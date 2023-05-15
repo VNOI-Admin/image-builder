@@ -33,7 +33,7 @@ cat /dev/null > /var/log/auth.log
 cat /dev/null > /var/log/cloud-init.log
 
 # Remove various logs
-rm /var/log/vmware*log || true
+# rm /var/log/vmware*log || true
 rm /var/log/Xorg*log || true
 rm /var/log/unattended-upgrades/* || true
 rm /var/log/apt/term.log || true

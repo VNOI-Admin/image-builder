@@ -24,7 +24,7 @@ fi
 # Fix up date/time
 
 timedatectl set-timezone Asia/Jakarta
-vmware-toolbox-cmd timesync enable
+# vmware-toolbox-cmd timesync enable
 hwclock -w
 
 # Install zabbix repo
