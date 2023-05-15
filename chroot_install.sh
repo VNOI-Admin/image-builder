@@ -1,5 +1,7 @@
 pwd
 
+cp -R /src/* /root/
+
 if [ -f local_config.sh ]; then
     source /root/local_config.sh
 else

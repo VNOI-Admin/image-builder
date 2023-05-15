@@ -23,7 +23,7 @@ logger -p local0.info "STARTATD: time now is `date`"
 
 # Check for new contest schedule
 logger -p local0.info "STARTATD: check new schedule from pop server"
-/opt/ioi/sbin/checkschedule.sh
+/opt/vnoi/sbin/checkschedule.sh
 
 logger -p local0.info "STARTATD: Starting atd"
 

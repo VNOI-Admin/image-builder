@@ -1,9 +1,9 @@
 #!/bin/bash
 
-source /opt/ioi/misc/config
+source /opt/vnoi/misc/config
 
 if [ "$DOSETUP" = "1" ]; then
-	if ! /opt/ioi/bin/ioicheckuser -q; then
-		/opt/ioi/bin/ioisetup
+	if ! /opt/vnoi/bin/vnoicheckuser -q; then
+		/opt/vnoi/bin/vnoisetup
 	fi
 fi

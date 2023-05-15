@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# 2020-09-13 19:00 2020-09-14 00:00 3 /opt/ioi/sbin/contest.sh prep 0
+# 2020-09-13 19:00 2020-09-14 00:00 3 /opt/vnoi/sbin/contest.sh prep 0
 
-SCHEDULE="/opt/ioi/misc/schedule2.txt"
+SCHEDULE="/opt/vnoi/misc/schedule2.txt"
 
 TIMENOW=$(date +"%Y-%m-%d %H:%M")
 
@@ -37,7 +37,7 @@ schedule()
 
 	cat - <<EOM | at -M "$ATTIME" 2> /dev/null
 # AUTO-CONTEST-SCHEDULE
-/opt/ioi/sbin/atrun.sh exec $JOBID
+/opt/vnoi/sbin/atrun.sh exec $JOBID
 EOM
 	#echo $date, $time, $cmd
 

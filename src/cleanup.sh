@@ -21,7 +21,7 @@ rm -rf /tmp/*
 rm -rf /var/tmp/*
 
 # Clean up home directories
-rm ~ioi/.bash_history || true
+rm ~vnoi/.bash_history || true
 rm ~ansible/.bash_history || true
 rm ~root/.bash_history || true
 
@@ -55,7 +55,7 @@ if [ -f "config.local.sh" ]; then
 	rm config.local.sh
 fi
 
-PARTKEY=$(/opt/ioi/sbin/genkey.sh)
+PARTKEY=$(/opt/vnoi/sbin/genkey.sh)
 echo $PARTKEY
 
 echo REMEMBER TO REMOVE SETUP DIRECTORY

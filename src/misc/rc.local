@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /opt/ioi/config.sh
+source /opt/vnoi/config.sh
 
 check_user()
 {
@@ -18,13 +18,13 @@ check_user()
 case "$1" in
 	start)
 		# Generate an instance ID to uniquely id this VM
-		if [ ! -f /opt/ioi/run/instanceid.txt ]; then
-			openssl rand 10 | base32 > /opt/ioi/run/instanceid.txt
+		if [ ! -f /opt/vnoi/run/instanceid.txt ]; then
+			openssl rand 10 | base32 > /opt/vnoi/run/instanceid.txt
 		fi
 
 		# If VPN is configured, then turn on firewall
 		if check_user; then
-			/opt/ioi/sbin/firewall.sh start
+			/opt/vnoi/sbin/firewall.sh start
 		fi
 
 		logger -p local0.info "RCLOCAL: start time `date`"
@@ -44,7 +44,7 @@ case "$1" in
 		fi
 		rm $HOSTSFILE
 
-		/opt/ioi/sbin/startatd.sh &
+		/opt/vnoi/sbin/startatd.sh &
 
 		;;
 	*)

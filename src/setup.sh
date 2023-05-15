@@ -82,18 +82,18 @@ pip3 install matplotlib
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
-# Copy IOI stuffs into /opt
+# Copy VNOI stuffs into /opt
 
-mkdir -p /opt/ioi
-cp -a bin sbin misc /opt/ioi/
-cp config.sh /opt/ioi/
-mkdir -p /opt/ioi/run
-mkdir -p /opt/ioi/store
-mkdir -p /opt/ioi/config
-mkdir -p /opt/ioi/store/log
-mkdir -p /opt/ioi/store/screenshots
-mkdir -p /opt/ioi/store/submissions
-mkdir -p /opt/ioi/config/ssh
+mkdir -p /opt/vnoi
+cp -a bin sbin misc /opt/vnoi/
+cp config.sh /opt/vnoi/
+mkdir -p /opt/vnoi/run
+mkdir -p /opt/vnoi/store
+mkdir -p /opt/vnoi/config
+mkdir -p /opt/vnoi/store/log
+mkdir -p /opt/vnoi/store/screenshots
+mkdir -p /opt/vnoi/store/submissions
+mkdir -p /opt/vnoi/config/ssh
 
 aria2c -x 4 -d /tmp -o cpptools-linux.vsix "https://github.com/microsoft/vscode-cpptools/releases/download/v1.10.7/cpptools-linux.vsix"
 aria2c -x 4 -d /tmp -o cpp-compile-run.vsix "https://github.com/danielpinto8zz6/c-cpp-compile-run/releases/download/v1.0.15/c-cpp-compile-run-1.0.15.vsix"
@@ -103,30 +103,30 @@ mkdir /tmp/vscode
 mkdir /tmp/vscode-extensions
 code --install-extension /tmp/cpptools-linux.vsix --extensions-dir /tmp/vscode-extensions --user-data-dir /tmp/vscode
 code --install-extension /tmp/cpp-compile-run.vsix --extensions-dir /tmp/vscode-extensions --user-data-dir /tmp/vscode
-tar jcf /opt/ioi/misc/vscode-extensions.tar.bz2 -C /tmp/vscode-extensions .
-cp /tmp/vscodevim.vsix /opt/ioi/misc
+tar jcf /opt/vnoi/misc/vscode-extensions.tar.bz2 -C /tmp/vscode-extensions .
+cp /tmp/vscodevim.vsix /opt/vnoi/misc
 rm -rf /tmp/vscode-extensions
 
 # Add default timezone
-echo "Asia/Jakarta" > /opt/ioi/config/timezone
+echo "Asia/Jakarta" > /opt/vnoi/config/timezone
 
 # Default to enable screensaver lock
-touch /opt/ioi/config/screenlock
+touch /opt/vnoi/config/screenlock
 
-# Create IOI account
-/opt/ioi/sbin/mkioiuser.sh
+# Create vnoi account
+/opt/vnoi/sbin/mkvnoiuser.sh
 
-# Set IOI user's initial password
-echo "ioi:ioi" | chpasswd
+# Set VNOI user's initial password
+echo "vnoi:vnoi" | chpasswd
 
 # Fix permission and ownership
-chown ioi.ioi /opt/ioi/store/submissions
-chown ansible.syslog /opt/ioi/store/log
-chmod 770 /opt/ioi/store/log
+chown vnoi.vnoi /opt/vnoi/store/submissions
+chown ansible.syslog /opt/vnoi/store/log
+chmod 770 /opt/vnoi/store/log
 
 # Add our own syslog facility
 
-echo "local0.* /opt/ioi/store/log/local.log" >> /etc/rsyslog.d/10-ioi.conf
+echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
 
 # Add custom NTP to timesyncd config
 
@@ -166,12 +166,12 @@ touch ~ansible/.ssh/authorized_keys
 chown -R ansible.ansible ~ansible/.ssh
 
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
-echo "ioi ALL=NOPASSWD: /opt/ioi/bin/ioiconf.sh, /opt/ioi/bin/ioiexec.sh, /opt/ioi/bin/ioibackup.sh" >> /etc/sudoers.d/01-ioi
-echo "zabbix ALL=NOPASSWD: /opt/ioi/sbin/genkey.sh" >> /etc/sudoers.d/01-ioi
-chmod 440 /etc/sudoers.d/01-ioi
+echo "vnoi ALL=NOPASSWD: /opt/vnoi/bin/vnoiconf.sh, /opt/vnoi/bin/vnoiexec.sh, /opt/vnoi/bin/vnoibackup.sh" >> /etc/sudoers.d/01-vnoi
+echo "zabbix ALL=NOPASSWD: /opt/vnoi/sbin/genkey.sh" >> /etc/sudoers.d/01-vnoi
+chmod 440 /etc/sudoers.d/01-vnoi
 
 # setup bash aliases for ansible user
-cp /opt/ioi/misc/bash_aliases ~ansible/.bash_aliases
+cp /opt/vnoi/misc/bash_aliases ~ansible/.bash_aliases
 chmod 644 ~ansible/.bash_aliases
 chown ansible.ansible ~ansible/.bash_aliases
 
@@ -197,7 +197,7 @@ cd build
 ../configure
 make
 make install
-cp ../keymaps/en_US_ubuntu_1204.map /opt/ioi/misc/
+cp ../keymaps/en_US_ubuntu_1204.map /opt/vnoi/misc/
 popd
 rm -rf $WORKDIR
 
@@ -228,12 +228,12 @@ depmod -a
 
 # Create local HTML
 
-cp -a html /opt/ioi/html
-mkdir -p /opt/ioi/html/fonts
+cp -a html /opt/vnoi/html
+mkdir -p /opt/vnoi/html/fonts
 wget -O /tmp/fira-sans.zip "https://google-webfonts-helper.herokuapp.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
 wget -O /tmp/share.zip "https://google-webfonts-helper.herokuapp.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
-unzip -o /tmp/fira-sans.zip -d /opt/ioi/html/fonts
-unzip -o /tmp/share.zip -d /opt/ioi/html/fonts
+unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
+unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
 rm /tmp/fira-sans.zip
 rm /tmp/share.zip
 
@@ -246,17 +246,17 @@ mkdir -p /etc/tinc/vpn/hosts
 cat - <<'EOM' > /etc/tinc/vpn/tinc-up
 #!/bin/bash
 
-source /opt/ioi/config.sh
+source /opt/vnoi/config.sh
 ifconfig $INTERFACE "$(cat /etc/tinc/vpn/ip.conf)" netmask "$(cat /etc/tinc/vpn/mask.conf)"
 route add -net $SUBNET gw "$(cat /etc/tinc/vpn/ip.conf)"
 EOM
 chmod 755 /etc/tinc/vpn/tinc-up
-cp /etc/tinc/vpn/tinc-up /opt/ioi/misc/
+cp /etc/tinc/vpn/tinc-up /opt/vnoi/misc/
 
 cat - <<'EOM' > /etc/tinc/vpn/host-up
 #!/bin/bash
 
-source /opt/ioi/config.sh
+source /opt/vnoi/config.sh
 logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is up
 
 # Force time resync as soon as VPN starts
@@ -268,11 +268,11 @@ resolvectl domain $INTERFACE $DNS_DOMAIN
 systemd-resolve --flush-cache
 
 # Register something on our HTTP server to log connection
-INSTANCEID=$(cat /opt/ioi/run/instanceid.txt)
+INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
 wget -qO- https://$POP_SERVER/ping/$NODE-$NAME-$INSTANCEID &> /dev/null
 EOM
 chmod 755 /etc/tinc/vpn/host-up
-cp /etc/tinc/vpn/host-up /opt/ioi/misc/
+cp /etc/tinc/vpn/host-up /opt/vnoi/misc/
 
 cat - <<'EOM' > /etc/tinc/vpn/host-down
 #!/bin/bash
@@ -327,7 +327,7 @@ APT::Periodic::Unattended-Upgrade "0";
 EOM
 
 # Use a different config for Zabbix
-sed -i '/^Environment=/ s/zabbix_agentd.conf/zabbix_agentd_ioi.conf/' /lib/systemd/system/zabbix-agent.service
+sed -i '/^Environment=/ s/zabbix_agentd.conf/zabbix_agentd_vnoi.conf/' /lib/systemd/system/zabbix-agent.service
 
 # Remove/clean up unneeded snaps
 
@@ -382,15 +382,15 @@ cp misc/rc.local /etc/rc.local
 chmod 755 /etc/rc.local
 
 # Set flag to run atrun.sh at first boot
-touch /opt/ioi/misc/schedule2.txt.firstrun
+touch /opt/vnoi/misc/schedule2.txt.firstrun
 
 # Embed version number
 if [ -n "$VERSION" ] ; then
-	echo "$VERSION" > /opt/ioi/misc/VERSION
+	echo "$VERSION" > /opt/vnoi/misc/VERSION
 fi
 
-# Deny ioi user from SSH login
-echo "DenyUsers ioi" >> /etc/ssh/sshd_config
+# Deny vnoi user from SSH login
+echo "DenyUsers vnoi" >> /etc/ssh/sshd_config
 
 echo "ansible:$ANSIBLE_PASSWD" | chpasswd
 
