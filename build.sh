@@ -41,7 +41,7 @@ build() {
     mount --bind /run $CHROOT/run
 
     # Copy this folder to chroot except the $INS_DIR
-    cp build.sh chroot_install.sh config.sh $CHROOT/root
+    cp -R build.sh chroot_install.sh config.sh src $CHROOT/root
 
     # Copy local_config.sh if exists
     if [ -f local_config.sh ]; then

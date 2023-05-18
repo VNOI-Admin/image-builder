@@ -1,7 +1,5 @@
 pwd
 
-cp -R src/* /root/
-
 if [ -f local_config.sh ]; then
     source /root/local_config.sh
 else
@@ -18,15 +16,17 @@ export LC_ALL=C
 
 echo "live-build" > /etc/hostname
 
+echo "Set mirror to $MIRROR"
+
 cat <<EOF > /etc/apt/sources.list
-deb http://vn.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
-deb-src http://vn.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
+deb $MIRROR focal main restricted universe multiverse
+deb-src $MIRROR focal main restricted universe multiverse
 
-deb http://vn.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
-deb-src http://vn.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
+deb $MIRROR focal-security main restricted universe multiverse
+deb-src $MIRROR focal-security main restricted universe multiverse
 
-deb http://vn.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse
-deb-src http://vn.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse
+deb $MIRROR focal-updates main restricted universe multiverse
+deb-src $MIRROR focal-updates main restricted universe multiverse
 EOF
 
 apt-get update
@@ -72,7 +72,7 @@ apt-get install -y \
 
 apt-get install -y \
     plymouth-theme-ubuntu-logo \
-    ubuntu-gnome-desktop \
+    ubuntu-desktop-minimal \
     ubuntu-gnome-wallpapers
 
 apt-get install -y \
@@ -126,6 +126,10 @@ dpkg-reconfigure network-manager
 
 # Clean up the chroot environment
 truncate -s 0 /etc/machine-id
+
+# SETUP IOI CONFIGURATIONS
+
+/root/src/setup.sh
 
 rm /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
