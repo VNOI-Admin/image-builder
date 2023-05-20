@@ -2,24 +2,17 @@
 
 # Partitioning
 
-# Use the first detected hard disk as default installation disk
-d-i partman/early_command string debconf-set partman-auto/disk "$(list-devices disk | head -n1)"
+d-i partman-auto/init_automatically_partition select biggest_free
 
 d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
 d-i partman-lvm/confirm boolean true
 d-i partman-lvm/confirm_nooverwrite boolean true
-d-i partman-md/device_remove_md boolean true
 d-i partman-md/confirm boolean true
 d-i partman-auto/method string regular
 d-i partman-basicfilesystems/no_swap boolean false
 
-d-i partman-auto/expert_recipe string root :: \
-        15000 15010 15360 ext4 \
-        $primary{ } $bootable{ } method{ format } \
-        format{ } use_filesystem{ } filesystem{ ext4 } \
-        mountpoint{ / } \
-    .
-d-i partman-auto/choose_recipe select root
+d-i partman-auto/choose_recipe select atomic
 
 # Apply partitioning info with confirmation
 d-i partman-partitioning/confirm_write_new_label boolean true
@@ -64,12 +57,6 @@ d-i user-setup/allow-password-weak boolean false
 d-i grub-installer/grub2_instead_of_grub_legacy boolean true
 d-i grub-installer/only_debian boolean true
 d-i finish-install/reboot_in_progress note
-
-# Custom Commands
-# ubiquity ubiquity/success_command string \
-#   in-target apt update;\
-#   in-target apt remove -y gnome-initial-setup;\
-#   in-target apt install -y open-vm-tools
 
 # Poweroff after install
 ubiquity ubiquity/poweroff boolean true
