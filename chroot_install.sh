@@ -127,10 +127,6 @@ dpkg-reconfigure network-manager
 # Clean up the chroot environment
 truncate -s 0 /etc/machine-id
 
-# SETUP IOI CONFIGURATIONS
-
-/root/src/setup.sh
-
 rm /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
 

@@ -64,6 +64,15 @@ build() {
     umount $CHROOT/dev
     umount $CHROOT/run
 
+    image_build
+}
+
+image_build() {
+    # Check if filesystem.squashfs exists
+    if [ -f $IMAGE/casper/filesystem.squashfs ]; then
+        rm -f $IMAGE/casper/filesystem.squashfs
+    fi
+
     # Setup and populate the CD image directory
     cp $CHROOT/boot/vmlinuz-**-**-generic $IMAGE/casper/vmlinuz
     cp $CHROOT/boot/initrd.img-**-**-generic $IMAGE/casper/initrd
@@ -92,8 +101,8 @@ menuentry "Try Ubuntu FS without installing" {
    initrd /casper/initrd
 }
 
-menuentry "Install Ubuntu FS" {
-   linux /casper/vmlinuz boot=casper only-ubiquity quiet splash ---
+menuentry "Install Ubuntu FS (Custom Preseed)" {
+   linux /casper/vmlinuz file=/cdrom/preseed/custom.seed auto=true priority=critical boot=casper automatic-ubiquity quiet splash noprompt noshell ---
    initrd /casper/initrd
 }
 
@@ -141,12 +150,14 @@ EOF
 #define TOTALNUM0  1
 EOF
 
+    # Add preseeed
+    mkdir $IMAGE/preseed
+    cp custom.seed $IMAGE/preseed/custom.seed
+
     clear
 
     echo "Building ISO"
     cd $IMAGE
-
-
 
     grub-mkstandalone \
         --format=x86_64-efi \
@@ -198,6 +209,8 @@ EOF
         -graft-points \
             "/EFI/efiboot.img=isolinux/efiboot.img" \
             "/boot/grub/bios.img=isolinux/bios.img" \
+            "/boot/grub/grub.cfg=isolinux/grub.cfg" \
+            "/boot/grub/loopback.cfg=isolinux/grub.cfg" \
             "."
 }
 
@@ -209,6 +222,9 @@ case $1 in
         ;;
     clean)
         rm -rf $INS_DIR
+        ;;
+    image_build)
+        image_build
         ;;
     help)
         echo "Usage: $0 {build}"
