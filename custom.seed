@@ -9,7 +9,6 @@ d-i partman-md/device_remove_md boolean true
 d-i partman-lvm/confirm boolean true
 d-i partman-lvm/confirm_nooverwrite boolean true
 d-i partman-md/confirm boolean true
-d-i partman-auto/method string regular
 d-i partman-basicfilesystems/no_swap boolean false
 
 d-i partman-auto/choose_recipe select atomic
