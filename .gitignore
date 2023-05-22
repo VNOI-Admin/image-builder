@@ -1,1 +1,3 @@
 local_config.sh
+live-build/
+*.iso
