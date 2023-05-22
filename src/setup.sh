@@ -20,6 +20,10 @@ if [ -f "config.local.sh" ]; then
 	source config.local.sh
 fi
 
+# Remove tmp_user from preseed
+
+userdel -r tmp_user
+
 # Fix up date/time
 
 timedatectl set-timezone Asia/Jakarta
