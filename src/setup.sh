@@ -15,21 +15,20 @@ error() {
 trap 'error ${LINENO}' ERR
 
 VERSION="test$(date +%m%d)"
-ANSIBLE_PASSWD="ansible"
 
 if [ -f "config.local.sh" ]; then
 	source config.local.sh
 fi
+
+# Remove tmp_user from preseed
+
+userdel -r tmp_user
 
 # Fix up date/time
 
 timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
 hwclock -w
-
-# Install zabbix repo
-wget -O /tmp/zabbix-release_5.0-1+focal_all.deb https://repo.zabbix.com/zabbix/5.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_5.0-1+focal_all.deb
-dpkg -i /tmp/zabbix-release_5.0-1+focal_all.deb
 
 # Update packages
 
@@ -38,13 +37,14 @@ apt -y upgrade
 
 # Convert server install into a minimuam desktop install
 
-apt -y install tasksel
-tasksel install ubuntu-desktop-minimal ubuntu-desktop-minimal-default-languages
+# NOTE: This is unnecessary if we use the Ubuntu Desktop ISO
+# apt -y install tasksel
+# tasksel install ubuntu-desktop-minimal ubuntu-desktop-minimal-default-languages
 
 # Install tools needed for management and monitoring
 
-apt -y install net-tools openssh-server ansible xvfb tinc oathtool imagemagick \
-	zabbix-agent aria2
+apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
+	aria2
 
 # Install local build tools
 
@@ -108,7 +108,7 @@ cp /tmp/vscodevim.vsix /opt/vnoi/misc
 rm -rf /tmp/vscode-extensions
 
 # Add default timezone
-echo "Asia/Jakarta" > /opt/vnoi/config/timezone
+echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 
 # Default to enable screensaver lock
 touch /opt/vnoi/config/screenlock
@@ -121,7 +121,6 @@ echo "vnoi:vnoi" | chpasswd
 
 # Fix permission and ownership
 chown vnoi.vnoi /opt/vnoi/store/submissions
-chown ansible.syslog /opt/vnoi/store/log
 chmod 770 /opt/vnoi/store/log
 
 # Add our own syslog facility
@@ -135,21 +134,10 @@ cat - <<EOM > /etc/systemd/timesyncd.conf
 NTP=time.windows.com time.nist.gov
 EOM
 
-# Don't list ansible user at login screen
-
-cat - <<EOM > /var/lib/AccountsService/users/ansible
-[User]
-Language=
-XSession=gnome
-SystemAccount=true
-EOM
-
-chmod 644 /var/lib/AccountsService/users/ansible
-
 # GRUB config: quiet, and password for edit
 
 sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash maxcpus=2 mem=6144M"/' /etc/default/grub
-GRUB_PASSWD=$(echo -e "$ANSIBLE_PASSWD\n$ANSIBLE_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
+GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
 
 sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestricted \$/' /etc/grub.d/10_linux
 cat - <<EOM >> /etc/grub.d/40_custom
@@ -159,21 +147,9 @@ EOM
 
 update-grub2
 
-# Setup empty SSH authorized keys and passwordless sudo for ansible
-
-mkdir -p ~ansible/.ssh
-touch ~ansible/.ssh/authorized_keys
-chown -R ansible.ansible ~ansible/.ssh
-
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 echo "vnoi ALL=NOPASSWD: /opt/vnoi/bin/vnoiconf.sh, /opt/vnoi/bin/vnoiexec.sh, /opt/vnoi/bin/vnoibackup.sh" >> /etc/sudoers.d/01-vnoi
-echo "zabbix ALL=NOPASSWD: /opt/vnoi/sbin/genkey.sh" >> /etc/sudoers.d/01-vnoi
 chmod 440 /etc/sudoers.d/01-vnoi
-
-# setup bash aliases for ansible user
-cp /opt/vnoi/misc/bash_aliases ~ansible/.bash_aliases
-chmod 644 ~ansible/.bash_aliases
-chown ansible.ansible ~ansible/.bash_aliases
 
 # Documentation
 
@@ -230,8 +206,8 @@ depmod -a
 
 cp -a html /opt/vnoi/html
 mkdir -p /opt/vnoi/html/fonts
-wget -O /tmp/fira-sans.zip "https://google-webfonts-helper.herokuapp.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
-wget -O /tmp/share.zip "https://google-webfonts-helper.herokuapp.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
+wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
+wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
 unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
 unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
 rm /tmp/fira-sans.zip
@@ -326,9 +302,6 @@ APT::Periodic::Update-Package-Lists "0";
 APT::Periodic::Unattended-Upgrade "0";
 EOM
 
-# Use a different config for Zabbix
-sed -i '/^Environment=/ s/zabbix_agentd.conf/zabbix_agentd_vnoi.conf/' /lib/systemd/system/zabbix-agent.service
-
 # Remove/clean up unneeded snaps
 
 snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision; do
@@ -391,8 +364,6 @@ fi
 
 # Deny vnoi user from SSH login
 echo "DenyUsers vnoi" >> /etc/ssh/sshd_config
-
-echo "ansible:$ANSIBLE_PASSWD" | chpasswd
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
