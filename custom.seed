@@ -66,11 +66,13 @@ d-i grub-installer/only_debian boolean true
 d-i finish-install/reboot_in_progress note
 
 ubiquity ubiquity/success_command string  \
-    cp -a -r /root/src/ /target/opt/; \
+    cp -a -R /root/src/ /target/opt/; \
     in-target chmod -R 777 /opt/src/; \
-    in-target /bin/sh /opt/src/setup.sh; \
-    in-target /bin/sh /opt/src/cleanup.sh; \
-    in-target /bin/rm -rf /opt/src/
+    in-target --pass-stdout /bin/sh /opt/src/setup.sh > /opt/install.log; \
+    in-target --pass-stdout /bin/sh /opt/src/cleanup.sh > /opt/install_cleanup.log; \
+    in-target /bin/rm -rf /opt/src/; \
+    cp /opt/install.log /target/root/; \
+    cp /opt/install_cleanup.log /target/root/;
 
 # Poweroff after install
 # ubiquity ubiquity/poweroff boolean true

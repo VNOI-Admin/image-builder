@@ -22,42 +22,51 @@ fi
 
 # Remove tmp_user from preseed
 
-userdel -r tmp_user
+# Check if user exists, if yes, delete it
+if id "tmp_user" >/dev/null 2>&1; then
+	echo "Delete temporary user"
+	userdel -rf tmp_user
+fi
 
 # Fix up date/time
 
+echo "Fix up date/time"
 timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
 hwclock -w
 
 # Update packages
 
+echo "Update packages"
 apt -y update
 apt -y upgrade
 
 # Convert server install into a minimuam desktop install
 
 # NOTE: This is unnecessary if we use the Ubuntu Desktop ISO
-# apt -y install tasksel
-# tasksel install ubuntu-desktop-minimal ubuntu-desktop-minimal-default-languages
+apt install -y ubuntu-desktop-minimal
 
 # Install tools needed for management and monitoring
 
+echo "Install tools needed for management and monitoring"
 apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
 	aria2
 
 # Install local build tools
 
+echo "Install local build tools"
 apt -y install build-essential autoconf autotools-dev
 
 # Install packages needed by contestants
 
+echo "Install packages needed by contestants"
 apt -y install openjdk-11-jdk-headless codeblocks emacs \
 	geany gedit joe kate kdevelop nano vim vim-gtk3 \
 	ddd valgrind visualvm ruby python3-pip konsole
 
 # Install snap packages needed by contestants
 
+echo "Install snap packages needed by contestants"
 snap install --classic atom
 snap install --classic code
 snap install --classic sublime-text
@@ -77,6 +86,7 @@ EOM
 
 # Install python3 libraries
 
+echo "Install python3 libraries"
 pip3 install matplotlib
 
 # Change default shell for useradd
@@ -84,6 +94,7 @@ sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
 # Copy VNOI stuffs into /opt
 
+echo "Copy VNOI stuffs into /opt"
 mkdir -p /opt/vnoi
 cp -a bin sbin misc /opt/vnoi/
 cp config.sh /opt/vnoi/
@@ -114,6 +125,7 @@ echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 touch /opt/vnoi/config/screenlock
 
 # Create vnoi account
+echo "Create vnoi account"
 /opt/vnoi/sbin/mkvnoiuser.sh
 
 # Set VNOI user's initial password
@@ -164,18 +176,18 @@ rm -f /tmp/html_book_20190607.zip
 
 # Build logkeys
 
-WORKDIR=`mktemp -d`
-pushd $WORKDIR
-git clone https://github.com/kernc/logkeys.git
-cd logkeys
-./autogen.sh
-cd build
-../configure
-make
-make install
-cp ../keymaps/en_US_ubuntu_1204.map /opt/vnoi/misc/
-popd
-rm -rf $WORKDIR
+# WORKDIR=`mktemp -d`
+# pushd $WORKDIR
+# git clone https://github.com/kernc/logkeys.git
+# cd logkeys
+# ./autogen.sh
+# cd build
+# ../configure
+# make
+# make install
+# cp ../keymaps/en_US_ubuntu_1204.map /opt/vnoi/misc/
+# popd
+# rm -rf $WORKDIR
 
 # Mark some packages as needed so they wont' get auto-removed
 
@@ -185,22 +197,22 @@ apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
 # Remove unneeded packages
 
 apt -y remove gnome-power-manager brltty extra-cmake-modules
-apt -y remove llvm-9-dev zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
-apt -y remove linux-firmware memtest86+
+apt -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
+apt -y remove linux-firmware
 apt -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
-apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
-	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
+# apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
+# 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
 apt -y remove build-essential autoconf autotools-dev
 apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
 
 # Remove most extra modules but preserve those for sound
-kernelver=$(uname -a | cut -d\  -f 3)
-tar jcf /tmp/sound-modules.tar.bz2 -C / \
-	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
-	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
+# kernelver=$(uname -a | cut -d\  -f 3)
+# tar jcf /tmp/sound-modules.tar.bz2 -C / \
+# 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
+# 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
 apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
-tar jxf /tmp/sound-modules.tar.bz2 -C /
-depmod -a
+# tar jxf /tmp/sound-modules.tar.bz2 -C /
+# depmod -a
 
 # Create local HTML
 
