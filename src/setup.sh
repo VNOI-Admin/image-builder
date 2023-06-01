@@ -91,6 +91,10 @@ EOM
 echo "Install python3 libraries"
 pip3 install matplotlib
 
+# Install kerberos client
+export DEBIAN_FRONTEND=noninteractive # Prevents krb5-config from asking
+apt install -yq krb5-user
+
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
@@ -275,6 +279,33 @@ chmod 755 /etc/tinc/vpn/host-down
 systemctl enable tinc@vpn
 
 systemctl disable multipathd
+
+# Configure kerberos client
+cat - <<'EOM' > /etc/krb5.conf
+[libdefaults]
+	default_realm = vnoi.info
+
+	kdc_timesync = 1
+	ccache_type = 4
+	forwardable = true
+	proxiable = true
+	dns_lookup_realm = false
+	dns_lookup_kdc = false
+
+# The following libdefaults parameters are only for Heimdal Kerberos.
+	fcc-mit-ticketflags = true
+
+[realms]
+	vnoi.info = {
+		kdc = auth-cup.vnoi.info
+		admin_server = auth-cup.vnoi.info
+	}
+
+[domain_realm]
+	.vnoi.info = VNOI.INFO
+	vnoi.info = VNOI.INFO
+EOM
+chmod 755 /etc/krb5.conf
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
