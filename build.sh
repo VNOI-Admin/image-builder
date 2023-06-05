@@ -96,13 +96,13 @@ insmod all_video
 set default="0"
 set timeout=30
 
-menuentry "Try Ubuntu FS without installing" {
-   linux /casper/vmlinuz boot=casper nopersistent toram quiet splash ---
+menuentry "Install Ubuntu FS (Custom Preseed)" {
+   linux /casper/vmlinuz file=/cdrom/preseed/custom.seed auto=true priority=critical boot=casper automatic-ubiquity quiet splash noprompt noshell ---
    initrd /casper/initrd
 }
 
-menuentry "Install Ubuntu FS (Custom Preseed)" {
-   linux /casper/vmlinuz file=/cdrom/preseed/custom.seed auto=true priority=critical boot=casper automatic-ubiquity quiet splash noprompt noshell ---
+menuentry "Try Ubuntu FS without installing" {
+   linux /casper/vmlinuz boot=casper nopersistent toram quiet splash ---
    initrd /casper/initrd
 }
 
