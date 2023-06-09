@@ -33,7 +33,7 @@ d-i console-setup/ask_detect boolean false
 d-i console-setup/layoutcode string us
 
 # Network
-d-i netcfg/get_hostname string localhost
+d-i netcfg/get_hostname string vnoi-localhost
 d-i netcfg/get_domain string localdomain
 d-i netcfg/choose_interface select auto
 
@@ -73,6 +73,7 @@ ubiquity ubiquity/success_command string  \
     in-target /bin/rm -rf /opt/src/; \
     cp /opt/install.log /target/root/; \
     cp /opt/install_cleanup.log /target/root/;
+    cp /opt/realm.log /target/root/;
 
 # Poweroff after install
 # ubiquity ubiquity/poweroff boolean true

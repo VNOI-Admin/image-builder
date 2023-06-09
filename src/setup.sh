@@ -1,7 +1,7 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 
-source ./config.sh
+. ./config.sh
 
 error() {
 	local lineno="$1"
@@ -19,7 +19,7 @@ trap 'error ${LINENO}' ERR
 VERSION="test$(date +%m%d)"
 
 if [ -f "config.local.sh" ]; then
-	source config.local.sh
+	. ./config.local.sh
 fi
 
 # Remove tmp_user from preseed
@@ -94,6 +94,9 @@ pip3 install matplotlib
 # Install kerberos client
 export DEBIAN_FRONTEND=noninteractive # Prevents krb5-config from asking
 apt install -yq krb5-user
+
+# install sssd and realmd for AD integration
+apt install -yq sssd-ad sssd-tools realmd adcli
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -283,20 +286,16 @@ systemctl disable multipathd
 # Configure kerberos client
 cat - <<'EOM' > /etc/krb5.conf
 [libdefaults]
-	default_realm = vnoi.info
-
+	default_realm = VNOI.INFO
 	kdc_timesync = 1
 	ccache_type = 4
 	forwardable = true
 	proxiable = true
 	dns_lookup_realm = false
-	dns_lookup_kdc = false
-
-# The following libdefaults parameters are only for Heimdal Kerberos.
-	fcc-mit-ticketflags = true
+	dns_lookup_kdc = true
 
 [realms]
-	vnoi.info = {
+	VNOI.INFO = {
 		kdc = auth-cup.vnoi.info
 		admin_server = auth-cup.vnoi.info
 	}
@@ -306,6 +305,12 @@ cat - <<'EOM' > /etc/krb5.conf
 	vnoi.info = VNOI.INFO
 EOM
 chmod 755 /etc/krb5.conf
+
+# Join kerberos realm
+echo $REALM_PASSWD | realm  --unattended join -v auth-cup.vnoi.info 1>realm.log 2>realm.log && echo "realm joined"
+
+# Configure PAM to create home directories on login
+pam-auth-update --enable mkhomedir
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
