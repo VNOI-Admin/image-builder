@@ -304,10 +304,11 @@ cat - <<'EOM' > /etc/krb5.conf
 	.vnoi.info = VNOI.INFO
 	vnoi.info = VNOI.INFO
 EOM
-chmod 755 /etc/krb5.conf
 
-# Join kerberos realm
-echo $REALM_PASSWD | realm  --unattended join -v auth-cup.vnoi.info 1>realm.log 2>realm.log && echo "realm joined"
+# Join Active Directory domain
+echo $REALM_PASSWD | kinit administrator
+realm join --verbose --install=/ --unattended --membership-software=adcli auth-cup.vnoi.info
+echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
 
 # Configure PAM to create home directories on login
 pam-auth-update --enable mkhomedir

@@ -73,7 +73,6 @@ ubiquity ubiquity/success_command string  \
     in-target /bin/rm -rf /opt/src/; \
     cp /opt/install.log /target/root/; \
     cp /opt/install_cleanup.log /target/root/;
-    cp /opt/realm.log /target/root/;
 
 # Poweroff after install
 # ubiquity ubiquity/poweroff boolean true
