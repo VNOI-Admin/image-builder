@@ -2,3 +2,6 @@
 VERSION=""
 # Set a password, also used in GRUB. Otherwise we'll default to ansible.
 SUPER_PASSWD=""
+
+# Password for realm
+REALM_PASSWD=""
