@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /opt/ioi/config.sh
+source /opt/vnoi/config.sh
 
 
 check_ip()
@@ -52,11 +52,11 @@ do_config()
 	cp $WORKDIR/vpn/hosts/* /etc/tinc/vpn/hosts/
 	cp $WORKDIR/vpn/rsa_key.* /etc/tinc/vpn/
 	cp $WORKDIR/vpn/tinc.conf /etc/tinc/vpn
-	cp $WORKDIR/vpn/ioibackup* /opt/ioi/config/ssh/
+	cp $WORKDIR/vpn/vnoibackup* /opt/vnoi/config/ssh/
 
 	rm -r $WORKDIR
 	USERID=$(cat /etc/tinc/vpn/tinc.conf | grep Name | cut -d\  -f3)
-	chfn -f "$USERID" ioi
+	chfn -f "$USERID" vnoi
 
 	# Stop Zabbix agent
 	systemctl stop zabbix-agent 2> /dev/null
@@ -65,67 +65,67 @@ do_config()
 	# Restart firewall and VPN
 	systemctl enable tinc@vpn 2> /dev/null
 	systemctl restart tinc@vpn
-	/opt/ioi/sbin/firewall.sh start
+	/opt/vnoi/sbin/firewall.sh start
 
 	# Start Zabbix configuration
 	systemctl enable zabbix-agent 2> /dev/null
 	systemctl start zabbix-agent 2> /dev/null
 
 	# Generate an instance ID to uniquely id this VM
-	if [ ! -f /opt/ioi/run/instanceid.txt ]; then
-		openssl rand 10 | base32 > /opt/ioi/run/instanceid.txt
+	if [ ! -f /opt/vnoi/run/instanceid.txt ]; then
+		openssl rand 10 | base32 > /opt/vnoi/run/instanceid.txt
 	fi
 
 	# store credential
-	echo "${CRED%|*}" > /opt/ioi/run/username.txt
-	echo "${CRED##*|}" > /opt/ioi/run/password.txt
+	echo "${CRED%|*}" > /opt/vnoi/run/username.txt
+	echo "${CRED##*|}" > /opt/vnoi/run/password.txt
 
 	exit 0
 }
 
 
-logger -p local0.info "IOICONF: invoke $1"
+logger -p local0.info "VNOICONF: invoke $1"
 
 case "$1" in
 	fwstart)
-		if [ -e /opt/ioi/run/lockdown ]; then
+		if [ -e /opt/vnoi/run/lockdown ]; then
 			echo Not allowed to control firewall during lockdown mode
 		else
-			/opt/ioi/sbin/firewall.sh start
+			/opt/vnoi/sbin/firewall.sh start
 		fi
 		;;
 	fwstop)
-		if [ -e /opt/ioi/run/lockdown ]; then
+		if [ -e /opt/vnoi/run/lockdown ]; then
 			echo Not allowed to control firewall during lockdown mode
 		else
-			/opt/ioi/sbin/firewall.sh stop
+			/opt/vnoi/sbin/firewall.sh stop
 		fi
 		;;
 	vpnclear)
-		if [ -e /opt/ioi/run/lockdown ]; then
+		if [ -e /opt/vnoi/run/lockdown ]; then
 			echo Not allowed to control firewall during lockdown mode
 		else
 			systemctl stop tinc@vpn
 			systemctl disable tinc@vpn 2> /dev/null
 			systemctl stop zabbix-agent
 			systemctl disable zabbix-agent 2> /dev/null
-			/opt/ioi/sbin/firewall.sh stop
+			/opt/vnoi/sbin/firewall.sh stop
 			rm /etc/tinc/vpn/ip.conf 2> /dev/null
 			rm /etc/tinc/vpn/mask.conf 2> /dev/null
 			rm /etc/tinc/vpn/hosts/* 2> /dev/null
 			rm /etc/tinc/vpn/rsa_key.* 2> /dev/null
 			rm /etc/tinc/vpn/tinc.conf 2> /dev/null
-			rm /opt/ioi/config/ssh/ioibackup* 2> /dev/null
-			chfn -f "" ioi
+			rm /opt/vnoi/config/ssh/vnoibackup* 2> /dev/null
+			chfn -f "" vnoi
 		fi
 		;;
 	vpnstart)
 		systemctl start tinc@vpn
-		/opt/ioi/sbin/firewall.sh start
+		/opt/vnoi/sbin/firewall.sh start
 		;;
 	vpnrestart)
 		systemctl restart tinc@vpn
-		/opt/ioi/sbin/firewall.sh start
+		/opt/vnoi/sbin/firewall.sh start
 		;;
 	vpnstatus)
 		systemctl status tinc@vpn
@@ -160,11 +160,11 @@ EOM
 		if [ -f "/usr/share/zoneinfo/$2" ]; then
 			cat - <<EOM
 Your timezone will be set to $2 at your next login.
-*** Please take note that all dates and times communicated by the IOI 2022 ***
+*** Please take note that all dates and times communicated by the VNOI 2023 ***
 *** organisers will be in Asia/Jakarta timezone (GMT+07), unless it is     ***
 *** otherwise specified.                                                   ***
 EOM
-			echo "$2" > /opt/ioi/config/timezone
+			echo "$2" > /opt/vnoi/config/timezone
 		else
 			cat - <<EOM
 Timezone $2 is not valid. Run tzselect to learn about the valid timezones
@@ -175,32 +175,32 @@ EOM
 		;;
 	setautobackup)
 		if [ "$2" = "on" ]; then
-			touch /opt/ioi/config/autobackup
+			touch /opt/vnoi/config/autobackup
 			echo Auto backup enabled
 		elif [ "$2" = "off" ]; then
-			if [ -f /opt/ioi/config/autobackup ]; then
-				rm /opt/ioi/config/autobackup
+			if [ -f /opt/vnoi/config/autobackup ]; then
+				rm /opt/vnoi/config/autobackup
 			fi
 			echo Auto backup disabled
 		else
 			cat - <<EOM
 Invalid argument to setautobackup. Specify "on" to enable automatic backup
 of home directory, or "off" to disable automatic backup. You can always run
-"ioibackup" manually to backup at any time. Backups will only include
+"vnoibackup" manually to backup at any time. Backups will only include
 non-hidden files less than 1MB in size.
 EOM
 		fi
 		;;
 	setscreenlock)
 		if [ "$2" = "on" ]; then
-			touch /opt/ioi/config/screenlock
-			sudo -Hu ioi xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled true
+			touch /opt/vnoi/config/screenlock
+			sudo -Hu vnoi xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled true
 			echo Screensaver lock enabled
 		elif [ "$2" = "off" ]; then
-			if [ -f /opt/ioi/config/screenlock ]; then
-				rm /opt/ioi/config/screenlock
+			if [ -f /opt/vnoi/config/screenlock ]; then
+				rm /opt/vnoi/config/screenlock
 			fi
-			sudo -Hu ioi xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled false
+			sudo -Hu vnoi xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled false
 			echo Screensaver lock disabled
 		else
 			cat - <<EOM
@@ -210,15 +210,15 @@ EOM
 		fi
 		;;
 	getpubkey)
-		curl -m 5 -s -f -o /opt/ioi/misc/id_ansible.pub "https://$POP_SERVER/ansible.pub" > /dev/null 2>&1
+		curl -m 5 -s -f -o /opt/vnoi/misc/id_ansible.pub "https://$POP_SERVER/ansible.pub" > /dev/null 2>&1
 		RC=$?
 		if [ ${RC} -ne 0 ]; then
 			exit ${RC}
 		fi
-		chmod 664 /opt/ioi/misc/id_ansible.pub
-		chown ansible:ansible /opt/ioi/misc/id_ansible.pub
+		chmod 664 /opt/vnoi/misc/id_ansible.pub
+		chown ansible:ansible /opt/vnoi/misc/id_ansible.pub
 
-		cp /opt/ioi/misc/id_ansible.pub /home/ansible/.ssh/authorized_keys
+		cp /opt/vnoi/misc/id_ansible.pub /home/ansible/.ssh/authorized_keys
 		chmod 600 /home/ansible/.ssh/authorized_keys
 		chown ansible:ansible /home/ansible/.ssh/authorized_keys
 		exit 0

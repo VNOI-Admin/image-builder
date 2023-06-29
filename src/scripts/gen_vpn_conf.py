@@ -46,8 +46,8 @@ def gen_ioi_conf(dir, ip, dns_servers, server_ips):
     with open(dir + '/dns.conf', 'w') as f:
         f.write(' '.join(server_ips[server] for server in dns_servers))
 
-    if not os.path.exists(dir + '/ioibackup'):
-        os.system(f'ssh-keygen -f {dir}/ioibackup -b 2048 -q -N "" -C ""')
+    if not os.path.exists(dir + '/vnoibackup'):
+        os.system(f'ssh-keygen -f {dir}/vnoibackup -b 2048 -q -N "" -C ""')
 
 
 def gen_hosts():
@@ -135,7 +135,7 @@ def gen_backup_config():
 
         for row in csv_reader:
             _, _, _, _, host, _, _, _, _ = row
-            os.system(f'echo "command=\\\"rrsync /home/ioibackup/{host}/\\\",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding $(cat {DEST_DIR}/clients/{host}/ioibackup.pub)" >> {authorized_keys_file}')
+            os.system(f'echo "command=\\\"rrsync /home/vnoibackup/{host}/\\\",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding $(cat {DEST_DIR}/clients/{host}/vnoibackup.pub)" >> {authorized_keys_file}')
 
 
 def gen_vm_hosts():

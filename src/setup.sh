@@ -1,5 +1,7 @@
 #!/bin/bash
-source ./config.sh
+cd "$(dirname "$0")"
+
+. ./config.sh
 
 error() {
 	local lineno="$1"
@@ -15,49 +17,58 @@ error() {
 trap 'error ${LINENO}' ERR
 
 VERSION="test$(date +%m%d)"
-ANSIBLE_PASSWD="ansible"
 
 if [ -f "config.local.sh" ]; then
-	source config.local.sh
+	. ./config.local.sh
+fi
+
+# Remove tmp_user from preseed
+
+# Check if user exists, if yes, delete it
+if id "tmp_user" >/dev/null 2>&1; then
+	echo "Delete temporary user"
+	userdel -rf tmp_user
 fi
 
 # Fix up date/time
 
+echo "Fix up date/time"
 timedatectl set-timezone Asia/Jakarta
-vmware-toolbox-cmd timesync enable
+# vmware-toolbox-cmd timesync enable
 hwclock -w
-
-# Install zabbix repo
-wget -O /tmp/zabbix-release_5.0-1+focal_all.deb https://repo.zabbix.com/zabbix/5.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_5.0-1+focal_all.deb
-dpkg -i /tmp/zabbix-release_5.0-1+focal_all.deb
 
 # Update packages
 
+echo "Update packages"
 apt -y update
 apt -y upgrade
 
 # Convert server install into a minimuam desktop install
 
-apt -y install tasksel
-tasksel install ubuntu-desktop-minimal ubuntu-desktop-minimal-default-languages
+# NOTE: This is unnecessary if we use the Ubuntu Desktop ISO
+apt install -y ubuntu-desktop-minimal
 
 # Install tools needed for management and monitoring
 
-apt -y install net-tools openssh-server ansible xvfb tinc oathtool imagemagick \
-	zabbix-agent aria2
+echo "Install tools needed for management and monitoring"
+apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
+	aria2
 
 # Install local build tools
 
+echo "Install local build tools"
 apt -y install build-essential autoconf autotools-dev
 
 # Install packages needed by contestants
 
+echo "Install packages needed by contestants"
 apt -y install openjdk-11-jdk-headless codeblocks emacs \
 	geany gedit joe kate kdevelop nano vim vim-gtk3 \
 	ddd valgrind visualvm ruby python3-pip konsole
 
 # Install snap packages needed by contestants
 
+echo "Install snap packages needed by contestants"
 snap install --classic atom
 snap install --classic code
 snap install --classic sublime-text
@@ -77,23 +88,32 @@ EOM
 
 # Install python3 libraries
 
+echo "Install python3 libraries"
 pip3 install matplotlib
+
+# Install kerberos client
+export DEBIAN_FRONTEND=noninteractive # Prevents krb5-config from asking
+apt install -yq krb5-user
+
+# install sssd and realmd for AD integration
+apt install -yq sssd-ad sssd-tools realmd adcli
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
-# Copy IOI stuffs into /opt
+# Copy VNOI stuffs into /opt
 
-mkdir -p /opt/ioi
-cp -a bin sbin misc /opt/ioi/
-cp config.sh /opt/ioi/
-mkdir -p /opt/ioi/run
-mkdir -p /opt/ioi/store
-mkdir -p /opt/ioi/config
-mkdir -p /opt/ioi/store/log
-mkdir -p /opt/ioi/store/screenshots
-mkdir -p /opt/ioi/store/submissions
-mkdir -p /opt/ioi/config/ssh
+echo "Copy VNOI stuffs into /opt"
+mkdir -p /opt/vnoi
+cp -a bin sbin misc /opt/vnoi/
+cp config.sh /opt/vnoi/
+mkdir -p /opt/vnoi/run
+mkdir -p /opt/vnoi/store
+mkdir -p /opt/vnoi/config
+mkdir -p /opt/vnoi/store/log
+mkdir -p /opt/vnoi/store/screenshots
+mkdir -p /opt/vnoi/store/submissions
+mkdir -p /opt/vnoi/config/ssh
 
 aria2c -x 4 -d /tmp -o cpptools-linux.vsix "https://github.com/microsoft/vscode-cpptools/releases/download/v1.10.7/cpptools-linux.vsix"
 aria2c -x 4 -d /tmp -o cpp-compile-run.vsix "https://github.com/danielpinto8zz6/c-cpp-compile-run/releases/download/v1.0.15/c-cpp-compile-run-1.0.15.vsix"
@@ -103,30 +123,30 @@ mkdir /tmp/vscode
 mkdir /tmp/vscode-extensions
 code --install-extension /tmp/cpptools-linux.vsix --extensions-dir /tmp/vscode-extensions --user-data-dir /tmp/vscode
 code --install-extension /tmp/cpp-compile-run.vsix --extensions-dir /tmp/vscode-extensions --user-data-dir /tmp/vscode
-tar jcf /opt/ioi/misc/vscode-extensions.tar.bz2 -C /tmp/vscode-extensions .
-cp /tmp/vscodevim.vsix /opt/ioi/misc
+tar jcf /opt/vnoi/misc/vscode-extensions.tar.bz2 -C /tmp/vscode-extensions .
+cp /tmp/vscodevim.vsix /opt/vnoi/misc
 rm -rf /tmp/vscode-extensions
 
 # Add default timezone
-echo "Asia/Jakarta" > /opt/ioi/config/timezone
+echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 
 # Default to enable screensaver lock
-touch /opt/ioi/config/screenlock
+touch /opt/vnoi/config/screenlock
 
-# Create IOI account
-/opt/ioi/sbin/mkioiuser.sh
+# Create vnoi account
+echo "Create vnoi account"
+/opt/vnoi/sbin/mkvnoiuser.sh
 
-# Set IOI user's initial password
-echo "ioi:ioi" | chpasswd
+# Set VNOI user's initial password
+echo "vnoi:vnoi" | chpasswd
 
 # Fix permission and ownership
-chown ioi.ioi /opt/ioi/store/submissions
-chown ansible.syslog /opt/ioi/store/log
-chmod 770 /opt/ioi/store/log
+chown vnoi.vnoi /opt/vnoi/store/submissions
+chmod 770 /opt/vnoi/store/log
 
 # Add our own syslog facility
 
-echo "local0.* /opt/ioi/store/log/local.log" >> /etc/rsyslog.d/10-ioi.conf
+echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
 
 # Add custom NTP to timesyncd config
 
@@ -135,21 +155,10 @@ cat - <<EOM > /etc/systemd/timesyncd.conf
 NTP=time.windows.com time.nist.gov
 EOM
 
-# Don't list ansible user at login screen
-
-cat - <<EOM > /var/lib/AccountsService/users/ansible
-[User]
-Language=
-XSession=gnome
-SystemAccount=true
-EOM
-
-chmod 644 /var/lib/AccountsService/users/ansible
-
 # GRUB config: quiet, and password for edit
 
 sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash maxcpus=2 mem=6144M"/' /etc/default/grub
-GRUB_PASSWD=$(echo -e "$ANSIBLE_PASSWD\n$ANSIBLE_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
+GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
 
 sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestricted \$/' /etc/grub.d/10_linux
 cat - <<EOM >> /etc/grub.d/40_custom
@@ -159,21 +168,9 @@ EOM
 
 update-grub2
 
-# Setup empty SSH authorized keys and passwordless sudo for ansible
-
-mkdir -p ~ansible/.ssh
-touch ~ansible/.ssh/authorized_keys
-chown -R ansible.ansible ~ansible/.ssh
-
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
-echo "ioi ALL=NOPASSWD: /opt/ioi/bin/ioiconf.sh, /opt/ioi/bin/ioiexec.sh, /opt/ioi/bin/ioibackup.sh" >> /etc/sudoers.d/01-ioi
-echo "zabbix ALL=NOPASSWD: /opt/ioi/sbin/genkey.sh" >> /etc/sudoers.d/01-ioi
-chmod 440 /etc/sudoers.d/01-ioi
-
-# setup bash aliases for ansible user
-cp /opt/ioi/misc/bash_aliases ~ansible/.bash_aliases
-chmod 644 ~ansible/.bash_aliases
-chown ansible.ansible ~ansible/.bash_aliases
+echo "vnoi ALL=NOPASSWD: /opt/vnoi/bin/vnoiconf.sh, /opt/vnoi/bin/vnoiexec.sh, /opt/vnoi/bin/vnoibackup.sh" >> /etc/sudoers.d/01-vnoi
+chmod 440 /etc/sudoers.d/01-vnoi
 
 # Documentation
 
@@ -188,18 +185,18 @@ rm -f /tmp/html_book_20190607.zip
 
 # Build logkeys
 
-WORKDIR=`mktemp -d`
-pushd $WORKDIR
-git clone https://github.com/kernc/logkeys.git
-cd logkeys
-./autogen.sh
-cd build
-../configure
-make
-make install
-cp ../keymaps/en_US_ubuntu_1204.map /opt/ioi/misc/
-popd
-rm -rf $WORKDIR
+# WORKDIR=`mktemp -d`
+# pushd $WORKDIR
+# git clone https://github.com/kernc/logkeys.git
+# cd logkeys
+# ./autogen.sh
+# cd build
+# ../configure
+# make
+# make install
+# cp ../keymaps/en_US_ubuntu_1204.map /opt/vnoi/misc/
+# popd
+# rm -rf $WORKDIR
 
 # Mark some packages as needed so they wont' get auto-removed
 
@@ -209,31 +206,31 @@ apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
 # Remove unneeded packages
 
 apt -y remove gnome-power-manager brltty extra-cmake-modules
-apt -y remove llvm-9-dev zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
-apt -y remove linux-firmware memtest86+
+apt -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
+apt -y remove linux-firmware
 apt -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
-apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
-	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
+# apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
+# 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
 apt -y remove build-essential autoconf autotools-dev
 apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
 
 # Remove most extra modules but preserve those for sound
-kernelver=$(uname -a | cut -d\  -f 3)
-tar jcf /tmp/sound-modules.tar.bz2 -C / \
-	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
-	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
+# kernelver=$(uname -a | cut -d\  -f 3)
+# tar jcf /tmp/sound-modules.tar.bz2 -C / \
+# 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
+# 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
 apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
-tar jxf /tmp/sound-modules.tar.bz2 -C /
-depmod -a
+# tar jxf /tmp/sound-modules.tar.bz2 -C /
+# depmod -a
 
 # Create local HTML
 
-cp -a html /opt/ioi/html
-mkdir -p /opt/ioi/html/fonts
-wget -O /tmp/fira-sans.zip "https://google-webfonts-helper.herokuapp.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
-wget -O /tmp/share.zip "https://google-webfonts-helper.herokuapp.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
-unzip -o /tmp/fira-sans.zip -d /opt/ioi/html/fonts
-unzip -o /tmp/share.zip -d /opt/ioi/html/fonts
+cp -a html /opt/vnoi/html
+mkdir -p /opt/vnoi/html/fonts
+wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
+wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
+unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
+unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
 rm /tmp/fira-sans.zip
 rm /tmp/share.zip
 
@@ -246,17 +243,17 @@ mkdir -p /etc/tinc/vpn/hosts
 cat - <<'EOM' > /etc/tinc/vpn/tinc-up
 #!/bin/bash
 
-source /opt/ioi/config.sh
+source /opt/vnoi/config.sh
 ifconfig $INTERFACE "$(cat /etc/tinc/vpn/ip.conf)" netmask "$(cat /etc/tinc/vpn/mask.conf)"
 route add -net $SUBNET gw "$(cat /etc/tinc/vpn/ip.conf)"
 EOM
 chmod 755 /etc/tinc/vpn/tinc-up
-cp /etc/tinc/vpn/tinc-up /opt/ioi/misc/
+cp /etc/tinc/vpn/tinc-up /opt/vnoi/misc/
 
 cat - <<'EOM' > /etc/tinc/vpn/host-up
 #!/bin/bash
 
-source /opt/ioi/config.sh
+source /opt/vnoi/config.sh
 logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is up
 
 # Force time resync as soon as VPN starts
@@ -268,11 +265,11 @@ resolvectl domain $INTERFACE $DNS_DOMAIN
 systemd-resolve --flush-cache
 
 # Register something on our HTTP server to log connection
-INSTANCEID=$(cat /opt/ioi/run/instanceid.txt)
+INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
 wget -qO- https://$POP_SERVER/ping/$NODE-$NAME-$INSTANCEID &> /dev/null
 EOM
 chmod 755 /etc/tinc/vpn/host-up
-cp /etc/tinc/vpn/host-up /opt/ioi/misc/
+cp /etc/tinc/vpn/host-up /opt/vnoi/misc/
 
 cat - <<'EOM' > /etc/tinc/vpn/host-down
 #!/bin/bash
@@ -285,6 +282,36 @@ chmod 755 /etc/tinc/vpn/host-down
 systemctl enable tinc@vpn
 
 systemctl disable multipathd
+
+# Configure kerberos client
+cat - <<'EOM' > /etc/krb5.conf
+[libdefaults]
+	default_realm = VNOI.INFO
+	kdc_timesync = 1
+	ccache_type = 4
+	forwardable = true
+	proxiable = true
+	dns_lookup_realm = false
+	dns_lookup_kdc = true
+
+[realms]
+	VNOI.INFO = {
+		kdc = auth-cup.vnoi.info
+		admin_server = auth-cup.vnoi.info
+	}
+
+[domain_realm]
+	.vnoi.info = VNOI.INFO
+	vnoi.info = VNOI.INFO
+EOM
+
+# Join Active Directory domain
+echo $REALM_PASSWD | kinit administrator
+realm join --verbose --install=/ --unattended --membership-software=adcli auth-cup.vnoi.info
+echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
+
+# Configure PAM to create home directories on login
+pam-auth-update --enable mkhomedir
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
@@ -325,9 +352,6 @@ cat - <<EOM > /etc/apt/apt.conf.d/20auto-upgrades
 APT::Periodic::Update-Package-Lists "0";
 APT::Periodic::Unattended-Upgrade "0";
 EOM
-
-# Use a different config for Zabbix
-sed -i '/^Environment=/ s/zabbix_agentd.conf/zabbix_agentd_ioi.conf/' /lib/systemd/system/zabbix-agent.service
 
 # Remove/clean up unneeded snaps
 
@@ -382,17 +406,15 @@ cp misc/rc.local /etc/rc.local
 chmod 755 /etc/rc.local
 
 # Set flag to run atrun.sh at first boot
-touch /opt/ioi/misc/schedule2.txt.firstrun
+touch /opt/vnoi/misc/schedule2.txt.firstrun
 
 # Embed version number
 if [ -n "$VERSION" ] ; then
-	echo "$VERSION" > /opt/ioi/misc/VERSION
+	echo "$VERSION" > /opt/vnoi/misc/VERSION
 fi
 
-# Deny ioi user from SSH login
-echo "DenyUsers ioi" >> /etc/ssh/sshd_config
-
-echo "ansible:$ANSIBLE_PASSWD" | chpasswd
+# Deny vnoi user from SSH login
+echo "DenyUsers vnoi" >> /etc/ssh/sshd_config
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."

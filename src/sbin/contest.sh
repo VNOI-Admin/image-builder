@@ -8,43 +8,43 @@ contestprep()
 	# Prepare system for contest. This is run BEFORE start of contest.
 
 	# init 3
-	pkill -9 -u ioi
+	pkill -9 -u vnoi
 
-	UID=$(id -u ioi)
-	EPASSWD=$(grep ioi /etc/shadow | cut -d: -f2)
-	FULLNAME=$(grep ^ioi: /etc/passwd | cut -d: -f5 | cut -d, -f1)
+	UID=$(id -u vnoi)
+	EPASSWD=$(grep vnoi /etc/shadow | cut -d: -f2)
+	FULLNAME=$(grep ^vnoi: /etc/passwd | cut -d: -f5 | cut -d, -f1)
 
 	# Forces removal of home directory and mail spool
-	userdel -rf ioi > /dev/null 2>&1
+	userdel -rf vnoi > /dev/null 2>&1
 
 	# Remove all other user files in /tmp and /var/tmp
 	find /tmp -user $UID -exec rm -rf {} \;
 	find /var/tmp -user $UID -exec rm -rf {} \;
 
 	# Recreate submissions directory
-	rm -rf /opt/ioi/store/submissions
-	mkdir /opt/ioi/store/submissions
-	chown $UID.$UID /opt/ioi/store/submissions
+	rm -rf /opt/vnoi/store/submissions
+	mkdir /opt/vnoi/store/submissions
+	chown $UID.$UID /opt/vnoi/store/submissions
 
 	# Remove screenshot data
-	rm /opt/ioi/store/screenshots/*
+	rm /opt/vnoi/store/screenshots/*
 
-	/opt/ioi/sbin/mkioiuser.sh
+	/opt/vnoi/sbin/mkvnoiuser.sh
 
 	# Detect cases where the crypt password is invalid, and if so set default passwd
 	if [ ${#EPASSWD} -gt 5 ]; then
-		echo "ioi:$EPASSWD" | chpasswd -e
+		echo "vnoi:$EPASSWD" | chpasswd -e
 	else
-		echo "ioi:ioi" | chpasswd
+		echo "vnoi:vnoi" | chpasswd
 	fi
 
-	chfn -f "$FULLNAME" ioi
+	chfn -f "$FULLNAME" vnoi
 
-	/opt/ioi/sbin/firewall.sh start
-	USER=$(/opt/ioi/bin/ioicheckuser -q)
-	echo "$USER" > /opt/ioi/run/userid.txt
-	echo "$CONTESTID" > /opt/ioi/run/contestid.txt
-	echo "$CONTESTID" > /opt/ioi/run/lockdown
+	/opt/vnoi/sbin/firewall.sh start
+	USER=$(/opt/vnoi/bin/vnoicheckuser -q)
+	echo "$USER" > /opt/vnoi/run/userid.txt
+	echo "$CONTESTID" > /opt/vnoi/run/contestid.txt
+	echo "$CONTESTID" > /opt/vnoi/run/lockdown
 
 	# init 5
 }
@@ -65,47 +65,47 @@ schedule()
 $cmd
 EOM
 		#echo $date, $time, $cmd
-	done < /opt/ioi/misc/schedule
+	done < /opt/vnoi/misc/schedule
 }
 
 monitor()
 {
 	DATE=$(date +%Y%m%d%H%M%S)
-	DISPLAY=:0.0 sudo -u ioi xhost +local:root > /dev/null
-	echo "$DATE monitor run" >> /opt/ioi/store/contest.log
+	DISPLAY=:0.0 sudo -u vnoi xhost +local:root > /dev/null
+	echo "$DATE monitor run" >> /opt/vnoi/store/contest.log
 
 	# capture screen every minute but with 50% chance
 	if [ $(seq 2 | shuf | head -1) -eq 2 ]; then
-		USER=$(cat /opt/ioi/run/userid.txt)
+		USER=$(cat /opt/vnoi/run/userid.txt)
 		DISPLAY=:0.0 xwd -root -silent | convert xwd:- png:- | bzip2 -c - \
-			> /opt/ioi/store/screenshots/$USER-$DATE.png.bz2
+			> /opt/vnoi/store/screenshots/$USER-$DATE.png.bz2
 	fi
 
 	RESOLUTION=$(DISPLAY=:0.0 xdpyinfo | grep dimensions | awk '{print $2}')
-	if [ -f /opt/ioi/run/resolution ]; then
-		if [ "$RESOLUTION" != "$(cat /opt/ioi/run/resolution)" ]; then
+	if [ -f /opt/vnoi/run/resolution ]; then
+		if [ "$RESOLUTION" != "$(cat /opt/vnoi/run/resolution)" ]; then
 			logger -p local0.alert "MONITOR: Display resolution changed to $RESOLUTION"
-			echo "$RESOLUTION" > /opt/ioi/run/resolution
+			echo "$RESOLUTION" > /opt/vnoi/run/resolution
 		fi
 	else
-		echo "$RESOLUTION" > /opt/ioi/run/resolution
+		echo "$RESOLUTION" > /opt/vnoi/run/resolution
 		logger -p local0.info "MONITOR: Display resolution is $RESOLUTION"
 	fi
 
 	# Check if auto backups are requested
-	if [ -f /opt/ioi/config/autobackup ]; then
+	if [ -f /opt/vnoi/config/autobackup ]; then
 		# This script runs every minute, but we want to only do backups every 5 mins
 		if [ $(( $(date +%s) / 60 % 5)) -eq 0 ]; then
 			# Insert a random delay up to 30 seconds so backups don't all start at the same time
 			sleep $(seq 30 | shuf | head -1)
-			/opt/ioi/bin/ioibackup.sh > /dev/null &
+			/opt/vnoi/bin/vnoibackup.sh > /dev/null &
 		fi
 	fi
 }
 
 lock()
 {
-	passwd -l ioi
+	passwd -l vnoi
 	cat - <<EOM > /etc/gdm3/greeter.dconf-defaults
 [org/gnome/login-screen]
 banner-message-enable=true
@@ -116,7 +116,7 @@ EOM
 
 unlock()
 {
-	passwd -u ioi
+	passwd -u vnoi
 	cat - <<EOM > /etc/gdm3/greeter.dconf-defaults
 [org/gnome/login-screen]
 banner-message-enable=false
@@ -139,18 +139,18 @@ case "$1" in
 		unlock
 		;;
 	start)
-		logkeys --start --keymap /opt/ioi/misc/en_US_ubuntu_1204.map
-		echo "* * * * * root /opt/ioi/sbin/contest.sh monitor" > /etc/cron.d/contest
+		logkeys --start --keymap /opt/vnoi/misc/en_US_ubuntu_1204.map
+		echo "* * * * * root /opt/vnoi/sbin/contest.sh monitor" > /etc/cron.d/contest
 		;;
 	stop)
 		logkeys --kill
 		rm /etc/cron.d/contest
 		;;
 	done)
-		/opt/ioi/sbin/firewall.sh stop
-		rm /opt/ioi/run/lockdown
-		rm /opt/ioi/run/contestid.txt
-		rm /opt/ioi/run/userid.txt
+		/opt/vnoi/sbin/firewall.sh stop
+		rm /opt/vnoi/run/lockdown
+		rm /opt/vnoi/run/contestid.txt
+		rm /opt/vnoi/run/userid.txt
 		;;
 	schedule)
 		schedule

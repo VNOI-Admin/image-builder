@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PARTKEY=$(/opt/ioi/sbin/genkey.sh)
+PARTKEY=$(/opt/vnoi/sbin/genkey.sh)
 
 if [ $# -lt 2 ]; then
 	echo "Too few arguments" >&2
@@ -15,12 +15,12 @@ CMDSTRING=$*
 
 FULLKEY=$(echo $PARTKEY $CMDSTRING | sha256sum | cut -d\  -f1)
 
-logger -p local0.info "IOIEXEC: invoke '$CMDSTRING'"
+logger -p local0.info "VNOIEXEC: invoke '$CMDSTRING'"
 
 # totp interval set to 30 minutes
 if ! oathtool -s 1800 --totp $FULLKEY -d 8 -w 1 -- "$TOTP" > /dev/null 2>&1; then
 	echo "TOTP failed" >&2
-	logger -p local0.info "IOIEXEC: totp failed"
+	logger -p local0.info "VNOIEXEC: totp failed"
 	exit;
 fi
 
@@ -30,7 +30,7 @@ case $1 in
 		iptables -P OUTPUT ACCEPT
 		iptables -P INPUT ACCEPT
 		iptables -F
-		logger -p local0.info "IOIEXEC: firewall stopped"
+		logger -p local0.info "VNOIEXEC: firewall stopped"
 		;;
 	vpnclear)
 		systemctl stop tinc@vpn
@@ -41,16 +41,16 @@ case $1 in
 		rm /etc/tinc/vpn/hosts/* 2> /dev/null
 		rm /etc/tinc/vpn/rsa_key.* 2> /dev/null
 		rm /etc/tinc/vpn/tinc.conf 2> /dev/null
-		rm /opt/ioi/config/ssh/ioibackup* 2> /dev/null
-		logger -p local0.info "IOIEXEC: vpn stopped"
-		chfn -f "IOI Contestant" ioi
+		rm /opt/vnoi/config/ssh/vnoibackup* 2> /dev/null
+		logger -p local0.info "vnoiEXEC: vpn stopped"
+		chfn -f "VNOI Contestant" vnoi
 		echo "Due to some issues, we have disabled VPN connection to CMS."
 		echo ""
-		echo "For now, open https://cms-public.ioi2022.id on Firefox,"
+		echo "For now, open https://cms-public.vnoi2022.id on Firefox,"
 		echo "and log in using the following credentials:"
 		echo ""
-		echo "- Username: $(cat /opt/ioi/run/username.txt)"
-		echo "- Password: $(cat /opt/ioi/run/password.txt)"
+		echo "- Username: $(cat /opt/vnoi/run/username.txt)"
+		echo "- Password: $(cat /opt/vnoi/run/password.txt)"
 		;;
 esac
 

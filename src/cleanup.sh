@@ -21,7 +21,7 @@ rm -rf /tmp/*
 rm -rf /var/tmp/*
 
 # Clean up home directories
-rm ~ioi/.bash_history || true
+rm ~vnoi/.bash_history || true
 rm ~ansible/.bash_history || true
 rm ~root/.bash_history || true
 
@@ -33,7 +33,7 @@ cat /dev/null > /var/log/auth.log
 cat /dev/null > /var/log/cloud-init.log
 
 # Remove various logs
-rm /var/log/vmware*log || true
+# rm /var/log/vmware*log || true
 rm /var/log/Xorg*log || true
 rm /var/log/unattended-upgrades/* || true
 rm /var/log/apt/term.log || true
@@ -55,7 +55,7 @@ if [ -f "config.local.sh" ]; then
 	rm config.local.sh
 fi
 
-PARTKEY=$(/opt/ioi/sbin/genkey.sh)
+PARTKEY=$(/opt/vnoi/sbin/genkey.sh)
 echo $PARTKEY
 
 echo REMEMBER TO REMOVE SETUP DIRECTORY
