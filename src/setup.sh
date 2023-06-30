@@ -1,6 +1,11 @@
 #!/bin/bash
+
+echo "Starting setup.sh"
+
+echo "Change directory to the script's directory"
 cd "$(dirname "$0")"
 
+echo "Load config.sh"
 . ./config.sh
 
 error() {
@@ -19,6 +24,7 @@ trap 'error ${LINENO}' ERR
 VERSION="test$(date +%m%d)"
 
 if [ -f "config.local.sh" ]; then
+	echo "Load config.local.sh"
 	. ./config.local.sh
 fi
 
@@ -296,8 +302,8 @@ cat - <<'EOM' > /etc/krb5.conf
 
 [realms]
 	VNOI.INFO = {
-		kdc = auth-cup.vnoi.info
-		admin_server = auth-cup.vnoi.info
+		kdc = dc-cup.vnoi.info
+		admin_server = dc-cup.vnoi.info
 	}
 
 [domain_realm]
@@ -305,9 +311,12 @@ cat - <<'EOM' > /etc/krb5.conf
 	vnoi.info = VNOI.INFO
 EOM
 
+# Add host
+echo "$AD_DC_IP dc-cup.vnoi.info" >> /etc/hosts
+
 # Join Active Directory domain
 echo $REALM_PASSWD | kinit administrator
-realm join --verbose --install=/ --unattended --membership-software=adcli auth-cup.vnoi.info
+realm join --verbose --install=/ --unattended --membership-software=adcli dc-cup.vnoi.info
 echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
 
 # Configure PAM to create home directories on login

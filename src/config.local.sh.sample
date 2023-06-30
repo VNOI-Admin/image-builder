@@ -5,3 +5,6 @@ SUPER_PASSWD=""
 
 # Password for realm
 REALM_PASSWD=""
+
+# IP for Active Directory Domain Controller
+AD_DC_IP=""
