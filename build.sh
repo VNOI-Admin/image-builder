@@ -41,7 +41,7 @@ build() {
     mount --bind /run $CHROOT/run
 
     # Copy this folder to chroot except the $INS_DIR
-    cp -R build.sh chroot_install.sh config.sh src $CHROOT/root
+    cp -R build.sh chroot_install.sh local_config.sh config.sh src $CHROOT/root
 
     # Copy local_config.sh if exists
     if [ -f local_config.sh ]; then
@@ -50,10 +50,10 @@ build() {
 
     clear
 
-    sudo su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh"
+    sudo su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh '$MIRROR'"
 
     # Remove build.sh, chroot_install.sh, config.sh and local_config.sh from chroot
-    rm -f $CHROOT/root/build.sh $CHROOT/root/chroot_install.sh $CHROOT/root/config.sh
+    rm -f $CHROOT/root/build.sh $CHROOT/root/chroot_install.sh $CHROOT/root/config.sh $CHROOT/root/local_config.sh
 
     if [ -f local_config.sh ]; then
         rm -f $CHROOT/root/local_config.sh
