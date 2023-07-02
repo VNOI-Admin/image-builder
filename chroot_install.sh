@@ -22,7 +22,7 @@ cat <<EOF > /etc/apt/sources.list
 deb $MIRROR focal main restricted universe multiverse
 deb-src $MIRROR focal main restricted universe multiverse
 
-deb $1 focal-security main restricted universe multiverse
+deb $MIRROR focal-security main restricted universe multiverse
 deb-src $MIRROR focal-security main restricted universe multiverse
 
 deb $MIRROR focal-updates main restricted universe multiverse

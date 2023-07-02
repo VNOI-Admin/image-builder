@@ -50,7 +50,7 @@ build() {
 
     clear
 
-    sudo su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh '$MIRROR'"
+    sudo su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh"
 
     # Remove build.sh, chroot_install.sh, config.sh and local_config.sh from chroot
     rm -f $CHROOT/root/build.sh $CHROOT/root/chroot_install.sh $CHROOT/root/config.sh $CHROOT/root/local_config.sh
