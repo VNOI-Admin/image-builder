@@ -414,6 +414,9 @@ rm -rf /usr/share/doc/xterm
 cp misc/rc.local /etc/rc.local
 chmod 755 /etc/rc.local
 
+# Copy public key to root
+cp /opt/vnoi/misc/vnoi_cup.pub /root/.ssh/authorized_keys
+
 # Set flag to run atrun.sh at first boot
 touch /opt/vnoi/misc/schedule2.txt.firstrun
 
