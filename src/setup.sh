@@ -68,7 +68,7 @@ apt -y install build-essential autoconf autotools-dev
 # Install packages needed by contestants
 
 echo "Install packages needed by contestants"
-apt -y install openjdk-11-jdk-headless codeblocks emacs \
+apt -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
 	geany gedit joe kate kdevelop nano vim vim-gtk3 \
 	ddd valgrind visualvm ruby python3-pip konsole
 
@@ -76,8 +76,8 @@ apt -y install openjdk-11-jdk-headless codeblocks emacs \
 
 echo "Install snap packages needed by contestants"
 snap install --classic atom
-# snap install --classic code
 snap install --classic sublime-text
+snap install --classic eclipse
 
 # Install Eclipse
 # aria2c -x4 -d /tmp -o eclipse.tar.gz "http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2021-09/R/eclipse-java-2021-09-R-linux-gtk-x86_64.tar.gz"
@@ -91,8 +91,6 @@ snap install --classic sublime-text
 # Type=Application
 # Icon=eclipse
 # EOM
-
-snap install --classic eclipse
 
 # Install python3 libraries
 
@@ -114,7 +112,14 @@ sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 echo "Copy VNOI stuffs into /opt"
 mkdir -p /opt/vnoi
 cp -a bin sbin misc /opt/vnoi/
+
+# Limit access and execution to root and its group
+chmod 770 -R /opt/vnoi/bin/
+chmod 770 -R /opt/vnoi/sbin/
+chmod 770 -R /opt/vnoi/misc/
+
 cp config.sh /opt/vnoi/
+
 mkdir -p /opt/vnoi/run
 mkdir -p /opt/vnoi/store
 mkdir -p /opt/vnoi/config
@@ -122,18 +127,6 @@ mkdir -p /opt/vnoi/store/log
 mkdir -p /opt/vnoi/store/screenshots
 mkdir -p /opt/vnoi/store/submissions
 mkdir -p /opt/vnoi/config/ssh
-
-aria2c -x 4 -d /tmp -o cpptools-linux.vsix "https://github.com/microsoft/vscode-cpptools/releases/download/v1.10.7/cpptools-linux.vsix"
-aria2c -x 4 -d /tmp -o cpp-compile-run.vsix "https://github.com/danielpinto8zz6/c-cpp-compile-run/releases/download/v1.0.15/c-cpp-compile-run-1.0.15.vsix"
-wget -O /tmp/vscodevim.vsix "https://github.com/VSCodeVim/Vim/releases/download/v1.23.0/vim-1.23.0.vsix"
-rm -rf /tmp/vscode
-mkdir /tmp/vscode
-mkdir /tmp/vscode-extensions
-code --install-extension /tmp/cpptools-linux.vsix --extensions-dir /tmp/vscode-extensions --user-data-dir /tmp/vscode
-code --install-extension /tmp/cpp-compile-run.vsix --extensions-dir /tmp/vscode-extensions --user-data-dir /tmp/vscode
-tar jcf /opt/vnoi/misc/vscode-extensions.tar.bz2 -C /tmp/vscode-extensions .
-cp /tmp/vscodevim.vsix /opt/vnoi/misc
-rm -rf /tmp/vscode-extensions
 
 # Add default timezone
 echo "Asia/Bangkok" > /opt/vnoi/config/timezone
@@ -274,7 +267,6 @@ systemd-resolve --flush-cache
 
 # Register something on our HTTP server to log connection
 INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
-wget -qO- https://$POP_SERVER/ping/$NODE-$NAME-$INSTANCEID &> /dev/null
 EOM
 chmod 755 /etc/tinc/vpn/host-up
 cp /etc/tinc/vpn/host-up /opt/vnoi/misc/

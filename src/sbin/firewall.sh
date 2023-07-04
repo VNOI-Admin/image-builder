@@ -5,13 +5,9 @@ source /opt/vnoi/config.sh
 case "$1" in
 	start)
 		cat /opt/vnoi/misc/iptables.save | \
-			sed -e 's/{POP_SERVER}/'${POP_SERVER}'/g' | \
-			sed -e 's/{BACKUP_SERVER}/'${BACKUP_SERVER}'/g' | \
-			sed -e 's/{CMS_PUBLIC_DOMAIN}/'${CMS_PUBLIC_DOMAIN}'/g' | \
-			sed -e 's#{SUBNET}#'${SUBNET}'#g' | tee|iptables-restore
-		iptables -A INPUT -p tcp --dport 88 -j ACCEPT
-		ufw allow out to code.visualstudio.com
-		ufw allow out to marketplace.visualstudio.com
+			sed -e 's/{AUTH_ADDRESS}/'${AUTH_ADDRESS}'/g' | \
+			sed -e 's/{WEBSERVER_PUBLIC_DOMAIN}/'${WEBSERVER_PUBLIC_DOMAIN}'/g' | \
+			sed -e 's#{SUBNET}#'${SUBNET}'#g' | tee | iptables-restore
 		logger -p local0.info "FIREWALL: started"
 		;;
 	stop)

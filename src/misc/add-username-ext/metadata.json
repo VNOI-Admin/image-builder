@@ -1,6 +1,0 @@
-{
-"name": "Add Username",
-"description": "Add username to top bar",
-"uuid": "add-username-ext",
-"shell-version": ["3.36"]
-}
