@@ -1,6 +1,6 @@
 pwd
 
-if [ -f local_config.sh ]; then
+if [ -f /root/local_config.sh ]; then
     source /root/local_config.sh
 else
     echo "local_config.sh not found, running config.sh"
@@ -102,6 +102,70 @@ apt-get purge -y \
     gnome-sudoku \
     aisleriot \
     hitori
+
+# Install tools needed for management and monitoring
+echo "Install tools needed for management and monitoring"
+apt-get -y install net-tools openssh-server xvfb tinc oathtool imagemagick aria2 iputils-ping
+
+# Install local build tools
+echo "Install local build tools"
+apt-get -y install build-essential autoconf autotools-dev
+
+# Install packages needed by contestants
+echo "Install packages needed by contestants"
+apt-get -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
+	geany gedit joe kate kdevelop nano vim vim-gtk3 \
+	ddd valgrind visualvm ruby python3-pip konsole
+
+# Install Sublime Text
+wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
+echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+apt-get update
+apt-get install sublime-text
+
+# Documentation
+apt-get -y install stl-manual python3-doc
+
+# CPP Reference
+wget -O /tmp/html_book_20190607.zip http://upload.cppreference.com/mwiki/images/b/b2/html_book_20190607.zip
+mkdir -p /opt/cppref
+unzip -o /tmp/html_book_20190607.zip -d /opt/cppref
+rm -f /tmp/html_book_20190607.zip
+
+# Mark some packages as needed so they wont' get auto-removed
+
+apt-get -y install `dpkg-query -Wf '${Package}\n' | grep linux-image-`
+apt-get -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
+
+# Remove unneeded packages
+
+apt-get -y remove gnome-power-manager brltty extra-cmake-modules
+apt-get -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
+apt-get -y remove linux-firmware
+apt-get -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
+# apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
+# 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
+apt-get -y remove build-essential autoconf autotools-dev
+apt-get -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
+
+# Remove most extra modules but preserve those for sound
+# kernelver=$(uname -a | cut -d\  -f 3)
+# tar jcf /tmp/sound-modules.tar.bz2 -C / \
+# 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
+# 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
+apt-get -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
+# tar jxf /tmp/sound-modules.tar.bz2 -C /
+# depmod -a
+
+# Create local HTML
+cp -a html /opt/vnoi/html
+mkdir -p /opt/vnoi/html/fonts
+wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
+wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
+unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
+unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
+rm /tmp/fira-sans.zip
+rm /tmp/share.zip
 
 apt-get autoremove -y
 

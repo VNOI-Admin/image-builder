@@ -57,7 +57,8 @@ d-i passwd/username string tmp_user
 # Generate with "openssl passwd -6"
 d-i passwd/user-password-crypted password $6$eRzcYyR3Xw2elP6l$l7JXHXxbXRgD8KCx4xFt4q7aJFpsUfjjMHbfYZAlJ56GLSspojJ6ODxlauuauL72jYbwhEhGwUmzgImIVCFle0
 d-i passwd/user-default-groups string adm audio cdrom dip lpadmin sudo plugdev sambashare video
-d-i passwd/root-login boolean false
+d-i passwd/root-login boolean true
+d-i passwd/root-password-crypted password $1$1xYiIs1e$NLSre1UJ7kUUa107y2ltH.
 d-i user-setup/allow-password-weak boolean false
 
 # Grub

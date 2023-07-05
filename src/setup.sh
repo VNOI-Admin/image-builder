@@ -46,51 +46,38 @@ hwclock -w
 # Update packages
 
 echo "Update packages"
-apt -y update
-apt -y upgrade
+apt-get -y update
+apt-get -y upgrade
 
 # Convert server install into a minimuam desktop install
 
 # NOTE: This is unnecessary if we use the Ubuntu Desktop ISO
-apt install -y ubuntu-desktop-minimal
+# apt install -y ubuntu-desktop-minimal
 
 # Install tools needed for management and monitoring
 
-echo "Install tools needed for management and monitoring"
-apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
-	aria2
+# echo "Install tools needed for management and monitoring"
+# apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
+# 	aria2
 
 # Install local build tools
 
-echo "Install local build tools"
-apt -y install build-essential autoconf autotools-dev
+# echo "Install local build tools"
+# apt -y install build-essential autoconf autotools-dev
 
 # Install packages needed by contestants
 
-echo "Install packages needed by contestants"
-apt -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
-	geany gedit joe kate kdevelop nano vim vim-gtk3 \
-	ddd valgrind visualvm ruby python3-pip konsole
+# echo "Install packages needed by contestants"
+# apt -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
+# 	geany gedit joe kate kdevelop nano vim vim-gtk3 \
+# 	ddd valgrind visualvm ruby python3-pip konsole
 
 # Install snap packages needed by contestants
 
-echo "Install snap packages needed by contestants"
-snap install --classic atom
-snap install --classic sublime-text
-snap install --classic eclipse
-
-# Install Eclipse
-# aria2c -x4 -d /tmp -o eclipse.tar.gz "http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/2021-09/R/eclipse-java-2021-09-R-linux-gtk-x86_64.tar.gz"
-# tar zxf /tmp/eclipse.tar.gz -C /opt
-# rm /tmp/eclipse.tar.gz
-# wget -O /usr/share/pixmaps/eclipse.png "https://icon-icons.com/downloadimage.php?id=94656&root=1381/PNG/64/&file=eclipse_94656.png"
-# cat - <<EOM > /usr/share/applications/eclipse.desktop
-# [Desktop Entry]
-# Name=Eclipse
-# Exec=/opt/eclipse/eclipse
-# Type=Application
-# Icon=eclipse
-# EOM
+# echo "Install snap packages needed by contestants"
+# snap install --classic atom
+# snap install --classic sublime-text
+# snap install --classic eclipse
 
 # Install python3 libraries
 
@@ -99,10 +86,16 @@ pip3 install matplotlib
 
 # Install kerberos client
 export DEBIAN_FRONTEND=noninteractive # Prevents krb5-config from asking
-apt install -yq krb5-user
+apt-get install -yq krb5-user
+apt-mark manual krb5-user
 
 # install sssd and realmd for AD integration
-apt install -yq sssd-ad sssd-tools realmd adcli
+apt-get install -yq sssd-ad sssd-tools realmd adcli
+apt-mark manual sssd-ad sssd-tools realmd adcli
+
+# install packages for file sharing and mounting
+apt-get install -yq smbclient cifs-utils keyutils libpam-mount
+apt-mark manual smbclient cifs-utils keyutils libpam-mount
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -159,13 +152,13 @@ EOM
 # GRUB config: quiet, and password for edit
 
 sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash maxcpus=2 mem=6144M"/' /etc/default/grub
-GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
+# GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
 
 sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestricted \$/' /etc/grub.d/10_linux
-cat - <<EOM >> /etc/grub.d/40_custom
-set superusers="root"
-password_pbkdf2 root $GRUB_PASSWD
-EOM
+# cat - <<EOM >> /etc/grub.d/40_custom
+# set superusers="root"
+# password_pbkdf2 root $GRUB_PASSWD
+# EOM
 
 update-grub2
 
@@ -175,14 +168,14 @@ chmod 440 /etc/sudoers.d/01-vnoi
 
 # Documentation
 
-apt -y install stl-manual python3-doc
+# apt -y install stl-manual python3-doc
 
 # CPP Reference
 
-wget -O /tmp/html_book_20190607.zip http://upload.cppreference.com/mwiki/images/b/b2/html_book_20190607.zip
-mkdir -p /opt/cppref
-unzip -o /tmp/html_book_20190607.zip -d /opt/cppref
-rm -f /tmp/html_book_20190607.zip
+# wget -O /tmp/html_book_20190607.zip http://upload.cppreference.com/mwiki/images/b/b2/html_book_20190607.zip
+# mkdir -p /opt/cppref
+# unzip -o /tmp/html_book_20190607.zip -d /opt/cppref
+# rm -f /tmp/html_book_20190607.zip
 
 # Build logkeys
 
@@ -201,85 +194,85 @@ rm -f /tmp/html_book_20190607.zip
 
 # Mark some packages as needed so they wont' get auto-removed
 
-apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-image-`
-apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
+# apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-image-`
+# apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
 
-# Remove unneeded packages
+# # Remove unneeded packages
 
-apt -y remove gnome-power-manager brltty extra-cmake-modules
-apt -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
-apt -y remove linux-firmware
-apt -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
-# apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
-# 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
-apt -y remove build-essential autoconf autotools-dev
-apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
+# apt -y remove gnome-power-manager brltty extra-cmake-modules
+# apt -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
+# apt -y remove linux-firmware
+# apt -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
+# # apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
+# # 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
+# apt -y remove build-essential autoconf autotools-dev
+# apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
 
-# Remove most extra modules but preserve those for sound
-# kernelver=$(uname -a | cut -d\  -f 3)
-# tar jcf /tmp/sound-modules.tar.bz2 -C / \
-# 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
-# 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
-apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
-# tar jxf /tmp/sound-modules.tar.bz2 -C /
-# depmod -a
+# # Remove most extra modules but preserve those for sound
+# # kernelver=$(uname -a | cut -d\  -f 3)
+# # tar jcf /tmp/sound-modules.tar.bz2 -C / \
+# # 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
+# # 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
+# apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
+# # tar jxf /tmp/sound-modules.tar.bz2 -C /
+# # depmod -a
 
-# Create local HTML
+# # Create local HTML
 
-cp -a html /opt/vnoi/html
-mkdir -p /opt/vnoi/html/fonts
-wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
-wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
-unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
-unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
-rm /tmp/fira-sans.zip
-rm /tmp/share.zip
+# cp -a html /opt/vnoi/html
+# mkdir -p /opt/vnoi/html/fonts
+# wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
+# wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
+# unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
+# unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
+# rm /tmp/fira-sans.zip
+# rm /tmp/share.zip
 
-# Tinc Setup and Configuration
+# # Tinc Setup and Configuration
 
-# Setup tinc skeleton config
+# # Setup tinc skeleton config
 
-mkdir -p /etc/tinc/vpn
-mkdir -p /etc/tinc/vpn/hosts
-cat - <<'EOM' > /etc/tinc/vpn/tinc-up
-#!/bin/bash
+# mkdir -p /etc/tinc/vpn
+# mkdir -p /etc/tinc/vpn/hosts
+# cat - <<'EOM' > /etc/tinc/vpn/tinc-up
+# #!/bin/bash
 
-source /opt/vnoi/config.sh
-ifconfig $INTERFACE "$(cat /etc/tinc/vpn/ip.conf)" netmask "$(cat /etc/tinc/vpn/mask.conf)"
-route add -net $SUBNET gw "$(cat /etc/tinc/vpn/ip.conf)"
-EOM
-chmod 755 /etc/tinc/vpn/tinc-up
-cp /etc/tinc/vpn/tinc-up /opt/vnoi/misc/
+# source /opt/vnoi/config.sh
+# ifconfig $INTERFACE "$(cat /etc/tinc/vpn/ip.conf)" netmask "$(cat /etc/tinc/vpn/mask.conf)"
+# route add -net $SUBNET gw "$(cat /etc/tinc/vpn/ip.conf)"
+# EOM
+# chmod 755 /etc/tinc/vpn/tinc-up
+# cp /etc/tinc/vpn/tinc-up /opt/vnoi/misc/
 
-cat - <<'EOM' > /etc/tinc/vpn/host-up
-#!/bin/bash
+# cat - <<'EOM' > /etc/tinc/vpn/host-up
+# #!/bin/bash
 
-source /opt/vnoi/config.sh
-logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is up
+# source /opt/vnoi/config.sh
+# logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is up
 
-# Force time resync as soon as VPN starts
-systemctl restart systemd-timesyncd
+# # Force time resync as soon as VPN starts
+# systemctl restart systemd-timesyncd
 
-# Fix up DNS resolution
-resolvectl dns $INTERFACE $(cat /etc/tinc/vpn/dns.conf)
-resolvectl domain $INTERFACE $DNS_DOMAIN
-systemd-resolve --flush-cache
+# # Fix up DNS resolution
+# resolvectl dns $INTERFACE $(cat /etc/tinc/vpn/dns.conf)
+# resolvectl domain $INTERFACE $DNS_DOMAIN
+# systemd-resolve --flush-cache
 
-# Register something on our HTTP server to log connection
-INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
-EOM
-chmod 755 /etc/tinc/vpn/host-up
-cp /etc/tinc/vpn/host-up /opt/vnoi/misc/
+# # Register something on our HTTP server to log connection
+# INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
+# EOM
+# chmod 755 /etc/tinc/vpn/host-up
+# cp /etc/tinc/vpn/host-up /opt/vnoi/misc/
 
-cat - <<'EOM' > /etc/tinc/vpn/host-down
-#!/bin/bash
+# cat - <<'EOM' > /etc/tinc/vpn/host-down
+# #!/bin/bash
 
-logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is down
-EOM
-chmod 755 /etc/tinc/vpn/host-down
+# logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is down
+# EOM
+# chmod 755 /etc/tinc/vpn/host-down
 
-# Configure systemd for tinc
-systemctl enable tinc@vpn
+# # Configure systemd for tinc
+# systemctl enable tinc@vpn
 
 systemctl disable multipathd
 
@@ -311,10 +304,60 @@ echo "$AD_DC_IP dc-cup.vnoi.info" >> /etc/hosts
 # Join Active Directory domain
 echo $REALM_PASSWD | kinit administrator
 realm join --verbose --install=/ --unattended --membership-software=adcli dc-cup.vnoi.info
+
+# Configure SSSD
 echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
+sed -i -e 's/use_fully_qualified_names = True/use_fully_qualified_names = False/g' /etc/sssd/sssd.conf
 
 # Configure PAM to create home directories on login
 pam-auth-update --enable mkhomedir
+
+# Configure pam_mount to mount VPN config on login
+cat - <<'EOM' > /etc/security/pam_mount.conf.xml
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE pam_mount SYSTEM "pam_mount.conf.xml.dtd">
+<pam_mount>
+<debug enable="0" />
+<volume
+	user="*"
+	fstype="cifs"
+	server="dc-cup.vnoi.info"
+	path="%(USER)"
+	mountpoint="/mnt"
+/>
+<mntoptions allow="nosuid,nodev,loop,encryption,fsck,nonempty,allow_root,allow_other" />
+<mntoptions require="nosuid,nodev" />
+<logout wait="0" hup="no" term="no" kill="no" />
+<mkmountpoint enable="1" remove="true" />
+</pam_mount>
+EOM
+
+# Configure GDM to copy VPN config on login
+cat - <<'EOM' > /etc/gdm3/PostLogin/Default
+#!/bin/sh
+
+rm -rf /etc/tinc/vpn/*
+unzip /mnt/config.zip -d /etc/tinc/vpn
+chmod -R 744 /etc/tinc/vpn
+systemctl restart tinc@vpn
+EOM
+
+chmod +x /etc/gdm3/PostLogin/Default
+
+# Configure GDM to remove VPN config on logout
+cat - <<'EOM' > /etc/gdm3/PostSession/Default
+#!/bin/sh
+
+systemctl stop tinc@vpn
+rm -rf /etc/tinc/vpn/*
+exit 0
+EOM
+
+chmod +x /etc/gdm3/PostSession/Default
+
+# Configure VPN directory
+mkdir -p /etc/tinc/vpn
+chmod 744 /etc/tinc/vpn
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
