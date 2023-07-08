@@ -105,7 +105,8 @@ apt-get purge -y \
 
 # Install tools needed for management and monitoring
 echo "Install tools needed for management and monitoring"
-apt-get -y install net-tools openssh-server xvfb tinc oathtool imagemagick aria2 iputils-ping
+apt-get -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
+    aria2 iputils-ping vlc vlc-plugin-access-extra
 
 # Install local build tools
 echo "Install local build tools"
@@ -185,6 +186,10 @@ dns=dnsmasq
 [ifupdown]
 managed=false
 EOF
+
+mkdir -p /root/.ssh/
+mv /root/authorized_keys /root/.ssh/
+chmod 400 /root/.ssh/authorized_keys
 
 dpkg-reconfigure network-manager
 

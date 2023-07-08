@@ -41,7 +41,7 @@ build() {
     mount --bind /run $CHROOT/run
 
     # Copy this folder to chroot except the $INS_DIR
-    cp -R build.sh chroot_install.sh local_config.sh config.sh src $CHROOT/root
+    cp -R build.sh chroot_install.sh local_config.sh config.sh src authorized_keys $CHROOT/root
 
     # Copy local_config.sh if exists
     if [ -f local_config.sh ]; then
@@ -57,6 +57,7 @@ build() {
 
     if [ -f local_config.sh ]; then
         rm -f $CHROOT/root/local_config.sh
+        rm -f $CHROOT/root/authorized_keys
     fi
 
     # Unmount /dev and /run from chroot

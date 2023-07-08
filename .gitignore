@@ -1,3 +1,4 @@
 local_config.sh
 live-build/
 *.iso
+authorized_keys

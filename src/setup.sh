@@ -340,6 +340,8 @@ rm -rf /etc/tinc/vpn/*
 unzip /mnt/config.zip -d /etc/tinc/vpn
 chmod -R 744 /etc/tinc/vpn
 systemctl restart tinc@vpn
+
+/opt/vnoi/bin/vnoiconf.sh fwstart
 EOM
 
 chmod +x /etc/gdm3/PostLogin/Default
@@ -358,6 +360,11 @@ chmod +x /etc/gdm3/PostSession/Default
 # Configure VPN directory
 mkdir -p /etc/tinc/vpn
 chmod 744 /etc/tinc/vpn
+
+# Screencast after login and X is fully started
+cat - <<'EOM' > /etc/xprofile
+cvlc -q screen:// --screen-fps=30 --sout "#transcode{venc=x264{keyint=15},vcodec=h264,vb=0}:http{mux=ts,dst=:9090/}" >/dev/null 2>&1 &
+EOM
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
