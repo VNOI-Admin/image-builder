@@ -340,8 +340,6 @@ rm -rf /etc/tinc/vpn/*
 unzip /mnt/config.zip -d /etc/tinc/vpn
 chmod -R 744 /etc/tinc/vpn
 systemctl restart tinc@vpn
-
-/opt/vnoi/bin/vnoiconf.sh fwstart
 EOM
 
 chmod +x /etc/gdm3/PostLogin/Default
