@@ -7,6 +7,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 if [ -f local_config.sh ]; then
+    echo "Using local_config.sh"
     source local_config.sh
 else
     echo "local_config.sh not found, running config.sh"
