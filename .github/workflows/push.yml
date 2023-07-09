@@ -11,7 +11,6 @@ on:
       - "v*"
 
 env:
-  registry: ghcr.io
   image_name: "VNOI Ubuntu ${{ github.ref }}"
 
 jobs:
@@ -28,27 +27,24 @@ jobs:
         env:
           CONTENT: ${{ secrets.AUTHORIZED_KEYS }}
           FILENAME: authorized_keys
-      
+
       - name: Write local_config.sh
         run: echo $CONTENT > $FILENAME
         env:
           CONTENT: ${{ secrets.LOCAL_CONFIG }}
           FILENAME: local_config.sh
-      
+
       - name: Write config.local.sh
         run: echo $CONTENT > $FILENAME
         env:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
           FILENAME: src/config.local.sh
-      
+
       - name: Write config.sh
         run: echo $CONTENT > $FILENAME
         env:
           CONTENT: ${{ secrets.CONFIG_SH }}
           FILENAME: src/config.sh
-
-      - name: Out
-        run: cat local_config.sh
 
       - name: Build image
         run: sudo ./build.sh build
@@ -62,7 +58,7 @@ jobs:
           release_name: ${{ env.image_name }}
           draft: false
           prerelease: false
-      
+
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
         with:
