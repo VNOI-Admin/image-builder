@@ -47,11 +47,11 @@ jobs:
           CONTENT: ${{ secrets.CONFIG_SH }}
           FILENAME: src/config.sh
 
-      - name: Build image
-        run: sudo ./build.sh build
-
       - name: Out
         run: cat local_config.sh
+
+      - name: Build image
+        run: sudo ./build.sh build
 
       - name: Create Release
         uses: actions/create-release@v1
