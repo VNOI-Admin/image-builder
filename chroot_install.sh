@@ -11,6 +11,7 @@ mount none -t proc /proc
 mount none -t sysfs /sys
 mount none -t devpts /dev/pts
 
+export DEBIAN_FRONTEND=noninteractive
 export HOME=/root
 export LC_ALL=C
 

@@ -1,0 +1,67 @@
+name: Publish ISO Image
+
+# Avoids having multiple instances running
+concurrency:
+  group: build-iso
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  registry: ghcr.io
+  image_name: "VNOI Ubuntu ${{ github.ref }}"
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest-16-cores
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Write authorized_keys
+        run: echo $CONTENT > $FILENAME
+        env:
+          CONTENT: ${{ secrets.AUTHORIZED_KEYS }}
+          FILENAME: authorized_keys
+      
+      - name: Write local_config.sh
+        run: echo $CONTENT > $FILENAME
+        env:
+          CONTENT: ${{ secrets.LOCAL_CONFIG }}
+          FILENAME: local_config.sh
+      
+      - name: Write config.local.sh
+        run: echo $CONTENT > $FILENAME
+        env:
+          CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
+          FILENAME: src/config.local.sh
+      
+      - name: Write config.sh
+        run: echo $CONTENT > $FILENAME
+        env:
+          CONTENT: ${{ secrets.CONFIG_SH }}
+          FILENAME: src/config.sh
+
+      - name: Build image
+        # run: sudo ./build.sh build
+        run: mkdir live-build; echo "abc" > live-build/contestant.iso
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ env.image_name }}
+          draft: false
+          prerelease: false
+      
+      - name: Upload ISO
+        uses: softprops/action-gh-release@v1
+        with:
+          files: live-build/contestant.iso
