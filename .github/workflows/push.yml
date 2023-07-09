@@ -48,8 +48,7 @@ jobs:
           FILENAME: src/config.sh
 
       - name: Build image
-        # run: sudo ./build.sh build
-        run: mkdir live-build; echo "abc" > live-build/contestant.iso
+        run: sudo ./build.sh build
 
       - name: Create Release
         uses: actions/create-release@v1
