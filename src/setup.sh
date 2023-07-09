@@ -298,8 +298,11 @@ cat - <<'EOM' > /etc/krb5.conf
 	vnoi.info = VNOI.INFO
 EOM
 
-# Add host
+# Add Active Directory Domain Controller IP to hosts
 echo "$AD_DC_IP dc-cup.vnoi.info" >> /etc/hosts
+
+# Add Judge IP to hosts
+echo "10.1.0.2 vnoicup" >> /etc/hosts
 
 # Join Active Directory domain
 echo $REALM_PASSWD | kinit administrator

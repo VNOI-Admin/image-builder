@@ -22,4 +22,7 @@
 -A OUTPUT -p tcp -m tcp -m multiport -d {WEBSERVER_PUBLIC_DOMAIN} --dports 80,443 -j ACCEPT
 -A OUTPUT -p tcp -m tcp -m multiport -d {AUTH_ADDRESS} --dports 80,443,88,749,464,445,135,389 -j ACCEPT
 -A OUTPUT -p udp -m udp -m multiport -d {AUTH_ADDRESS} --dports 88,4444,464,53,389 -j ACCEPT
+-A OUTPUT -p tcp -m multiport -d fonts.gstatic.com --dports 80,443 -j ACCEPT
+-A OUTPUT -p tcp -m multiport -d gravatar.com --dports 80,443 -j ACCEPT
+-A OUTPUT -p tcp -m multiport -d cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
 COMMIT
