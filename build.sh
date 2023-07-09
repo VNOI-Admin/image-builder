@@ -8,11 +8,7 @@ fi
 
 if [ -f local_config.sh ]; then
     echo "Using local_config.sh"
-    apt-get -y install unix2dos
-    unix2dos local_config.sh
     source local_config.sh
-    echo $VARIANT, $DISTRO, $ARCH, $MIRROR, $INS_DIR, $CHROOT, $IMAGE
-    exit 0
 else
     echo "local_config.sh not found, running config.sh"
     source config.sh
