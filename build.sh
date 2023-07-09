@@ -8,6 +8,7 @@ fi
 
 if [ -f local_config.sh ]; then
     echo "Using local_config.sh"
+    apt-get -y install dos2unix
     dos2unix local_config.sh
     source local_config.sh
     echo $VARIANT, $DISTRO, $ARCH, $MIRROR, $INS_DIR, $CHROOT, $IMAGE
