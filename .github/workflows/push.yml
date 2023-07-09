@@ -51,7 +51,7 @@ jobs:
         run: sudo ./build.sh build
 
       - name: Out
-        run: cat src/config.sh
+        run: cat local_config.sh
 
       - name: Create Release
         uses: actions/create-release@v1
