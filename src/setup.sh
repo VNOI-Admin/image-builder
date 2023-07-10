@@ -311,6 +311,7 @@ realm join --verbose --install=/ --unattended --membership-software=adcli dc-cup
 # Configure SSSD
 echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
 sed -i -e 's/use_fully_qualified_names = True/use_fully_qualified_names = False/g' /etc/sssd/sssd.conf
+sed -i -e 's/access_provider = ad/access_provider = permit/g' /etc/sssd/sssd.conf
 
 # Configure PAM to create home directories on login
 pam-auth-update --enable mkhomedir
@@ -343,6 +344,8 @@ rm -rf /etc/tinc/vpn/*
 unzip /mnt/config.zip -d /etc/tinc/vpn
 chmod -R 744 /etc/tinc/vpn
 systemctl restart tinc@vpn
+
+/opt/vnoi/bin/vnoiconf.sh fwstart
 EOM
 
 chmod +x /etc/gdm3/PostLogin/Default
@@ -353,6 +356,9 @@ cat - <<'EOM' > /etc/gdm3/PostSession/Default
 
 systemctl stop tinc@vpn
 rm -rf /etc/tinc/vpn/*
+
+/opt/vnoi/bin/vnoiconf.sh fwstop
+
 exit 0
 EOM
 
