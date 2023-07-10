@@ -10,6 +10,8 @@ if [ -f local_config.sh ]; then
     echo "Using local_config.sh"
     chmod +x local_config.sh
     source local_config.sh
+    echo arc: $ARCH
+    echo "Something"
     exit 0
 else
     echo "local_config.sh not found, running config.sh"
