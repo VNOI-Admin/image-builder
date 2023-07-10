@@ -8,6 +8,7 @@ fi
 
 if [ -f local_config.sh ]; then
     echo "Using local_config.sh"
+    chmod +x local_config.sh
     source local_config.sh
     exit 0
 else
