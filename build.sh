@@ -7,11 +7,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 if [ -f local_config.sh ]; then
-    echo "Using local_config.sh"
-    chmod +x local_config.sh
     source local_config.sh
-    echo arc: $ARCH
-    exit 0
 else
     echo "local_config.sh not found, running config.sh"
     source config.sh

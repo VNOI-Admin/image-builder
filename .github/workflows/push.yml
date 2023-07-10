@@ -23,25 +23,25 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Write authorized_keys
-        run: echo $CONTENT > $FILENAME
+        run: echo $CONTENT | base64 -d > $FILENAME
         env:
           CONTENT: ${{ secrets.AUTHORIZED_KEYS }}
           FILENAME: authorized_keys
 
       - name: Write local_config.sh
-        run: echo $CONTENT > $FILENAME
+        run: echo $CONTENT | base64 -d > $FILENAME
         env:
           CONTENT: ${{ secrets.LOCAL_CONFIG }}
           FILENAME: local_config.sh
 
       - name: Write config.local.sh
-        run: echo $CONTENT > $FILENAME
+        run: echo $CONTENT | base64 -d > $FILENAME
         env:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
           FILENAME: src/config.local.sh
 
       - name: Write config.sh
-        run: echo $CONTENT > $FILENAME
+        run: echo $CONTENT | base64 -d > $FILENAME
         env:
           CONTENT: ${{ secrets.CONFIG_SH }}
           FILENAME: src/config.sh
@@ -62,5 +62,4 @@ jobs:
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
         with:
-          # files: live-build/contestant.iso
-          files: local_config.sh
+          files: live-build/contestant.iso
