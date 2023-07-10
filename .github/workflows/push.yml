@@ -58,8 +58,11 @@ jobs:
           release_name: ${{ env.image_name }}
           draft: false
           prerelease: false
+      
+      - name: Split ISO
+        run: split -b 2000MB live-build/contestant.iso iso-parts/cts/contestant
 
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
         with:
-          files: live-build/contestant.iso
+          files: live-build/contestant*
