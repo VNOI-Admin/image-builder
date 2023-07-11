@@ -114,7 +114,7 @@ echo "Install local build tools"
 apt-get -y install build-essential autoconf autotools-dev
 
 # Install important packages for network drivers
-apt-get -y install linux-headers-generic dkms rtl8812au-dkms rtl8821ce-dkms r8168-dkms
+apt-get -y install linux-headers-generic
 
 # Install packages needed by contestants
 echo "Install packages needed by contestants"
@@ -145,7 +145,7 @@ apt-get -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
 # Remove unneeded packages
 
 apt-get -y remove gnome-power-manager brltty extra-cmake-modules
-apt-get -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
+# apt-get -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
 # apt-get -y remove linux-firmware
 apt-get -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
 # apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
@@ -189,6 +189,12 @@ dns=dnsmasq
 
 [ifupdown]
 managed=false
+EOF
+
+# Create file /etc/modprobe.d/network.conf for enabling drivers for network cards from realtek and broadcom and intel
+cat <<EOF > /etc/modprobe.d/network.conf
+r8169
+rtw88_8822ce
 EOF
 
 mkdir -p /root/.ssh/
