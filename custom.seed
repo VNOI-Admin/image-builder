@@ -1,30 +1,30 @@
 # Based on https://askubuntu.com/questions/806820/how-do-i-create-a-completely-unattended-install-of-ubuntu-desktop-16-04-1-lts
 
-# Partitioning
-# https://askubuntu.com/questions/1109752/preseeding-no-physical-volume-defined-in-volume-group
-d-i partman/early_command string \
-for DISK in $(list-devices disk); do \
-    dd if=/dev/zero of=${DISK} bs=512 count=1; \
-    parted -s ${DISK} mklabel gpt; \
-done; \
-debconf-set partman-auto/disk "$(list-devices disk | head -n1)"
-
-d-i partman-auto/init_automatically_partition select biggest_free
-
-d-i partman-lvm/device_remove_lvm boolean true
-d-i partman-md/device_remove_md boolean true
-d-i partman-lvm/confirm boolean true
-d-i partman-lvm/confirm_nooverwrite boolean true
-d-i partman-md/confirm boolean true
-d-i partman-basicfilesystems/no_swap boolean false
-
-d-i partman-auto/choose_recipe select atomic
-
-# Apply partitioning info with confirmation
-d-i partman-partitioning/confirm_write_new_label boolean true
-d-i partman/choose_partition select finish
-d-i partman/confirm boolean true
-d-i partman/confirm_nooverwrite boolean true
+# # Partitioning
+# # https://askubuntu.com/questions/1109752/preseeding-no-physical-volume-defined-in-volume-group
+# d-i partman/early_command string \
+# for DISK in $(list-devices disk); do \
+#     dd if=/dev/zero of=${DISK} bs=512 count=1; \
+#     parted -s ${DISK} mklabel gpt; \
+# done; \
+# debconf-set partman-auto/disk "$(list-devices disk | head -n1)"
+#
+# d-i partman-auto/init_automatically_partition select biggest_free
+#
+# d-i partman-lvm/device_remove_lvm boolean true
+# d-i partman-md/device_remove_md boolean true
+# d-i partman-lvm/confirm boolean true
+# d-i partman-lvm/confirm_nooverwrite boolean true
+# d-i partman-md/confirm boolean true
+# d-i partman-basicfilesystems/no_swap boolean false
+#
+# d-i partman-auto/choose_recipe select atomic
+#
+# # Apply partitioning info with confirmation
+# d-i partman-partitioning/confirm_write_new_label boolean true
+# d-i partman/choose_partition select finish
+# d-i partman/confirm boolean true
+# d-i partman/confirm_nooverwrite boolean true
 
 # Locale
 d-i keyboard-configuration/layoutcode select us

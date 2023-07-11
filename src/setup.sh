@@ -302,7 +302,7 @@ EOM
 echo "$AD_DC_IP dc-cup.vnoi.info" >> /etc/hosts
 
 # Add Judge IP to hosts
-echo "10.1.0.2 vnoicup" >> /etc/hosts
+echo "10.1.0.2 vnoi.cup" >> /etc/hosts
 
 # Join Active Directory domain
 echo $REALM_PASSWD | kinit administrator
