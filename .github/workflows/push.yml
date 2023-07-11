@@ -46,8 +46,8 @@ jobs:
           CONTENT: ${{ secrets.CONFIG_SH }}
           FILENAME: src/config.sh
 
-      # - name: Build image
-        # run: sudo ./build.sh build
+      - name: Build image
+        run: sudo ./build.sh build
 
       - name: Create Release
         uses: actions/create-release@v1
@@ -59,11 +59,10 @@ jobs:
           draft: false
           prerelease: false
       
-      # - name: Split ISO
-      #   run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
+      - name: Split ISO
+        run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
 
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
         with:
-          # files: iso-parts/contestant*
-          files: local_config.sh
+          files: iso-parts/contestant*
