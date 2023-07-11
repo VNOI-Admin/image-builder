@@ -113,6 +113,9 @@ apt-get -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
 echo "Install local build tools"
 apt-get -y install build-essential autoconf autotools-dev
 
+# Install important packages for network drivers
+apt-get -y install linux-headers-generic dkms rtl8812au-dkms rtl8821ce-dkms r8168-dkms
+
 # Install packages needed by contestants
 echo "Install packages needed by contestants"
 apt-get -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
