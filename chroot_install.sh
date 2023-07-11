@@ -146,19 +146,19 @@ apt-get -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
 
 apt-get -y remove gnome-power-manager brltty extra-cmake-modules
 apt-get -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
-apt-get -y remove linux-firmware
+# apt-get -y remove linux-firmware
 apt-get -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
 # apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
 # 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
 apt-get -y remove build-essential autoconf autotools-dev
-apt-get -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
+# apt-get -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
 
 # Remove most extra modules but preserve those for sound
 # kernelver=$(uname -a | cut -d\  -f 3)
 # tar jcf /tmp/sound-modules.tar.bz2 -C / \
 # 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
 # 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
-apt-get -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
+# apt-get -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
 # tar jxf /tmp/sound-modules.tar.bz2 -C /
 # depmod -a
 
