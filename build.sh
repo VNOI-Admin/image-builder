@@ -15,6 +15,7 @@ fi
 
 build() {
     # Install dependencies for building the ISO
+    apt-get update
     apt-get install \
         binutils \
         debootstrap \
