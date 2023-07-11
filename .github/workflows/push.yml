@@ -59,8 +59,8 @@ jobs:
           draft: false
           prerelease: false
       
-      - name: Split ISO
-        run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
+      # - name: Split ISO
+      #   run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
 
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
