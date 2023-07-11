@@ -193,8 +193,8 @@ EOF
 
 # Create file /etc/modprobe.d/network.conf for enabling drivers for network cards from realtek and broadcom and intel
 cat <<EOF > /etc/modprobe.d/network.conf
-r8169
-rtw88_8822ce
+install r8169 /bin/true
+install rtw88 /bin/true
 EOF
 
 mkdir -p /root/.ssh/
