@@ -65,4 +65,4 @@ jobs:
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
         with:
-          files: live-build/contestant*
+          files: iso-parts/contestant*
