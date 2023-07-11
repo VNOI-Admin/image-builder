@@ -65,4 +65,5 @@ jobs:
       - name: Upload ISO
         uses: softprops/action-gh-release@v1
         with:
-          files: iso-parts/contestant*
+          # files: iso-parts/contestant*
+          files: local_config.sh
