@@ -191,10 +191,10 @@ dns=dnsmasq
 managed=false
 EOF
 
-# Create file /etc/modprobe.d/network.conf for enabling drivers for network cards from realtek and broadcom and intel
+# Create file /etc/modprobe.d/network.conf for enabling drivers for network cards from realtek
 cat <<EOF > /etc/modprobe.d/network.conf
-install r8169 /bin/true
-install rtw88 /bin/true
+install r8169 /sbin/modprobe --ignore-install r8169
+install rtw88 /sbin/modprobe --ignore-install rtw88
 EOF
 
 mkdir -p /root/.ssh/
