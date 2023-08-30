@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ARCH="amd64" # Architecture
-export DISTRO="focal" # Distribution, focal recommended
+export DISTRO="focal" # (DEPRECATED) Distribution, focal recommended
 export VARIANT="minbase" # Variant
 
 export MIRROR="http://vn.archive.ubuntu.com/ubuntu/" # see https://launchpad.net/ubuntu/+archivemirrors

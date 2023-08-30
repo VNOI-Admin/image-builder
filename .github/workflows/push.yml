@@ -47,7 +47,7 @@ jobs:
           FILENAME: src/config.sh
 
       - name: Build image
-        run: sudo ./build.sh build
+        run: sudo ./build.sh icpc_build
 
       - name: Create Release
         uses: actions/create-release@v1
@@ -58,7 +58,7 @@ jobs:
           release_name: ${{ env.image_name }}
           draft: false
           prerelease: false
-      
+
       - name: Split ISO
         run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
 
