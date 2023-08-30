@@ -1,7 +1,29 @@
 #!/bin/bash
 
+# Custom color echo function, use for debugging
+log() {
+    echo -e "\e[32m$1\e[0m"
+}
+
 # Capture error and stop script
-set -e
+error() {
+	local lineno="$1"
+	local message="$2"
+	local code="${3:-1}"
+	if [[ -n "$message" ]] ; then
+		echo "Error at or near line ${lineno}: ${message}; exiting with status ${code}"
+	else
+		echo "Error at or near line ${lineno}; exiting with status ${code}"
+	fi
+
+    log "Unmounting /dev and /run from chroot"
+    umount $CHROOT/dev
+    umount $CHROOT/run
+    log "Done"
+
+	exit "${code}"
+}
+trap 'error ${LINENO}' ERR
 
 # Check if user is root
 if [ "$EUID" -ne 0 ]
@@ -9,12 +31,7 @@ if [ "$EUID" -ne 0 ]
     exit 1
 fi
 
-SUDO_USER=$(logname)
-
-# Custom color echo function, use for debugging
-log() {
-    echo -e "\e[32m$1\e[0m"
-}
+SUDO_USER="root"
 
 if [ -f local_config.sh ]; then
     source local_config.sh
@@ -77,7 +94,12 @@ icpc_build() {
         xorriso \
         grub-pc-bin \
         grub-efi-amd64-bin \
-        mtools
+        mtools \
+        p7zip-full \
+        p7zip-rar \
+        unzip \
+        zip \
+        -y
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
