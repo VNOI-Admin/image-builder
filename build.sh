@@ -114,7 +114,7 @@ icpc_build() {
     log "Done"
 
     log "Extracting squashfs filesystem from ISO"
-    time sudo unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs
+    unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs
     log "Done"
 
     log "Mount /dev and /run to chroot"
@@ -130,7 +130,7 @@ icpc_build() {
     log "Done"
 
     log "chrooting into $CHROOT"
-    sudo su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh"
+    su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh"
     log "Done"
 
     log "Cleanup scripts and config from chroot"
@@ -173,7 +173,7 @@ icpc_image_build() {
 
     (
         dd if=/dev/zero of=efiboot.img bs=1M count=10 && \
-        sudo mkfs.vfat efiboot.img && \
+        mkfs.vfat efiboot.img && \
         LC_CTYPE=C mmd -i efiboot.img EFI EFI/boot && \
         LC_CTYPE=C mcopy -i efiboot.img EFI/boot/*.efi ::EFI/boot
     )
