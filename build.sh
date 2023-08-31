@@ -40,6 +40,12 @@ else
     source config.sh
 fi
 
+if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
+    log "Unmounting /dev and /run from chroot"
+    umount $CHROOT/dev
+    umount $CHROOT/run
+    log "Done"
+fi
 
 icpc_build() {
     FORCE_DOWNLOAD=false
@@ -74,7 +80,7 @@ icpc_build() {
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
         log "Downloading ICPC image"
-        apt install aria2
+        apt install aria2 -y
         aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
         # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
     fi
