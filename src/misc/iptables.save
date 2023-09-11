@@ -4,6 +4,12 @@
 :FORWARD ACCEPT [0:0]
 :OUTPUT DROP [0:0]
 
+# IMPORTANT (for people working on other services): non-sudo users must not be allowed to
+# host servers on low ports. Giving this permission will let them host a server on ports
+# 22 or 88 to receive information from outside using INPUT ACCEPT rules below. Even limiting
+# sources will not work due to possibility of IP spoofing.
+# TODO: Investigate possibility of communicating through port 10050 and 9090, spoofing as from {SUBNET}.
+
 # Loopback (localhost) incoming
 -A INPUT -i lo -j ACCEPT
 # Already existing connections
@@ -11,11 +17,10 @@
 # Pings incoming
 -A INPUT -p icmp -j ACCEPT
 # SSH for remote support.
-# TODO: Specify several sources for security while maintaining recovery ability
-# or disable password login completely.
+# TODO: Specify several sources for security while maintaining
+# recovery ability or disable password login completely.
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
-# Kerberos. TODO: Specify source for security. Beware of spoofing.
-# Incoming connections are still a method for communicating with outsiders, although one-way.
+# Kerberos. TODO: Specify source for additional security in case of cred leak.
 -A INPUT -p tcp -m tcp --dport 88 -j ACCEPT
 # Internal services
 -A INPUT -p tcp -m tcp -s {SUBNET} --dport 10050 -j ACCEPT
