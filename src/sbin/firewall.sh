@@ -4,10 +4,7 @@ source /opt/vnoi/config.sh
 
 case "$1" in
 	start)
-		cat /opt/vnoi/misc/iptables.save | \
-			sed -e 's/{AUTH_ADDRESS}/'${AUTH_ADDRESS}'/g' | \
-			sed -e 's/{WEBSERVER_PUBLIC_DOMAIN}/'${WEBSERVER_PUBLIC_DOMAIN}'/g' | \
-			sed -e 's#{SUBNET}#'${SUBNET}'#g' | tee | /usr/sbin/iptables-restore
+		/usr/sbin/iptables-restore < /opt/vnoi/misc/iptables.save
 		/usr/sbin/ip6tables -P INPUT DROP
 		/usr/sbin/ip6tables -P OUTPUT DROP
 		logger -p local0.info "FIREWALL: started"
