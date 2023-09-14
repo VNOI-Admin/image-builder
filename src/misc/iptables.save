@@ -4,22 +4,33 @@
 :FORWARD ACCEPT [0:0]
 :OUTPUT DROP [0:0]
 
--A INPUT -i lo -j ACCEPT                                                        # Loopback (localhost)
--A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT                         # Already existing connections
+# Loopback (localhost)
+-A INPUT -i lo -j ACCEPT
+# Already existing connections
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
--A INPUT -p icmp -i vnoi-vpn -j ACCEPT                                          # Pings
--A INPUT -p tcp -m tcp --dport 22 -i vnoi-vpn -j ACCEPT                         # SSH
--A INPUT -p tcp -m tcp --dport 88 -i vnoi-vpn -j ACCEPT                         # Kerberos
--A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -i vnoi-vpn -j ACCEPT   # Internal services
+# Pings
+-A INPUT -p icmp -i vnoi-vpn -j ACCEPT
+# SSH
+-A INPUT -p tcp -m tcp --dport 22 -i vnoi-vpn -j ACCEPT
+# Kerberos
+-A INPUT -p tcp -m tcp --dport 88 -i vnoi-vpn -j ACCEPT
+# Internal services
+-A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -i vnoi-vpn -j ACCEPT
 
+# Loopback (localhost)
+-A OUTPUT -o lo -j ACCEPT
+# Already existing connections
+-A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
--A OUTPUT -o lo -j ACCEPT                                                       # Loopback (localhost)
--A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT                        # Already existing connections
-
--A OUTPUT -p icmp -i vnoi-vpn -j ACCEPT                                         # Pings
--A OUTPUT -p tcp -m tcp --dports 22 -o vnoi-vpn -j ACCEPT                       # SSH
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -o vnoi-vpn -j ACCEPT      # HTTP, HTTPS to portal
--A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -o vnoi-vpn -j ACCEPT   # Internal services
+# Pings
+-A OUTPUT -p icmp -i vnoi-vpn -j ACCEPT
+# SSH
+-A OUTPUT -p tcp -m tcp --dports 22 -o vnoi-vpn -j ACCEPT
+# HTTP, HTTPS to portal
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -o vnoi-vpn -j ACCEPT
+# Internal services
+-A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -o vnoi-vpn -j ACCEPT
 
 # Tinc outgoing. Restricted to central server at the address "vpn.vnoi". Specified in /etc/hosts.
 -A OUTPUT -p tcp -m tcp -d vpn.vnoi --dport 655 -j ACCEPT
