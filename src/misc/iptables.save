@@ -24,7 +24,7 @@
 -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Pings
--A OUTPUT -p icmp -i vnoi-vpn -j ACCEPT
+-A OUTPUT -p icmp -o vnoi-vpn -j ACCEPT
 # SSH
 -A OUTPUT -p tcp -m tcp --dports 22 -o vnoi-vpn -j ACCEPT
 # HTTP, HTTPS to portal
