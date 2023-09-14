@@ -4,51 +4,42 @@
 :FORWARD ACCEPT [0:0]
 :OUTPUT DROP [0:0]
 
-# IMPORTANT (for people working on other services): non-sudo users must not be allowed to
-# host servers on low ports. Giving this permission will let them host a server on ports
-# 22 or 88 to receive information from outside using INPUT ACCEPT rules below. Even limiting
-# sources will not work due to possibility of IP spoofing.
-# TODO: Investigate possibility of communicating through port 10050 and 9090, spoofing as from {SUBNET}.
+-A INPUT -i lo -j ACCEPT                                                        # Loopback (localhost)
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT                         # Already existing connections
 
-# Loopback (localhost) incoming
--A INPUT -i lo -j ACCEPT
-# Already existing connections
--A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-# Pings incoming
--A INPUT -p icmp -j ACCEPT
-# SSH for remote support.
-# TODO: Specify several sources for security while maintaining
-# recovery ability or disable password login completely.
--A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
-# Kerberos. TODO: Specify source for additional security in case of cred leak.
--A INPUT -p tcp -m tcp --dport 88 -j ACCEPT
-# Internal services
--A INPUT -p tcp -m tcp -s {SUBNET} --dport 10050 -j ACCEPT
--A INPUT -p tcp -m tcp -s {SUBNET} --dport 9090 -j ACCEPT
+-A INPUT -p icmp -i vnoi-vpn -j ACCEPT                                          # Pings
+-A INPUT -p tcp -m tcp --dport 22 -i vnoi-vpn -j ACCEPT                         # SSH
+-A INPUT -p tcp -m tcp --dport 88 -i vnoi-vpn -j ACCEPT                         # Kerberos
+-A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -i vnoi-vpn -j ACCEPT   # Internal services
 
-# Loopback (localhost) outgoing
--A OUTPUT -o lo -j ACCEPT
-# Already existing connections
--A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-# Pings outgoing
--A OUTPUT -p icmp -j ACCEPT
+
+-A OUTPUT -o lo -j ACCEPT                                                       # Loopback (localhost)
+-A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT                        # Already existing connections
+
+-A OUTPUT -p icmp -i vnoi-vpn -j ACCEPT                                         # Pings
+-A OUTPUT -p tcp -m tcp --dports 22 -o vnoi-vpn -j ACCEPT                       # SSH
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -o vnoi-vpn -j ACCEPT      # HTTP, HTTPS to portal
+-A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -o vnoi-vpn -j ACCEPT   # Internal services
+
 # Tinc outgoing. Restricted to central server at the address "vpn.vnoi". Specified in /etc/hosts.
 -A OUTPUT -p tcp -m tcp -d vpn.vnoi --dport 655 -j ACCEPT
 -A OUTPUT -p udp -m udp -d vpn.vnoi --dport 655 -j ACCEPT
+
 # DNS resolver. Restricted to servers managed by Google and Cloudflare (should be enough).
 -A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.8.4,1.1.1.1,1.0.0.1 -j ACCEPT
 -A OUTPUT -p udp -m udp --dport 53 -d 8.8.8.8,8.8.8.4,1.1.1.1,1.0.0.1 -j ACCEPT
-# NTP, time sync. Restricted to ntp.ubuntu.com (Ubuntu's default), time.windows.com, time.nist.gov (Windows's choices)
+
+# NTP, time sync. Restricted to
+# Ubuntu's default: ntp.ubuntu.com
+# Windows's choices: time.windows.com, time.nist.gov
 -A OUTPUT -p udp -m udp --dport 123 -d ntp.ubuntu.com,time.windows.com,time.nist.gov -j ACCEPT
-# Internal services
--A OUTPUT -p tcp -m tcp -m multiport -d {SUBNET} --dports 22,80,443,8000:9000 -j ACCEPT
-# User portal. Restricted to webserver's domain. TODO: Consider placing in /etc/hosts.
--A OUTPUT -p tcp -m tcp -m multiport -d {WEBSERVER_PUBLIC_DOMAIN} --dports 80,443 -j ACCEPT
-# Authentication. TODO: Consider placing in /etc/hosts.
--A OUTPUT -p tcp -m tcp -m multiport -d {AUTH_ADDRESS} --dports 80,443,88,749,464,445,135,389 -j ACCEPT
--A OUTPUT -p udp -m udp -m multiport -d {AUTH_ADDRESS} --dports 88,4444,464,53,389 -j ACCEPT
+
+# HTTP, HTTPS to portal. Used if the VPN is down or portal is not connected to the VPN. Specified in /etc/hosts.
+-A OUTPUT -p tcp -m tcp -m multiport -d portal.vnoi --dports 80,443 -j ACCEPT
 # External resources. Will be enabled on a case-by-case basis.
--A OUTPUT -p tcp -m multiport -d fonts.gstatic.com --dports 80,443 -j ACCEPT
--A OUTPUT -p tcp -m multiport -d gravatar.com --dports 80,443 -j ACCEPT
--A OUTPUT -p tcp -m multiport -d cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
+-A OUTPUT -p tcp -m multiport -d fonts.gstatic.com,gravatar.com,cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
+
+# Authentication.
+-A OUTPUT -p tcp -m tcp -m multiport -d auth.vnoi --dports 80,443,88,749,464,445,135,389 -j ACCEPT
+-A OUTPUT -p udp -m udp -m multiport -d auth.vnoi --dports 88,4444,464,53,389 -j ACCEPT
 COMMIT
