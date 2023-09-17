@@ -40,6 +40,23 @@ apt-get install -y \
     grub2-common \
     gpg
 
+# Install Chrome to avoid using Firefox snap. Firefox snap can't read stuffs not in ~/
+mkdir /tmp/chrome-download/
+wget -qO /tmp/chrome-download/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+dpkg -i /tmp/chrome-download/chrome.deb
+rm -r /tmp/chrome-download
+
+# Install documentations
+mkdir /tmp/docs-download/
+mkdir -p /opt/vnoi/docs/
+# Regularly built cppreference archive featured on https://en.cppreference.com/w/Cppreference:Archives
+wget -qO /tmp/docs-download/cppref.zip https://github.com/PeterFeicht/cppreference-doc/releases/download/v20230810/html-book-20230810.zip
+unzip -q -d /opt/vnoi/docs/cppreference /tmp/docs-download/cppref.zip
+# Python documentation for 3.10.12
+wget -qO /tmp/docs-download/python310.zip https://docs.python.org/3.10/archives/python-3.10.12-docs-html.zip
+unzip -q -d /opt/vnoi/docs/python310 /tmp/docs-download/python310.zip
+rm -r /tmp/docs-download
+
 # Reconfigure network-manager
 cat <<EOF > /etc/NetworkManager/NetworkManager.conf
 [main]
