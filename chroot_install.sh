@@ -46,6 +46,7 @@ wget -qO /tmp/chrome-download/chrome.deb https://dl.google.com/linux/direct/goog
 dpkg -i /tmp/chrome-download/chrome.deb
 rm -r /tmp/chrome-download
 
+echo "Installing documentations"
 # Install documentations
 mkdir /tmp/docs-download/
 mkdir -p /opt/vnoi/docs/
