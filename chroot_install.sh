@@ -57,6 +57,8 @@ unzip -q -d /opt/vnoi/docs/cppreference /tmp/docs-download/cppref.zip
 wget -qO /tmp/docs-download/python310.zip https://docs.python.org/3.10/archives/python-3.10.12-docs-html.zip
 unzip -q -d /opt/vnoi/docs/python310 /tmp/docs-download/python310.zip
 rm -r /tmp/docs-download
+# Allow everyone to access the docs
+chmod a+rx -R /opt/vnoi/docs
 
 # Reconfigure network-manager
 cat <<EOF > /etc/NetworkManager/NetworkManager.conf
