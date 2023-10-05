@@ -209,6 +209,7 @@ icpc_image_build() {
             -no-emul-boot \
         -o "../contestant.iso" \
         .
+    log "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
