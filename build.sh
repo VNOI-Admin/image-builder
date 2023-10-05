@@ -152,13 +152,19 @@ icpc_build() {
 }
 
 icpc_image_build() {
-    echo "Start building ICPC image"
+    log "Start building ICPC image"
 
     # # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
     cp -r $ICPC $IMAGE
 
     rm -f $IMAGE/casper/filesystem.squashfs
+
+    log "Move custom preseed"
+    cp custom.seed $IMAGE/preseed/custom.seed
+
+    log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
+    cp grub.cfg $IMAGE/boot/grub/grub.cfg
 
     # # Create manifest
     chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' | tee $IMAGE/casper/filesystem.manifest
@@ -174,7 +180,7 @@ icpc_image_build() {
 
     printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
 
-    echo "Building ISO"
+    log "Building ISO"
     cd $IMAGE
 
     (
