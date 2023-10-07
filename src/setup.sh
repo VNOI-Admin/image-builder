@@ -167,15 +167,20 @@ echo "vnoi ALL=NOPASSWD: /opt/vnoi/bin/vnoiconf.sh, /opt/vnoi/bin/vnoiexec.sh, /
 chmod 440 /etc/sudoers.d/01-vnoi
 
 # Documentation
+apt -y install stl-manual python3-doc
 
-# apt -y install stl-manual python3-doc
-
-# CPP Reference
-
-# wget -O /tmp/html_book_20190607.zip http://upload.cppreference.com/mwiki/images/b/b2/html_book_20190607.zip
-# mkdir -p /opt/cppref
-# unzip -o /tmp/html_book_20190607.zip -d /opt/cppref
-# rm -f /tmp/html_book_20190607.zip
+# Install documentations
+mkdir /tmp/docs-download/
+mkdir -p /opt/vnoi/docs/
+# Regularly built cppreference archive featured on https://en.cppreference.com/w/Cppreference:Archives
+wget -qO /tmp/docs-download/cppref.zip https://github.com/PeterFeicht/cppreference-doc/releases/download/v20230810/html-book-20230810.zip
+unzip -q -d /opt/vnoi/docs/cppreference /tmp/docs-download/cppref.zip
+# Python documentation for 3.10.12
+wget -qO /tmp/docs-download/python310.zip https://docs.python.org/3.10/archives/python-3.10.12-docs-html.zip
+unzip -q -d /opt/vnoi/docs/python310 /tmp/docs-download/python310.zip
+rm -r /tmp/docs-download
+# Allow everyone to access the docs
+chmod a+rx -R /opt/vnoi/docs
 
 # Build logkeys
 
@@ -217,16 +222,16 @@ chmod 440 /etc/sudoers.d/01-vnoi
 # # tar jxf /tmp/sound-modules.tar.bz2 -C /
 # # depmod -a
 
-# # Create local HTML
+# Create local HTML
 
-# cp -a html /opt/vnoi/html
-# mkdir -p /opt/vnoi/html/fonts
-# wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
-# wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
-# unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
-# unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
-# rm /tmp/fira-sans.zip
-# rm /tmp/share.zip
+cp -a html /opt/vnoi/html
+mkdir -p /opt/vnoi/html/fonts
+wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
+wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
+unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
+unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
+rm /tmp/fira-sans.zip
+rm /tmp/share.zip
 
 # # Tinc Setup and Configuration
 
