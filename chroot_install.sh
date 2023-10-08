@@ -38,7 +38,10 @@ apt-get install -y \
     grub-pc \
     grub-pc-bin \
     grub2-common \
-    gpg
+    gpg \
+    vlc \
+    vlc-plugin-access-extra \
+    ffmpeg
 
 # Install Chrome to avoid using Firefox snap. Firefox snap can't read stuffs not in ~/
 mkdir /tmp/chrome-download/
