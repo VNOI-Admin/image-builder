@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+
+import tkinter as tk
+from tkinter import ttk, filedialog as fd
+
+LARGEFONT =("Verdana", 35)
+
+class tkinterApp(tk.Tk):
+	
+	# __init__ function for class tkinterApp 
+	def __init__(self, *args, **kwargs): 
+		
+		# __init__ function for class Tk
+		tk.Tk.__init__(self, *args, **kwargs)
+		
+		# creating a container
+		container = tk.Frame(self) 
+		container.pack(side = "top", fill = "both", expand = True) 
+
+		container.grid_rowconfigure(0, weight = 1)
+		container.grid_columnconfigure(0, weight = 1)
+
+		# initializing frames to an empty array
+		self.frames = {} 
+
+		# iterating through a tuple consisting
+		# of the different page layouts
+		for F in (StartPage, MainPage):
+
+			frame = F(container, self)
+
+			# initializing frame of that object from
+			# startpage, page1, page2 respectively with 
+			# for loop
+			self.frames[F] = frame 
+
+			frame.grid(row = 0, column = 0, sticky ="nsew")
+
+		self.show_frame(StartPage)
+
+	# to display the current frame passed as
+	# parameter
+	def show_frame(self, cont):
+		frame = self.frames[cont]
+		frame.tkraise()
+# first window frame startpage
+
+class StartPage(tk.Frame):
+	def __init__(self, parent, controller): 
+		tk.Frame.__init__(self, parent)
+		
+		def login_function():
+			# get the username and password
+			username = username_input.get()
+			password = pass_input.get()
+			# will handle login later
+
+			# redirect to other page
+			controller.show_frame(MainPage)
+
+		# label of frame Layout 2
+		username_label = tk.Label(self, text="Username", font=("Arial", 20))
+		username_label.place(x=50, y=20)
+		username_input = tk.Entry(self, width=20, font=("Arial", 20))
+		username_input.place(x=50, y=50)
+		pass_label = tk.Label(self, text="Password", font=("Arial", 20))
+		pass_label.place(x=50, y=90)
+		pass_input = tk.Entry(self, show="*", width=20, font=("Arial", 20))
+		pass_input.place(x=50, y=120)
+		login_button = tk.Button(self, text="Login", font=("Arial", 20), command=login_function)
+		# place in the center
+		login_button.place(x=50, y=160, width=300)
+
+# second window frame page1 
+class MainPage(tk.Frame):
+	
+	def select_file(self):
+		filename = fd.askopenfilename()
+		print(filename)
+		# read the file
+		data = open(filename, "rb").read()
+		# send the data to server
+
+	def send_print_req(self):
+		# send print request to server
+		print("send print request")
+
+	def __init__(self, parent, controller):
+		tk.Frame.__init__(self, parent)
+
+		label = tk.Label(self, text ="Connected", font = LARGEFONT)
+		label.grid(row = 0, column = 4, padx = 10, pady = 10)
+
+		send_print_req_button = tk.Button(self, text="Send print request", font=("Arial", 20), command=self.send_print_req)
+		send_print_req_button.place(x=50, y=200, width=300)
+		select_file_button = tk.Button(self, text="Select File", font=("Arial", 20), command=self.select_file)
+		select_file_button.place(x=50, y=100, width=300)
+		
+
+root = tkinterApp()
+root.title("Client")
+root.geometry("400x400")
+root.mainloop()
