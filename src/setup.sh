@@ -84,19 +84,6 @@ apt-get -y upgrade
 echo "Install python3 libraries"
 pip3 install matplotlib
 
-# Install kerberos client
-export DEBIAN_FRONTEND=noninteractive # Prevents krb5-config from asking
-apt-get install -yq krb5-user
-apt-mark manual krb5-user
-
-# install sssd and realmd for AD integration
-apt-get install -yq sssd-ad sssd-tools realmd adcli
-apt-mark manual sssd-ad sssd-tools realmd adcli
-
-# install packages for file sharing and mounting
-apt-get install -yq smbclient cifs-utils keyutils libpam-mount
-apt-mark manual smbclient cifs-utils keyutils libpam-mount
-
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
@@ -281,46 +268,6 @@ rm /tmp/share.zip
 
 systemctl disable multipathd
 
-# Configure kerberos client
-cat - <<'EOM' > /etc/krb5.conf
-[libdefaults]
-	default_realm = VNOI.INFO
-	kdc_timesync = 1
-	ccache_type = 4
-	forwardable = true
-	proxiable = true
-	dns_lookup_realm = false
-	dns_lookup_kdc = true
-
-[realms]
-	VNOI.INFO = {
-		kdc = dc-cup.vnoi.info
-		admin_server = dc-cup.vnoi.info
-	}
-
-[domain_realm]
-	.vnoi.info = VNOI.INFO
-	vnoi.info = VNOI.INFO
-EOM
-
-# Add Active Directory Domain Controller IP to hosts
-echo "$AD_DC_IP dc-cup.vnoi.info" >> /etc/hosts
-
-# Add Judge IP to hosts
-echo "10.1.0.2 vnoi.cup" >> /etc/hosts
-
-# Join Active Directory domain
-echo $REALM_PASSWD | kinit administrator
-realm join --verbose --install=/ --unattended --membership-software=adcli dc-cup.vnoi.info
-
-# Configure SSSD
-echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
-sed -i -e 's/use_fully_qualified_names = True/use_fully_qualified_names = False/g' /etc/sssd/sssd.conf
-sed -i -e 's/access_provider = ad/access_provider = permit/g' /etc/sssd/sssd.conf
-
-# Configure PAM to create home directories on login
-pam-auth-update --enable mkhomedir
-
 # Configure pam_mount to mount VPN config on login
 cat - <<'EOM' > /etc/security/pam_mount.conf.xml
 <?xml version="1.0" encoding="utf-8" ?>
@@ -346,10 +293,6 @@ cat - <<'EOM' > /etc/gdm3/PostLogin/Default
 #!/bin/sh
 
 rm -rf /etc/tinc/vpn/*
-unzip /mnt/config.zip -d /etc/tinc/vpn
-chmod -R 744 /etc/tinc/vpn
-systemctl restart tinc@vpn
-
 /opt/vnoi/bin/vnoiconf.sh fwstart
 EOM
 
