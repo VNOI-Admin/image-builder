@@ -42,7 +42,9 @@ apt-get install -y \
     vlc \
     vlc-plugin-access-extra \
     ffmpeg \
-    python3-tk
+    python3-tk \
+    p7zip-full \
+    tinc
 
 # Install Chrome to avoid using Firefox snap. Firefox snap can't read stuffs not in ~/
 mkdir /tmp/chrome-download/
