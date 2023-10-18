@@ -76,7 +76,7 @@ class StartPage(tk.Frame):
 		with open("/etc/tinc/vpn/config.zip", "wb") as f:
 			f.write(response.content)
 
-		result = subprocess.run(["7z", "x", f"-p{password}", "/etc/tinc/vpn/config.zip", "-o/etc/tinc/vpn/"])
+		result = subprocess.run(["7z", "x", "/etc/tinc/vpn/config.zip", "-o/etc/tinc/vpn/"])
 		if result.returncode != 0:
 			print("unzip failed")
 			return
