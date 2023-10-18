@@ -268,27 +268,7 @@ rm /tmp/share.zip
 
 systemctl disable multipathd
 
-# Configure pam_mount to mount VPN config on login
-cat - <<'EOM' > /etc/security/pam_mount.conf.xml
-<?xml version="1.0" encoding="utf-8" ?>
-<!DOCTYPE pam_mount SYSTEM "pam_mount.conf.xml.dtd">
-<pam_mount>
-<debug enable="0" />
-<volume
-	user="*"
-	fstype="cifs"
-	server="dc-cup.vnoi.info"
-	path="%(USER)"
-	mountpoint="/mnt"
-/>
-<mntoptions allow="nosuid,nodev,loop,encryption,fsck,nonempty,allow_root,allow_other" />
-<mntoptions require="nosuid,nodev" />
-<logout wait="0" hup="no" term="no" kill="no" />
-<mkmountpoint enable="1" remove="true" />
-</pam_mount>
-EOM
-
-# Configure GDM to copy VPN config on login
+# Configure GDM to remove VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
 #!/bin/sh
 
