@@ -60,7 +60,7 @@ class StartPage(tk.Frame):
 		username = self.username_input.get()
 		password = self.pass_input.get()
 
-		response = requests.post("http://46.101.130.85:8000/login", data={
+		response = requests.post("http://central-server.vnoi:8000/login", data={
 			"username": username,
 			"password": password
 		})

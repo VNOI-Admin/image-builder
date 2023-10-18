@@ -268,6 +268,9 @@ rm /tmp/share.zip
 
 systemctl disable multipathd
 
+# Add central server IP to hosts
+echo "$CENTRAL_SERVER_IP central-server.vnoi" >> /etc/hosts
+
 # Configure GDM to remove VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
 #!/bin/sh
