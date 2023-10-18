@@ -11,18 +11,18 @@ import subprocess
 LARGEFONT = ("Verdana", 35)
 
 class tkinterApp(tk.Tk):
-	def __init__(self, *args, **kwargs): 
+	def __init__(self, *args, **kwargs):
 		tk.Tk.__init__(self, *args, **kwargs)
-		
+
 		# creating a container
-		container = tk.Frame(self) 
-		container.pack(side="top", fill="both", expand=True) 
+		container = tk.Frame(self)
+		container.pack(side="top", fill="both", expand=True)
 
 		container.grid_rowconfigure(0, weight=1)
 		container.grid_columnconfigure(0, weight=1)
 
 		# initializing frames to an empty array
-		self.frames = {} 
+		self.frames = {}
 
 		# iterating through a tuple consisting
 		# of the different page layouts
@@ -31,9 +31,9 @@ class tkinterApp(tk.Tk):
 			frame = F(container, self)
 
 			# initializing frame of that object from
-			# startpage, page1, page2 respectively with 
+			# startpage, page1, page2 respectively with
 			# for loop
-			self.frames[F] = frame 
+			self.frames[F] = frame
 
 			frame.grid(row=0, column=0, sticky="nsew")
 
@@ -60,7 +60,7 @@ class StartPage(tk.Frame):
 		username = self.username_input.get()
 		password = self.pass_input.get()
 
-		response = requests.post("http://central-server.vnoi:8000/login", data={
+		response = requests.post("http://vpn.vnoi.info:8000/login", data={
 			"username": username,
 			"password": password
 		})
@@ -81,6 +81,9 @@ class StartPage(tk.Frame):
 			print("unzip failed")
 			return
 
+		os.chmod("/etc/tinc/vpn/tinc-up", 0o700)
+		os.chmod("/etc/tinc/vpn/tinc-down", 0o700)
+
 		result = subprocess.run(["systemctl", "restart", "tinc@vpn"])
 		if result.returncode != 0:
 			print("restart tinc failed")
@@ -93,7 +96,7 @@ class StartPage(tk.Frame):
 
 		self.controller.show_frame(MainPage)
 
-	def __init__(self, parent, controller): 
+	def __init__(self, parent, controller):
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
 
@@ -108,7 +111,7 @@ class StartPage(tk.Frame):
 		self.login_button = tk.Button(self, text="Login", font=("Arial", 20), command=self.login_function)
 		self.login_button.place(x=50, y=160, width=300)
 
-# second window frame page1 
+# second window frame page1
 class MainPage(tk.Frame):
 	def select_file(self):
 		filename = fd.askopenfilename()
@@ -142,7 +145,7 @@ class MainPage(tk.Frame):
 		select_file_button.place(x=50, y=100, width=300)
 		logout_button = tk.Button(self, text="Logout", font=("Arial", 20), command=self.logout)
 		logout_button.place(x=50, y=300, width=300)
-		
+
 
 root = tkinterApp()
 root.title("Client")

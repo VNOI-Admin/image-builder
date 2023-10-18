@@ -49,38 +49,6 @@ echo "Update packages"
 apt-get -y update
 apt-get -y upgrade
 
-# Convert server install into a minimuam desktop install
-
-# NOTE: This is unnecessary if we use the Ubuntu Desktop ISO
-# apt install -y ubuntu-desktop-minimal
-
-# Install tools needed for management and monitoring
-
-# echo "Install tools needed for management and monitoring"
-# apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
-# 	aria2
-
-# Install local build tools
-
-# echo "Install local build tools"
-# apt -y install build-essential autoconf autotools-dev
-
-# Install packages needed by contestants
-
-# echo "Install packages needed by contestants"
-# apt -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
-# 	geany gedit joe kate kdevelop nano vim vim-gtk3 \
-# 	ddd valgrind visualvm ruby python3-pip konsole
-
-# Install snap packages needed by contestants
-
-# echo "Install snap packages needed by contestants"
-# snap install --classic atom
-# snap install --classic sublime-text
-# snap install --classic eclipse
-
-# Install python3 libraries
-
 echo "Install python3 libraries"
 pip3 install matplotlib
 
@@ -169,46 +137,6 @@ rm -r /tmp/docs-download
 # Allow everyone to access the docs
 chmod a+rx -R /opt/vnoi/docs
 
-# Build logkeys
-
-# WORKDIR=`mktemp -d`
-# pushd $WORKDIR
-# git clone https://github.com/kernc/logkeys.git
-# cd logkeys
-# ./autogen.sh
-# cd build
-# ../configure
-# make
-# make install
-# cp ../keymaps/en_US_ubuntu_1204.map /opt/vnoi/misc/
-# popd
-# rm -rf $WORKDIR
-
-# Mark some packages as needed so they wont' get auto-removed
-
-# apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-image-`
-# apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
-
-# # Remove unneeded packages
-
-# apt -y remove gnome-power-manager brltty extra-cmake-modules
-# apt -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
-# apt -y remove linux-firmware
-# apt -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
-# # apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
-# # 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
-# apt -y remove build-essential autoconf autotools-dev
-# apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
-
-# # Remove most extra modules but preserve those for sound
-# # kernelver=$(uname -a | cut -d\  -f 3)
-# # tar jcf /tmp/sound-modules.tar.bz2 -C / \
-# # 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
-# # 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
-# apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
-# # tar jxf /tmp/sound-modules.tar.bz2 -C /
-# # depmod -a
-
 # Create local HTML
 
 cp -a html /opt/vnoi/html
@@ -222,56 +150,9 @@ rm /tmp/share.zip
 
 # # Tinc Setup and Configuration
 
-# # Setup tinc skeleton config
-
-# mkdir -p /etc/tinc/vpn
-# mkdir -p /etc/tinc/vpn/hosts
-# cat - <<'EOM' > /etc/tinc/vpn/tinc-up
-# #!/bin/bash
-
-# source /opt/vnoi/config.sh
-# ifconfig $INTERFACE "$(cat /etc/tinc/vpn/ip.conf)" netmask "$(cat /etc/tinc/vpn/mask.conf)"
-# route add -net $SUBNET gw "$(cat /etc/tinc/vpn/ip.conf)"
-# EOM
-# chmod 755 /etc/tinc/vpn/tinc-up
-# cp /etc/tinc/vpn/tinc-up /opt/vnoi/misc/
-
-# cat - <<'EOM' > /etc/tinc/vpn/host-up
-# #!/bin/bash
-
-# source /opt/vnoi/config.sh
-# logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is up
-
-# # Force time resync as soon as VPN starts
-# systemctl restart systemd-timesyncd
-
-# # Fix up DNS resolution
-# resolvectl dns $INTERFACE $(cat /etc/tinc/vpn/dns.conf)
-# resolvectl domain $INTERFACE $DNS_DOMAIN
-# systemd-resolve --flush-cache
-
-# # Register something on our HTTP server to log connection
-# INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
-# EOM
-# chmod 755 /etc/tinc/vpn/host-up
-# cp /etc/tinc/vpn/host-up /opt/vnoi/misc/
-
-# cat - <<'EOM' > /etc/tinc/vpn/host-down
-# #!/bin/bash
-
-# logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is down
-# EOM
-# chmod 755 /etc/tinc/vpn/host-down
-
-# # Configure systemd for tinc
-# systemctl enable tinc@vpn
-
 systemctl disable multipathd
 
-# Add central server IP to hosts
-echo "$CENTRAL_SERVER_IP central-server.vnoi" >> /etc/hosts
-
-# Configure GDM to remove VPN config on login
+# Configure GDM to copy VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
 #!/bin/sh
 
@@ -341,6 +222,10 @@ WantedBy=multi-user.target
 EOM
 
 chmod 644 /lib/systemd/system/atd.service
+
+# Update /etc/hosts
+echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
+echo "10.1.0.2 contest.vnoi.info" >> /etc/hosts
 
 # Disable virtual consoles
 
