@@ -86,6 +86,11 @@ class StartPage(tk.Frame):
 			print("restart tinc failed")
 			return
 
+		result = subprocess.run(["chmod", "-R", "744", "/etc/tinc/vpn"])
+		if result.returncode != 0:
+			print("change permission failed")
+			return
+
 		self.controller.show_frame(MainPage)
 
 	def __init__(self, parent, controller): 
