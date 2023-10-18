@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+
+import tkinter as tk
+from tkinter import ttk, filedialog as fd
+
+import requests
+import shutil
+import os
+import subprocess
+
+LARGEFONT = ("Verdana", 35)
+
+class tkinterApp(tk.Tk):
+	def __init__(self, *args, **kwargs):
+		tk.Tk.__init__(self, *args, **kwargs)
+
+		# creating a container
+		container = tk.Frame(self)
+		container.pack(side="top", fill="both", expand=True)
+
+		container.grid_rowconfigure(0, weight=1)
+		container.grid_columnconfigure(0, weight=1)
+
+		# initializing frames to an empty array
+		self.frames = {}
+
+		# iterating through a tuple consisting
+		# of the different page layouts
+		for F in (StartPage, MainPage):
+
+			frame = F(container, self)
+
+			# initializing frame of that object from
+			# startpage, page1, page2 respectively with
+			# for loop
+			self.frames[F] = frame
+
+			frame.grid(row=0, column=0, sticky="nsew")
+
+		self.show_frame(StartPage)
+
+	# to display the current frame passed as parameter
+	def show_frame(self, cont):
+		frame = self.frames[cont]
+		frame.tkraise()
+
+def remove_inside_folder(folder):
+	for filename in os.listdir(folder):
+		file_path = os.path.join(folder, filename)
+		try:
+			if os.path.isfile(file_path) or os.path.islink(file_path):
+				os.unlink(file_path)
+			elif os.path.isdir(file_path):
+				shutil.rmtree(file_path)
+		except Exception as e:
+			print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+class StartPage(tk.Frame):
+	def login_function(self):
+		username = self.username_input.get()
+		password = self.pass_input.get()
+
+		response = requests.post("http://vpn.vnoi.info:8000/login", data={
+			"username": username,
+			"password": password
+		})
+
+		if response.status_code != 200:
+			print("login failed")
+			print(response.json())
+			return
+
+		print("login success")
+		remove_inside_folder("/etc/tinc/vpn")
+
+		with open("/etc/tinc/vpn/config.zip", "wb") as f:
+			f.write(response.content)
+
+		result = subprocess.run(["7z", "x", f"-p{password}", "/etc/tinc/vpn/config.zip", "-o/etc/tinc/vpn/"])
+		if result.returncode != 0:
+			print("unzip failed")
+			return
+
+		os.chmod("/etc/tinc/vpn/tinc-up", 0o700)
+		os.chmod("/etc/tinc/vpn/tinc-down", 0o700)
+
+		result = subprocess.run(["systemctl", "restart", "tinc@vpn"])
+		if result.returncode != 0:
+			print("restart tinc failed")
+			return
+
+		self.controller.show_frame(MainPage)
+
+	def __init__(self, parent, controller):
+		tk.Frame.__init__(self, parent)
+		self.controller = controller
+
+		self.username_label = tk.Label(self, text="Username", font=("Arial", 20))
+		self.username_label.place(x=50, y=20)
+		self.username_input = tk.Entry(self, width=20, font=("Arial", 20))
+		self.username_input.place(x=50, y=50)
+		self.pass_label = tk.Label(self, text="Password", font=("Arial", 20))
+		self.pass_label.place(x=50, y=90)
+		self.pass_input = tk.Entry(self, show="*", width=20, font=("Arial", 20))
+		self.pass_input.place(x=50, y=120)
+		self.login_button = tk.Button(self, text="Login", font=("Arial", 20), command=self.login_function)
+		self.login_button.place(x=50, y=160, width=300)
+
+# second window frame page1
+class MainPage(tk.Frame):
+	def select_file(self):
+		filename = fd.askopenfilename()
+		print(filename)
+		# read the file
+		data = open(filename, "rb").read()
+		# send the data to server
+
+	def send_print_req(self):
+		# send print request to server
+		print("send print request")
+
+	def logout(self):
+		print("logout")
+
+		subprocess.run(["systemctl", "stop", "tinc@vpn"])
+		remove_inside_folder("/etc/tinc/vpn")
+
+		self.controller.show_frame(StartPage)
+
+	def __init__(self, parent, controller):
+		tk.Frame.__init__(self, parent)
+		self.controller = controller
+
+		label = tk.Label(self, text="Connected", font=LARGEFONT)
+		label.grid(row=0, column=4, padx=10, pady=10)
+
+		send_print_req_button = tk.Button(self, text="Send print request", font=("Arial", 20), command=self.send_print_req)
+		send_print_req_button.place(x=50, y=200, width=300)
+		select_file_button = tk.Button(self, text="Select File", font=("Arial", 20), command=self.select_file)
+		select_file_button.place(x=50, y=100, width=300)
+		logout_button = tk.Button(self, text="Logout", font=("Arial", 20), command=self.logout)
+		logout_button.place(x=50, y=300, width=300)
+
+
+root = tkinterApp()
+root.title("Client")
+root.geometry("400x400")
+root.mainloop()

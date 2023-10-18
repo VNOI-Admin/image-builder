@@ -49,53 +49,8 @@ echo "Update packages"
 apt-get -y update
 apt-get -y upgrade
 
-# Convert server install into a minimuam desktop install
-
-# NOTE: This is unnecessary if we use the Ubuntu Desktop ISO
-# apt install -y ubuntu-desktop-minimal
-
-# Install tools needed for management and monitoring
-
-# echo "Install tools needed for management and monitoring"
-# apt -y install net-tools openssh-server xvfb tinc oathtool imagemagick \
-# 	aria2
-
-# Install local build tools
-
-# echo "Install local build tools"
-# apt -y install build-essential autoconf autotools-dev
-
-# Install packages needed by contestants
-
-# echo "Install packages needed by contestants"
-# apt -y install openjdk-11-jdk-headless codeblocks-contrib emacs \
-# 	geany gedit joe kate kdevelop nano vim vim-gtk3 \
-# 	ddd valgrind visualvm ruby python3-pip konsole
-
-# Install snap packages needed by contestants
-
-# echo "Install snap packages needed by contestants"
-# snap install --classic atom
-# snap install --classic sublime-text
-# snap install --classic eclipse
-
-# Install python3 libraries
-
 echo "Install python3 libraries"
 pip3 install matplotlib
-
-# Install kerberos client
-export DEBIAN_FRONTEND=noninteractive # Prevents krb5-config from asking
-apt-get install -yq krb5-user
-apt-mark manual krb5-user
-
-# install sssd and realmd for AD integration
-apt-get install -yq sssd-ad sssd-tools realmd adcli
-apt-mark manual sssd-ad sssd-tools realmd adcli
-
-# install packages for file sharing and mounting
-apt-get install -yq smbclient cifs-utils keyutils libpam-mount
-apt-mark manual smbclient cifs-utils keyutils libpam-mount
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -182,46 +137,6 @@ rm -r /tmp/docs-download
 # Allow everyone to access the docs
 chmod a+rx -R /opt/vnoi/docs
 
-# Build logkeys
-
-# WORKDIR=`mktemp -d`
-# pushd $WORKDIR
-# git clone https://github.com/kernc/logkeys.git
-# cd logkeys
-# ./autogen.sh
-# cd build
-# ../configure
-# make
-# make install
-# cp ../keymaps/en_US_ubuntu_1204.map /opt/vnoi/misc/
-# popd
-# rm -rf $WORKDIR
-
-# Mark some packages as needed so they wont' get auto-removed
-
-# apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-image-`
-# apt -y install `dpkg-query -Wf '${Package}\n' | grep linux-modules-`
-
-# # Remove unneeded packages
-
-# apt -y remove gnome-power-manager brltty extra-cmake-modules
-# apt -y remove zlib1g-dev libobjc-9-dev libx11-dev dpkg-dev manpages-dev
-# apt -y remove linux-firmware
-# apt -y remove network-manager-openvpn network-manager-openvpn-gnome openvpn
-# # apt -y remove gnome-getting-started-docs-it gnome-getting-started-docs-ru \
-# # 	gnome-getting-started-docs-es gnome-getting-started-docs-fr gnome-getting-started-docs-de
-# apt -y remove build-essential autoconf autotools-dev
-# apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-header`
-
-# # Remove most extra modules but preserve those for sound
-# # kernelver=$(uname -a | cut -d\  -f 3)
-# # tar jcf /tmp/sound-modules.tar.bz2 -C / \
-# # 	lib/modules/$kernelver/kernel/sound/{ac97_bus.ko,pci} \
-# # 	lib/modules/$kernelver/kernel/drivers/gpu/drm/vmwgfx
-# apt -y remove `dpkg-query -Wf '${Package}\n' | grep linux-modules-extra-`
-# # tar jxf /tmp/sound-modules.tar.bz2 -C /
-# # depmod -a
-
 # Create local HTML
 
 cp -a html /opt/vnoi/html
@@ -235,121 +150,13 @@ rm /tmp/share.zip
 
 # # Tinc Setup and Configuration
 
-# # Setup tinc skeleton config
-
-# mkdir -p /etc/tinc/vpn
-# mkdir -p /etc/tinc/vpn/hosts
-# cat - <<'EOM' > /etc/tinc/vpn/tinc-up
-# #!/bin/bash
-
-# source /opt/vnoi/config.sh
-# ifconfig $INTERFACE "$(cat /etc/tinc/vpn/ip.conf)" netmask "$(cat /etc/tinc/vpn/mask.conf)"
-# route add -net $SUBNET gw "$(cat /etc/tinc/vpn/ip.conf)"
-# EOM
-# chmod 755 /etc/tinc/vpn/tinc-up
-# cp /etc/tinc/vpn/tinc-up /opt/vnoi/misc/
-
-# cat - <<'EOM' > /etc/tinc/vpn/host-up
-# #!/bin/bash
-
-# source /opt/vnoi/config.sh
-# logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is up
-
-# # Force time resync as soon as VPN starts
-# systemctl restart systemd-timesyncd
-
-# # Fix up DNS resolution
-# resolvectl dns $INTERFACE $(cat /etc/tinc/vpn/dns.conf)
-# resolvectl domain $INTERFACE $DNS_DOMAIN
-# systemd-resolve --flush-cache
-
-# # Register something on our HTTP server to log connection
-# INSTANCEID=$(cat /opt/vnoi/run/instanceid.txt)
-# EOM
-# chmod 755 /etc/tinc/vpn/host-up
-# cp /etc/tinc/vpn/host-up /opt/vnoi/misc/
-
-# cat - <<'EOM' > /etc/tinc/vpn/host-down
-# #!/bin/bash
-
-# logger -p local0.info TINC: VPN connection to $NODE $REMOTEADDRESS:$REMOTEPORT is down
-# EOM
-# chmod 755 /etc/tinc/vpn/host-down
-
-# # Configure systemd for tinc
-# systemctl enable tinc@vpn
-
 systemctl disable multipathd
-
-# Configure kerberos client
-cat - <<'EOM' > /etc/krb5.conf
-[libdefaults]
-	default_realm = VNOI.INFO
-	kdc_timesync = 1
-	ccache_type = 4
-	forwardable = true
-	proxiable = true
-	dns_lookup_realm = false
-	dns_lookup_kdc = true
-
-[realms]
-	VNOI.INFO = {
-		kdc = dc-cup.vnoi.info
-		admin_server = dc-cup.vnoi.info
-	}
-
-[domain_realm]
-	.vnoi.info = VNOI.INFO
-	vnoi.info = VNOI.INFO
-EOM
-
-# Add Active Directory Domain Controller IP to hosts
-echo "$AD_DC_IP dc-cup.vnoi.info" >> /etc/hosts
-
-# Add Judge IP to hosts
-echo "10.1.0.2 vnoi.cup" >> /etc/hosts
-
-# Join Active Directory domain
-echo $REALM_PASSWD | kinit administrator
-realm join --verbose --install=/ --unattended --membership-software=adcli dc-cup.vnoi.info
-
-# Configure SSSD
-echo "ad_gpo_access_control = permissive" >> /etc/sssd/sssd.conf
-sed -i -e 's/use_fully_qualified_names = True/use_fully_qualified_names = False/g' /etc/sssd/sssd.conf
-sed -i -e 's/access_provider = ad/access_provider = permit/g' /etc/sssd/sssd.conf
-
-# Configure PAM to create home directories on login
-pam-auth-update --enable mkhomedir
-
-# Configure pam_mount to mount VPN config on login
-cat - <<'EOM' > /etc/security/pam_mount.conf.xml
-<?xml version="1.0" encoding="utf-8" ?>
-<!DOCTYPE pam_mount SYSTEM "pam_mount.conf.xml.dtd">
-<pam_mount>
-<debug enable="0" />
-<volume
-	user="*"
-	fstype="cifs"
-	server="dc-cup.vnoi.info"
-	path="%(USER)"
-	mountpoint="/mnt"
-/>
-<mntoptions allow="nosuid,nodev,loop,encryption,fsck,nonempty,allow_root,allow_other" />
-<mntoptions require="nosuid,nodev" />
-<logout wait="0" hup="no" term="no" kill="no" />
-<mkmountpoint enable="1" remove="true" />
-</pam_mount>
-EOM
 
 # Configure GDM to copy VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
 #!/bin/sh
 
 rm -rf /etc/tinc/vpn/*
-unzip /mnt/config.zip -d /etc/tinc/vpn
-chmod -R 744 /etc/tinc/vpn
-systemctl restart tinc@vpn
-
 /opt/vnoi/bin/vnoiconf.sh fwstart
 EOM
 
@@ -377,16 +184,17 @@ chmod 744 /etc/tinc/vpn
 mkdir -p /opt/vnoi/misc/records/
 cat - <<'EOM' > /etc/xprofile
 sudo cvlc -q screen:// --screen-fps=20 --sout "#transcode{venc=x264{keyint=15},vcodec=h264,vb=0}:http{mux=ts,dst=:9090/}" >/dev/null 2>&1 &
-sudo ffmpeg -i http://127.0.0.1:9090 -c copy -map 0 -f segment -segment_time 300 -segment_format mp4 "/opt/vnoi/misc/records/capture-%04d.mp4" >/dev/null 2>&1 &
+sudo ffmpeg -i http://127.0.0.1:9090 -c copy -map 0 -f segment -reset_timestamps 1 -strftime 1 -segment_time 300 -segment_format mp4 "/opt/vnoi/misc/records/out-%H-%M-%S.mp4" >/dev/null 2>&1 &
+sudo /opt/vnoi/bin/client & disown
 EOM
 
 # Allow vlc to run as root
 sed -i 's/geteuid/getppid/' /usr/bin/vlc
 
-# Allow cvlc and ffmpeg to run as root without password
+# Allow cvlc, ffmpeg and client to run as root without password
 cat - <<'EOM' > /etc/sudoers.d/02-vnoi
 vnoi ALL=(ALL) ALL
-vnoi ALL=(root) NOPASSWD: /usr/bin/cvlc, /usr/bin/ffmpeg
+vnoi ALL=(root) NOPASSWD: /usr/bin/cvlc, /usr/bin/ffmpeg, /opt/vnoi/bin/client
 EOM
 
 # Disable cloud-init
@@ -414,6 +222,10 @@ WantedBy=multi-user.target
 EOM
 
 chmod 644 /lib/systemd/system/atd.service
+
+# Update /etc/hosts
+echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
+echo "10.1.0.2 contest.vnoi.info" >> /etc/hosts
 
 # Disable virtual consoles
 

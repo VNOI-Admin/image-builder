@@ -14,7 +14,7 @@
 # SSH
 -A INPUT -p tcp -m tcp --dport 22 -i vnoi-vpn -j ACCEPT
 # Kerberos
--A INPUT -p tcp -m tcp --dport 88 -i vnoi-vpn -j ACCEPT
+# -A INPUT -p tcp -m tcp --dport 88 -i vnoi-vpn -j ACCEPT
 # Internal services
 -A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -i vnoi-vpn -j ACCEPT
 
