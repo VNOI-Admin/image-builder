@@ -7,8 +7,32 @@ import requests
 import shutil
 import os
 import subprocess
+import pip
+import importlib.util
 
-LARGEFONT = ("Verdana", 35)
+# extra packages required to run services invoked by client
+EXTRA_PACKAGES = [
+	'gevent',
+	'psutil',
+]
+
+WIDTH = 300
+HEIGHT = 200
+INPUT_CHAR_WIDTH = 21
+MARGIN_LEFT = 30
+MARGIN_TOP = 10
+BUTTON_SIZE = WIDTH - 2 * MARGIN_LEFT
+
+LARGE_FONT = ("Verdana", 20)
+SMALL_FONT = ("Arial", 15)
+
+def check_extra_packages():
+	for package in EXTRA_PACKAGES:
+		spec = importlib.util.find_spec(package)
+		if spec is None:
+			pip.main(['install', package])
+		else:
+			print(f"package {package} already installed")
 
 class tkinterApp(tk.Tk):
 	def __init__(self, *args, **kwargs):
@@ -89,22 +113,29 @@ class StartPage(tk.Frame):
 			print("restart tinc failed")
 			return
 
+		check_extra_packages()
+
+		file_path = os.path.abspath(os.path.dirname(__file__))
+		service_command = f"{file_path}/service"
+		subprocess.run(["pkill", "-f", service_command])
+		subprocess.Popen([service_command])
+
 		self.controller.show_frame(MainPage)
 
 	def __init__(self, parent, controller):
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
 
-		self.username_label = tk.Label(self, text="Username", font=("Arial", 20))
-		self.username_label.place(x=50, y=20)
-		self.username_input = tk.Entry(self, width=20, font=("Arial", 20))
-		self.username_input.place(x=50, y=50)
-		self.pass_label = tk.Label(self, text="Password", font=("Arial", 20))
-		self.pass_label.place(x=50, y=90)
-		self.pass_input = tk.Entry(self, show="*", width=20, font=("Arial", 20))
-		self.pass_input.place(x=50, y=120)
-		self.login_button = tk.Button(self, text="Login", font=("Arial", 20), command=self.login_function)
-		self.login_button.place(x=50, y=160, width=300)
+		self.username_label = tk.Label(self, text="Username", font=SMALL_FONT)
+		self.username_label.place(x=MARGIN_LEFT, y=MARGIN_TOP)
+		self.username_input = tk.Entry(self, width=INPUT_CHAR_WIDTH, font=SMALL_FONT)
+		self.username_input.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 30))
+		self.pass_label = tk.Label(self, text="Password", font=SMALL_FONT)
+		self.pass_label.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 60))
+		self.pass_input = tk.Entry(self, show="*", width=INPUT_CHAR_WIDTH, font=SMALL_FONT)
+		self.pass_input.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 90))
+		self.login_button = tk.Button(self, text="Login", font=SMALL_FONT, command=self.login_function)
+		self.login_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 130), width=BUTTON_SIZE)
 
 # second window frame page1
 class MainPage(tk.Frame):
@@ -119,30 +150,20 @@ class MainPage(tk.Frame):
 		# send print request to server
 		print("send print request")
 
-	def logout(self):
-		print("logout")
-
-		subprocess.run(["systemctl", "stop", "tinc@vpn"])
-		remove_inside_folder("/etc/tinc/vpn")
-
-		self.controller.show_frame(StartPage)
-
 	def __init__(self, parent, controller):
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
 
-		label = tk.Label(self, text="Connected", font=LARGEFONT)
+		label = tk.Label(self, text="Connected", font=LARGE_FONT)
 		label.grid(row=0, column=4, padx=10, pady=10)
 
-		send_print_req_button = tk.Button(self, text="Send print request", font=("Arial", 20), command=self.send_print_req)
-		send_print_req_button.place(x=50, y=200, width=300)
-		select_file_button = tk.Button(self, text="Select File", font=("Arial", 20), command=self.select_file)
-		select_file_button.place(x=50, y=100, width=300)
-		logout_button = tk.Button(self, text="Logout", font=("Arial", 20), command=self.logout)
-		logout_button.place(x=50, y=300, width=300)
+		send_print_req_button = tk.Button(self, text="Send print request", font=SMALL_FONT, command=self.send_print_req)
+		send_print_req_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 60), width=BUTTON_SIZE)
+		select_file_button = tk.Button(self, text="Select file", font=SMALL_FONT, command=self.select_file)
+		select_file_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 120), width=BUTTON_SIZE)
 
 
 root = tkinterApp()
 root.title("Client")
-root.geometry("400x400")
+root.geometry(f"{WIDTH}x{HEIGHT}")
 root.mainloop()
