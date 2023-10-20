@@ -7,6 +7,14 @@ import requests
 import shutil
 import os
 import subprocess
+import pip
+import importlib.util
+
+# extra packages required to run services invoked by client
+EXTRA_PACKAGES = [
+	'gevent',
+	'psutil',
+]
 
 WIDTH = 300
 HEIGHT = 200
@@ -17,6 +25,14 @@ BUTTON_SIZE = WIDTH - 2 * MARGIN_LEFT
 
 LARGE_FONT = ("Verdana", 20)
 SMALL_FONT = ("Arial", 15)
+
+def check_extra_packages():
+	for package in EXTRA_PACKAGES:
+		spec = importlib.util.find_spec(package)
+		if spec is None:
+			pip.main(['install', package])
+		else:
+			print(f"package {package} already installed")
 
 class tkinterApp(tk.Tk):
 	def __init__(self, *args, **kwargs):
@@ -96,6 +112,13 @@ class StartPage(tk.Frame):
 		if result.returncode != 0:
 			print("restart tinc failed")
 			return
+
+		check_extra_packages()
+
+		file_path = os.path.abspath(os.path.dirname(__file__))
+		service_command = f"{file_path}/service"
+		subprocess.run(["pkill", "-f", service_command])
+		subprocess.Popen([service_command])
 
 		self.controller.show_frame(MainPage)
 
