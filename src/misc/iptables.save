@@ -32,9 +32,9 @@
 # Internal services
 -A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -o vnoi-vpn -j ACCEPT
 
-# Tinc outgoing. Restricted to central server at the address "vpn.vnoi". Specified in /etc/hosts.
--A OUTPUT -p tcp -m tcp -d vpn.vnoi --dport 655 -j ACCEPT
--A OUTPUT -p udp -m udp -d vpn.vnoi --dport 655 -j ACCEPT
+# Tinc outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
+-A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 655,8000,9000 -j ACCEPT
+-A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 655,8000,9000 -j ACCEPT
 
 # DNS resolver. Restricted to servers managed by Google and Cloudflare (should be enough).
 -A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.8.4,1.1.1.1,1.0.0.1 -j ACCEPT
@@ -46,11 +46,11 @@
 -A OUTPUT -p udp -m udp --dport 123 -d ntp.ubuntu.com,time.windows.com,time.nist.gov -j ACCEPT
 
 # HTTP, HTTPS to portal. Used if the VPN is down or portal is not connected to the VPN. Specified in /etc/hosts.
--A OUTPUT -p tcp -m tcp -m multiport -d portal.vnoi --dports 80,443 -j ACCEPT
+# -A OUTPUT -p tcp -m tcp -m multiport -d portal.vnoi --dports 80,443 -j ACCEPT
 # External resources. Will be enabled on a case-by-case basis.
 -A OUTPUT -p tcp -m multiport -d fonts.gstatic.com,gravatar.com,cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
 
 # Authentication.
--A OUTPUT -p tcp -m tcp -m multiport -d auth.vnoi --dports 80,443,88,749,464,445,135,389 -j ACCEPT
--A OUTPUT -p udp -m udp -m multiport -d auth.vnoi --dports 88,4444,464,53,389 -j ACCEPT
+# -A OUTPUT -p tcp -m tcp -m multiport -d auth.vnoi --dports 80,443,88,749,464,445,135,389 -j ACCEPT
+# -A OUTPUT -p udp -m udp -m multiport -d auth.vnoi --dports 88,4444,464,53,389 -j ACCEPT
 COMMIT

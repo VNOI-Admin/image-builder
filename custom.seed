@@ -44,7 +44,7 @@ d-i time/zone string UTC
 d-i clock-setup/ntp boolean true
 
 # Packages, Mirrors, Image
-d-i mirror/country string VN
+d-i mirror/country string FR
 d-i apt-setup/multiverse boolean true
 d-i apt-setup/restricted boolean true
 d-i apt-setup/universe boolean true
