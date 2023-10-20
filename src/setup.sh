@@ -43,12 +43,6 @@ timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
 hwclock -w
 
-# Update packages
-
-echo "Update packages"
-apt-get -y update
-apt-get -y upgrade
-
 echo "Install python3 libraries"
 pip3 install matplotlib gevent
 
