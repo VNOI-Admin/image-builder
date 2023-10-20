@@ -50,7 +50,7 @@ apt-get -y update
 apt-get -y upgrade
 
 echo "Install python3 libraries"
-pip3 install matplotlib
+pip3 install matplotlib gevent
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
