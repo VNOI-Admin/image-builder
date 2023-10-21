@@ -387,7 +387,7 @@ class Service:
 
         self.remote_services = {}
 
-        self.user_service = self.connect_to(Address("129.104.213.16", 8080))
+        self.user_service = self.connect_to(Address("10.1.0.1", 8080))
         self.health_track = None
         self.rpc_server = StreamServer(address, self._connection_handler)
 
