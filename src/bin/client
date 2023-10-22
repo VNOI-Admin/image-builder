@@ -30,14 +30,6 @@ SMALL_FONT = ("Arial", 15)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-def check_extra_packages():
-	for package in EXTRA_PACKAGES:
-		spec = importlib.util.find_spec(package)
-		if spec is None:
-			pip.main(['install', package])
-		else:
-			print(f"package {package} already installed")
-
 class tkinterApp(tk.Tk):
 	def __init__(self, *args, **kwargs):
 		tk.Tk.__init__(self, *args, **kwargs)
@@ -88,7 +80,7 @@ class StartPage(tk.Frame):
 		username = self.username_input.get()
 		password = self.pass_input.get()
 
-		response = requests.post("http://129.104.213.16:8000/login", data={
+		response = requests.post("http://vpn.vnoi.info:8000/login", data={
 			"username": username,
 			"password": password
 		})
@@ -117,8 +109,6 @@ class StartPage(tk.Frame):
 			print("restart tinc failed")
 			return
 
-		check_extra_packages()
-
 		file_path = os.path.abspath(os.path.dirname(__file__))
 		service_command = f"{file_path}/service"
 		subprocess.run(["pkill", "-f", service_command])
@@ -129,7 +119,6 @@ class StartPage(tk.Frame):
 				sock.settimeout(3)
 				sock.connect(("localhost", 8080))
 			except socket.error as e:
-				print("connection failed")
 				continue
 			else:
 				print("connection success")
@@ -159,7 +148,7 @@ class MainPage(tk.Frame):
 		filename = fd.askopenfilename()
 		print(filename)
 		self.btn_text.set(filename)
-		self.data = open(filename, "rb").read()
+		self.data = open(filename, "r").read()
 
 	def send_print_req(self):
 		if self.data is None:

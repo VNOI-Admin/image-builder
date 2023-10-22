@@ -46,7 +46,7 @@ hwclock -w
 apt-get install python3-pip -y
 
 echo "Install python3 libraries"
-pip3 install matplotlib gevent
+pip3 install matplotlib gevent psutil
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -115,8 +115,6 @@ sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestrict
 update-grub2
 
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
-echo "vnoi ALL=NOPASSWD: /opt/vnoi/bin/vnoiconf.sh, /opt/vnoi/bin/vnoiexec.sh, /opt/vnoi/bin/vnoibackup.sh" >> /etc/sudoers.d/01-vnoi
-chmod 440 /etc/sudoers.d/01-vnoi
 
 # Documentation
 apt -y install stl-manual python3-doc
@@ -193,6 +191,7 @@ cat - <<'EOM' > /etc/sudoers.d/02-vnoi
 vnoi ALL=(ALL) ALL
 vnoi ALL=(root) NOPASSWD: /usr/bin/cvlc, /usr/bin/ffmpeg, /opt/vnoi/bin/client
 EOM
+chmod 440 /etc/sudoers.d/02-vnoi
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled

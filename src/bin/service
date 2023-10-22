@@ -208,7 +208,7 @@ class RPCServiceServer(RPCServiceBase):
                 response['__error'] = 'Method not found'
             else:
                 try:
-                    response['__data'] = method(*request['__params'])
+                    response['__data'] = method(**request['__params'])
                 except Exception as error:
                     response['__error'] = "%s: %s\n%s" % (error.__class__.__name__, error, error.__traceback__)
 
@@ -216,7 +216,6 @@ class RPCServiceServer(RPCServiceBase):
             data = json.dumps(response).encode('utf-8')
         except (TypeError, ValueError):
             return
-
         try:
             self._write(data)
         except OSError:
