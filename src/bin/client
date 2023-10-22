@@ -99,23 +99,25 @@ class StartPage(tk.Frame):
 			return
 
 		print("login success")
-		remove_inside_folder("/etc/tinc/vpn")
 
-		with open("/etc/tinc/vpn/config.zip", "wb") as f:
-			f.write(response.content)
+		# TODO: Replace the following commented code with another VPN setup
+		# remove_inside_folder("/etc/tinc/vpn")
 
-		result = subprocess.run(["7z", "x", "/etc/tinc/vpn/config.zip", "-o/etc/tinc/vpn/"])
-		if result.returncode != 0:
-			print("unzip failed")
-			return
+		# with open("/etc/tinc/vpn/config.zip", "wb") as f:
+			# f.write(response.content)
 
-		os.chmod("/etc/tinc/vpn/tinc-up", 0o700)
-		os.chmod("/etc/tinc/vpn/tinc-down", 0o700)
+		# result = subprocess.run(["7z", "x", "/etc/tinc/vpn/config.zip", "-o/etc/tinc/vpn/"])
+		# if result.returncode != 0:
+		# 	print("unzip failed")
+		# 	return
 
-		result = subprocess.run(["systemctl", "restart", "tinc@vpn"])
-		if result.returncode != 0:
-			print("restart tinc failed")
-			return
+		# os.chmod("/etc/tinc/vpn/tinc-up", 0o700)
+		# os.chmod("/etc/tinc/vpn/tinc-down", 0o700)
+
+		# result = subprocess.run(["systemctl", "restart", "tinc@vpn"])
+		# if result.returncode != 0:
+		# 	print("restart tinc failed")
+		# 	return
 
 		check_extra_packages()
 
