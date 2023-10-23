@@ -170,4 +170,6 @@ class MainPage(tk.Frame):
 root = tkinterApp()
 root.title("Client")
 root.geometry(f"{WIDTH}x{HEIGHT}")
+root.resizable(False, False)
+root.protocol("WM_DELETE_WINDOW", lambda: root.iconify())
 root.mainloop()
