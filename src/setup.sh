@@ -43,10 +43,11 @@ timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
 hwclock -w
 
+apt-get update
 apt-get install python3-pip -y
 
 echo "Install python3 libraries"
-pip3 install matplotlib gevent psutil
+pip3 install matplotlib gevent psutil ping3
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd

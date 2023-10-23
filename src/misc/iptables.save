@@ -10,13 +10,13 @@
 -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Pings
--A INPUT -p icmp -i vnoi-vpn -j ACCEPT
+-A INPUT -p icmp -s {SUBNET} -j ACCEPT
 # SSH
--A INPUT -p tcp -m tcp --dport 22 -i vnoi-vpn -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -s {SUBNET} -j ACCEPT
 # Kerberos
-# -A INPUT -p tcp -m tcp --dport 88 -i vnoi-vpn -j ACCEPT
+# -A INPUT -p tcp -m tcp --dport 88 -s {SUBNET} -j ACCEPT
 # Internal services
--A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -i vnoi-vpn -j ACCEPT
+-A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -s {SUBNET} -j ACCEPT
 
 # Loopback (localhost)
 -A OUTPUT -o lo -j ACCEPT
@@ -24,17 +24,17 @@
 -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Pings
--A OUTPUT -p icmp -o vnoi-vpn -j ACCEPT
+-A OUTPUT -p icmp -d {SUBNET} -j ACCEPT
 # SSH
--A OUTPUT -p tcp -m tcp --dport 22 -o vnoi-vpn -j ACCEPT
+-A OUTPUT -p tcp -m tcp --dport 22 -d {SUBNET} -j ACCEPT
 # HTTP, HTTPS to portal
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -o vnoi-vpn -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {SUBNET} -j ACCEPT
 # Internal services
--A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -o vnoi-vpn -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {SUBNET} -j ACCEPT
 
 # Tinc outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
--A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 655,8000,9000 -j ACCEPT
--A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 655,8000,9000 -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
+-A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
 
 # DNS resolver. Restricted to servers managed by Google and Cloudflare (should be enough).
 -A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.8.4,1.1.1.1,1.0.0.1 -j ACCEPT

@@ -9,14 +9,7 @@ import requests
 import shutil
 import os
 import subprocess
-import pip
-import importlib.util
-
-# extra packages required to run services invoked by client
-EXTRA_PACKAGES = [
-	'gevent',
-	'psutil',
-]
+from ping3 import ping
 
 WIDTH = 300
 HEIGHT = 200
@@ -91,23 +84,15 @@ class StartPage(tk.Frame):
 			return
 
 		print("login success")
-		remove_inside_folder("/etc/tinc/vpn")
+		remove_inside_folder("/etc/wireguard")
 
-		with open("/etc/tinc/vpn/config.zip", "wb") as f:
-			f.write(response.content)
+		with open("/etc/wireguard/client.conf", "w") as f:
+			f.write(response.content.decode("utf-8"))
 
-		result = subprocess.run(["7z", "x", "/etc/tinc/vpn/config.zip", "-o/etc/tinc/vpn/"])
-		if result.returncode != 0:
-			print("unzip failed")
-			return
+		os.chmod("/etc/wireguard/client.conf", 0o600)
 
-		os.chmod("/etc/tinc/vpn/tinc-up", 0o700)
-		os.chmod("/etc/tinc/vpn/tinc-down", 0o700)
-
-		result = subprocess.run(["systemctl", "restart", "tinc@vpn"])
-		if result.returncode != 0:
-			print("restart tinc failed")
-			return
+		result = subprocess.run(["systemctl", "restart", "wg-quick@client"], stdout=subprocess.PIPE)
+		print(result.stdout)
 
 		file_path = os.path.abspath(os.path.dirname(__file__))
 		service_command = f"{file_path}/service"
@@ -145,13 +130,13 @@ class StartPage(tk.Frame):
 # second window frame page1
 class MainPage(tk.Frame):
 	def select_file(self):
+		self.can_send = True
 		filename = fd.askopenfilename()
-		print(filename)
-		self.btn_text.set(filename)
+		self.select_file_button["text"] = os.path.split(filename)[1]
 		self.data = open(filename, "r").read()
 
 	def send_print_req(self):
-		if self.data is None:
+		if not self.can_send:
 			print("please select file first")
 			return
 		else:
@@ -164,22 +149,22 @@ class MainPage(tk.Frame):
 				}
 			}).encode("utf-8") + b"\r\n")
 			print("sent print request")
-
+			self.data = None
+			self.select_file_button["text"] = "Select file"
 
 	def __init__(self, parent, controller):
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
 		self.data = None
+		self.can_send = False
 
 		label = tk.Label(self, text="Connected", font=LARGE_FONT)
 		label.grid(row=0, column=4, padx=10, pady=10)
 
-		self.btn_text = tk.StringVar()
-		self.btn_text.set("Select file")
+		self.select_file_button = tk.Button(self, text="Select file", font=SMALL_FONT, command=self.select_file)
+		self.select_file_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 60), width=BUTTON_SIZE)
 		send_print_req_button = tk.Button(self, text="Send print request", font=SMALL_FONT, command=self.send_print_req)
-		send_print_req_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 60), width=BUTTON_SIZE)
-		select_file_button = tk.Button(self, text=self.btn_text, font=SMALL_FONT, command=self.select_file)
-		select_file_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 120), width=BUTTON_SIZE)
+		send_print_req_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 120), width=BUTTON_SIZE)
 
 
 root = tkinterApp()
