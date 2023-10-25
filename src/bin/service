@@ -3,6 +3,7 @@
 from gevent import monkey
 monkey.patch_all()
 
+import signal
 import socket
 from collections import namedtuple
 import psutil
@@ -382,7 +383,10 @@ class RPCServiceClient(RPCServiceBase):
 
 class Service:
     def __init__(self):
+        gevent.signal_handler(signal.SIGINT, self.exit)
         address = ("localhost", 8080)
+
+        self.name = "Service"
 
         self.remote_services = {}
 
