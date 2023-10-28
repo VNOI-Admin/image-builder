@@ -25,8 +25,6 @@
 
 # Pings
 -A OUTPUT -p icmp -d {SUBNET} -j ACCEPT
-# SSH
--A OUTPUT -p tcp -m tcp --dport 22 -d {SUBNET} -j ACCEPT
 # HTTP, HTTPS to portal
 -A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {SUBNET} -j ACCEPT
 # Internal services
@@ -37,8 +35,8 @@
 -A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
 
 # DNS resolver. Restricted to servers managed by Google and Cloudflare (should be enough).
--A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.8.4,1.1.1.1,1.0.0.1 -j ACCEPT
--A OUTPUT -p udp -m udp --dport 53 -d 8.8.8.8,8.8.8.4,1.1.1.1,1.0.0.1 -j ACCEPT
+-A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
+-A OUTPUT -p udp -m udp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
 
 # NTP, time sync. Restricted to
 # Ubuntu's default: ntp.ubuntu.com
