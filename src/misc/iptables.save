@@ -10,13 +10,11 @@
 -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Pings
--A INPUT -p icmp -s {SUBNET} -j ACCEPT
+-A INPUT -p icmp -s {SUBNET} -j ACCEPT -i client
 # SSH
--A INPUT -p tcp -m tcp --dport 22 -s {SUBNET} -j ACCEPT
-# Kerberos
-# -A INPUT -p tcp -m tcp --dport 88 -s {SUBNET} -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -s {SUBNET} -j ACCEPT -i client
 # Internal services
--A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -s {SUBNET} -j ACCEPT
+-A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -s {SUBNET} -j ACCEPT -i client
 
 # Loopback (localhost)
 -A OUTPUT -o lo -j ACCEPT
@@ -24,13 +22,13 @@
 -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Pings
--A OUTPUT -p icmp -d {SUBNET} -j ACCEPT
-# HTTP, HTTPS to portal
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {SUBNET} -j ACCEPT
+-A OUTPUT -p icmp -d {SUBNET} -j ACCEPT -o client
+# HTTP, HTTPS to portal(s)
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {SUBNET} -j ACCEPT -o client
 # Internal services
--A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {SUBNET} -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {SUBNET} -j ACCEPT -o client
 
-# Tinc outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
+# VPN outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
 -A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
 -A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
 
