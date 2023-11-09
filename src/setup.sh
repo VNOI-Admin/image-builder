@@ -194,6 +194,11 @@ vnoi ALL=(root) NOPASSWD: /usr/bin/cvlc, /usr/bin/ffmpeg, /opt/vnoi/bin/client
 EOM
 chmod 440 /etc/sudoers.d/02-vnoi
 
+# Add aliases to .bashrc
+cat - <<'EOM' >> /home/vnoi/.bashrc
+alias client='sudo /opt/vnoi/bin/client & disown'
+EOM
+
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
 
