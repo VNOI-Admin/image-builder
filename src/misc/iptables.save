@@ -23,6 +23,7 @@
 
 # Pings
 -A OUTPUT -p icmp -d {SUBNET} -j ACCEPT -o client
+-A OUTPUT -p icmp -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
 # HTTP, HTTPS to portal(s)
 -A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {SUBNET} -j ACCEPT -o client
 # Internal services
