@@ -1,8 +1,8 @@
 # Default
 *filter
-:INPUT REJECT [0:0]
+:INPUT DROP [0:0]
 :FORWARD ACCEPT [0:0]
-:OUTPUT REJECT [0:0]
+:OUTPUT DROP [0:0]
 
 # Loopback (localhost)
 -A INPUT -i lo -j ACCEPT
