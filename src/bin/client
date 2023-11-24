@@ -10,6 +10,7 @@ import shutil
 import os
 import subprocess
 from ping3 import ping
+import requests
 
 WIDTH = 300
 HEIGHT = 200
@@ -99,17 +100,6 @@ class StartPage(tk.Frame):
 		subprocess.run(["pkill", "-f", service_command])
 		subprocess.Popen([service_command])
 
-		while True:
-			try:
-				sock.settimeout(3)
-				sock.connect(("localhost", 8080))
-			except socket.error as e:
-				continue
-			else:
-				print("connection success")
-				sock.settimeout(None)
-				break
-
 		self.controller.show_frame(MainPage)
 
 	def __init__(self, parent, controller):
@@ -131,9 +121,8 @@ class StartPage(tk.Frame):
 class MainPage(tk.Frame):
 	def select_file(self):
 		self.can_send = True
-		filename = fd.askopenfilename()
-		self.select_file_button["text"] = os.path.split(filename)[1]
-		self.data = open(filename, "r").read()
+		self.filename = fd.askopenfilename()
+		self.select_file_button["text"] = os.path.split(self.filename)[1]
 
 	def send_print_req(self):
 		if not self.can_send:
@@ -141,21 +130,17 @@ class MainPage(tk.Frame):
 			return
 		else:
 			print("sending print request")
-			sock.sendall(json.dumps({
-				"__id": "client",
-				"__method": "print",
-				"__params": {
-					"source": self.data
-				}
-			}).encode("utf-8") + b"\r\n")
-			print("sent print request")
-			self.data = None
+			r = requests.post("http://10.1.0.1:8000/print", files={ 'file': open(self.filename) })
+			print(r.status_code)
+			self.can_send = False
+			self.filename = None
 			self.select_file_button["text"] = "Select file"
+
 
 	def __init__(self, parent, controller):
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
-		self.data = None
+		self.filename = None
 		self.can_send = False
 
 		label = tk.Label(self, text="Connected", font=LARGE_FONT)

@@ -179,9 +179,7 @@ chmod 744 /etc/tinc/vpn
 # Screencast after login and X is fully started
 mkdir -p /opt/vnoi/misc/records/
 cat - <<'EOM' > /etc/xprofile
-sudo cvlc -q screen:// --screen-fps=20 --sout "#transcode{venc=x264{keyint=15},vcodec=h264,vb=0}:http{mux=ts,dst=:9090/}" >/dev/null 2>&1 &
-sudo ffmpeg -i http://127.0.0.1:9090 -c copy -map 0 -f segment -reset_timestamps 1 -strftime 1 -segment_time 300 -segment_format mp4 "/opt/vnoi/misc/records/out-%H-%M-%S.mp4" >/dev/null 2>&1 &
-sudo /opt/vnoi/bin/client & disown
+sudo /opt/vnoi/sbin/startup.sh
 EOM
 
 # Allow vlc to run as root
@@ -189,8 +187,7 @@ sed -i 's/geteuid/getppid/' /usr/bin/vlc
 
 # Allow cvlc, ffmpeg and client to run as root without password
 cat - <<'EOM' > /etc/sudoers.d/02-vnoi
-vnoi ALL=(ALL) ALL
-vnoi ALL=(root) NOPASSWD: /usr/bin/cvlc, /usr/bin/ffmpeg, /opt/vnoi/bin/client
+vnoi ALL=(root) NOPASSWD: /opt/vnoi/bin/client, /opt/vnoi/sbin/startup.sh
 EOM
 chmod 440 /etc/sudoers.d/02-vnoi
 
