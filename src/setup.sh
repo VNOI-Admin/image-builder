@@ -134,6 +134,9 @@ sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 # rm /tmp/fira-sans.zip
 # rm /tmp/share.zip
 
+# Fix CCS shortcut to open VNOJ
+sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser contest.vnoi.info#' /usr/share/applications/ccs.desktop
+
 # # Tinc Setup and Configuration
 
 systemctl disable multipathd
