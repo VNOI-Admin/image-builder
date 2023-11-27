@@ -141,6 +141,24 @@ sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
 systemctl disable multipathd
 
+# Configure GDM to copy VPN config on login
+cat - <<'EOM' > /etc/gdm3/PostLogin/Default
+#!/bin/sh
+rm -rf /etc/wireguard/*
+/opt/vnoi/bin/vnoiconf.sh fwstart
+EOM
+
+chmod +x /etc/gdm3/PostLogin/Default
+
+# Configure GDM to remove VPN config on logout
+cat - <<'EOM' > /etc/gdm3/PostSession/Default
+#!/bin/sh
+rm -rf /etc/wireguard/*
+/opt/vnoi/bin/vnoiconf.sh fwstop
+exit 0
+EOM
+
+chmod +x /etc/gdm3/PostSession/Default
 
 # Screencast after login and X is fully started
 mkdir -p /opt/vnoi/misc/records/
