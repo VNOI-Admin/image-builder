@@ -47,7 +47,7 @@ apt-get update
 apt-get install python3-pip -y
 
 echo "Install python3 libraries"
-pip3 install matplotlib gevent psutil ping3
+pip3 install gevent psutil
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -148,33 +148,6 @@ rm /tmp/share.zip
 
 systemctl disable multipathd
 
-# Configure GDM to copy VPN config on login
-cat - <<'EOM' > /etc/gdm3/PostLogin/Default
-#!/bin/sh
-
-rm -rf /etc/tinc/vpn/*
-/opt/vnoi/bin/vnoiconf.sh fwstart
-EOM
-
-chmod +x /etc/gdm3/PostLogin/Default
-
-# Configure GDM to remove VPN config on logout
-cat - <<'EOM' > /etc/gdm3/PostSession/Default
-#!/bin/sh
-
-systemctl stop tinc@vpn
-rm -rf /etc/tinc/vpn/*
-
-/opt/vnoi/bin/vnoiconf.sh fwstop
-
-exit 0
-EOM
-
-chmod +x /etc/gdm3/PostSession/Default
-
-# Configure VPN directory
-mkdir -p /etc/tinc/vpn
-chmod 744 /etc/tinc/vpn
 
 # Screencast after login and X is fully started
 mkdir -p /opt/vnoi/misc/records/
@@ -198,29 +171,6 @@ EOM
 
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
-
-# Don't stsart atd service
-systemctl disable atd
-
-# Replace atd.service file
-cat - <<EOM > /lib/systemd/system/atd.service
-[Unit]
-Description=Deferred execution scheduler
-Documentation=man:atd(8)
-After=remote-fs.target nss-user-lookup.target
-
-[Service]
-ExecStartPre=-find /var/spool/cron/atjobs -type f -name "=*" -not -newercc /run/systemd -delete
-ExecStart=/usr/sbin/atd -f -l 5 -b 30
-IgnoreSIGPIPE=false
-KillMode=process
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOM
-
-chmod 644 /lib/systemd/system/atd.service
 
 # Update /etc/hosts
 echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
@@ -247,12 +197,6 @@ snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision;
 done
 
 rm -rf /var/lib/snapd/cache/*
-
-# Clean up apt
-
-apt -y autoremove
-
-apt clean
 
 # Remove desktop backgrounds
 rm -rf /usr/share/backgrounds/*.jpg

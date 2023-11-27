@@ -176,7 +176,7 @@ icpc_image_build() {
     sed -i '/laptop-detect/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/os-prober/d' $IMAGE/casper/filesystem.manifest-desktop
     # Compress filesystem
-    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs
+    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
 
     printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
 

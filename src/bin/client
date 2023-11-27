@@ -9,7 +9,6 @@ import requests
 import shutil
 import os
 import subprocess
-from ping3 import ping
 import requests
 
 WIDTH = 300
@@ -23,6 +22,12 @@ LARGE_FONT = ("Verdana", 20)
 SMALL_FONT = ("Arial", 15)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+def message_popup(win, message="An error has occured"):
+   pop = tk.Toplevel(win)
+   pop.title("Error")
+   tk.Message(pop, text=message, padx=20, pady=20).pack()
+   tk.Button(pop, text="OK", command=pop.destroy).pack()
 
 class tkinterApp(tk.Tk):
 	def __init__(self, *args, **kwargs):
@@ -82,6 +87,7 @@ class StartPage(tk.Frame):
 		if response.status_code != 200:
 			print("login failed")
 			print(response.json())
+			message_popup(self, response.json()["error"])
 			return
 
 		print("login success")
@@ -126,7 +132,8 @@ class MainPage(tk.Frame):
 
 	def send_print_req(self):
 		if not self.can_send:
-			print("please select file first")
+			print("cannot send")
+			message_popup(self, "Please select a file first")
 			return
 		else:
 			print("sending print request")

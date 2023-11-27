@@ -35,7 +35,6 @@ d-i console-setup/layoutcode string us
 # Network
 d-i netcfg/get_hostname string vnoi-localhost
 d-i netcfg/get_domain string localdomain
-d-i netcfg/choose_interface select auto
 
 # Clock
 d-i clock-setup/utc-auto boolean true
@@ -48,6 +47,26 @@ d-i mirror/country string VN
 d-i apt-setup/multiverse boolean true
 d-i apt-setup/restricted boolean true
 d-i apt-setup/universe boolean true
+
+# Additional repositories, local[0-9] available
+d-i apt-setup/local0/repository string \
+       https://sysopspackages.icpc.global/ubuntu jammy main restricted universe multiverse
+d-i apt-setup/local0/comment string sysopspackages.icpc.global jammy mirror
+d-i apt-setup/local0/source boolean false
+d-i apt-setup/local1/repository string \
+       https://sysopspackages.icpc.global/ubuntu jammy-security main restricted universe multiverse
+d-i apt-setup/local1/comment string sysopspackages.icpc.global jammy-security mirror
+d-i apt-setup/local1/source boolean false
+d-i apt-setup/local2/repository string \
+       https://sysopspackages.icpc.global/ubuntu jammy-updates main restricted universe multiverse
+d-i apt-setup/local2/comment string sysopspackages.icpc.global jammy-updates mirror
+d-i apt-setup/local2/source boolean false
+d-i apt-setup/local3/repository string \
+       https://sysopspackages.icpc.global/apt/jammy jammy main
+d-i apt-setup/local3/comment string sysopspackages.icpc.global local
+d-i apt-setup/local3/source boolean false
+# attempt to restrict apt to amd64 not i386
+d-i apt-setup/multiarch string amd64
 
 # Users
 

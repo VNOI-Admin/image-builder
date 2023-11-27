@@ -75,6 +75,9 @@ dpkg-reconfigure network-manager
 # Clean up the chroot environment
 truncate -s 0 /etc/machine-id
 
+apt-get clean
+apt-get autoremove --purge -y
+
 rm /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
 
