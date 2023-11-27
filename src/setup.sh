@@ -43,9 +43,6 @@ timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
 hwclock -w
 
-echo "Install python3 libraries"
-pip3 install gevent psutil
-
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
