@@ -43,9 +43,6 @@ timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
 hwclock -w
 
-apt-get update
-apt-get install python3-pip -y
-
 echo "Install python3 libraries"
 pip3 install gevent psutil
 
@@ -104,7 +101,7 @@ EOM
 # GRUB config: quiet, and password for edit
 echo "root:$SUPER_PASSWD" | chpasswd
 
-sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash maxcpus=2 mem=6144M"/' /etc/default/grub
+sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash"/' /etc/default/grub
 # GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
 
 sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestricted \$/' /etc/grub.d/10_linux
@@ -117,32 +114,29 @@ update-grub2
 
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
-# Documentation
-apt -y install stl-manual python3-doc
+# # Install documentations
+# mkdir /tmp/docs-download/
+# mkdir -p /opt/vnoi/docs/
+# # Regularly built cppreference archive featured on https://en.cppreference.com/w/Cppreference:Archives
+# wget -qO /tmp/docs-download/cppref.zip https://github.com/PeterFeicht/cppreference-doc/releases/download/v20230810/html-book-20230810.zip
+# unzip -q -d /opt/vnoi/docs/cppreference /tmp/docs-download/cppref.zip
+# # Python documentation for 3.10.12
+# wget -qO /tmp/docs-download/python310.zip https://docs.python.org/3.10/archives/python-3.10.12-docs-html.zip
+# unzip -q -d /opt/vnoi/docs/python310 /tmp/docs-download/python310.zip
+# rm -r /tmp/docs-download
+# # Allow everyone to access the docs
+# chmod a+rx -R /opt/vnoi/docs
 
-# Install documentations
-mkdir /tmp/docs-download/
-mkdir -p /opt/vnoi/docs/
-# Regularly built cppreference archive featured on https://en.cppreference.com/w/Cppreference:Archives
-wget -qO /tmp/docs-download/cppref.zip https://github.com/PeterFeicht/cppreference-doc/releases/download/v20230810/html-book-20230810.zip
-unzip -q -d /opt/vnoi/docs/cppreference /tmp/docs-download/cppref.zip
-# Python documentation for 3.10.12
-wget -qO /tmp/docs-download/python310.zip https://docs.python.org/3.10/archives/python-3.10.12-docs-html.zip
-unzip -q -d /opt/vnoi/docs/python310 /tmp/docs-download/python310.zip
-rm -r /tmp/docs-download
-# Allow everyone to access the docs
-chmod a+rx -R /opt/vnoi/docs
+# # Create local HTML
 
-# Create local HTML
-
-cp -a html /opt/vnoi/html
-mkdir -p /opt/vnoi/html/fonts
-wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
-wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
-unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
-unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
-rm /tmp/fira-sans.zip
-rm /tmp/share.zip
+# cp -a html /opt/vnoi/html
+# mkdir -p /opt/vnoi/html/fonts
+# wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
+# wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
+# unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
+# unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
+# rm /tmp/fira-sans.zip
+# rm /tmp/share.zip
 
 # # Tinc Setup and Configuration
 

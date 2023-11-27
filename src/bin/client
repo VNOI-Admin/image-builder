@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import ttk, filedialog as fd
 
 import json
-import socket
 import requests
 import shutil
 import os
@@ -20,8 +19,6 @@ BUTTON_SIZE = WIDTH - 2 * MARGIN_LEFT
 
 LARGE_FONT = ("Verdana", 20)
 SMALL_FONT = ("Arial", 15)
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 def message_popup(win, message="An error has occured"):
    pop = tk.Toplevel(win)
@@ -122,6 +119,9 @@ class StartPage(tk.Frame):
 		self.pass_input.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 90))
 		self.login_button = tk.Button(self, text="Login", font=SMALL_FONT, command=self.login_function)
 		self.login_button.place(x=MARGIN_LEFT, y=(MARGIN_TOP + 130), width=BUTTON_SIZE)
+		self.username_input.bind("<Return>", lambda event: self.login_function())
+		self.pass_input.bind("<Return>", lambda event: self.login_function())
+		self.login_button.bind("<Return>", lambda event: self.login_function())
 
 # second window frame page1
 class MainPage(tk.Frame):

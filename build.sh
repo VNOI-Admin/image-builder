@@ -95,7 +95,6 @@ icpc_build() {
     apt-get update
     apt-get install \
         binutils \
-        debootstrap \
         squashfs-tools \
         xorriso \
         grub-pc-bin \

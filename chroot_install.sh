@@ -45,7 +45,9 @@ apt-get install -y \
     python3-tk \
     p7zip-full \
     wireguard-tools \
-    wireguard
+    wireguard \
+    python3-pip \
+    python3-psutil
 
 # Install Chrome to avoid using Firefox snap. Firefox snap can't read stuffs not in ~/
 mkdir /tmp/chrome-download/
