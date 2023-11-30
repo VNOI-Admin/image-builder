@@ -1,4 +1,3 @@
-DNS_DOMAIN="vnoi.info"
-WEBSERVER_PUBLIC_DOMAIN="cup.vnoi.info"
-AUTH_ADDRESS="auth-cup.vnoi.info"
+WEBSERVER_PUBLIC_ADDRESS="<your webserver public address>"
+AUTH_ADDRESS="<your auth server public address>"
 SUBNET="10.1.0.0/24"

@@ -186,6 +186,12 @@ touch /etc/cloud/cloud-init.disabled
 # Update /etc/hosts
 echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
 echo "10.1.0.2 contest.vnoi.info" >> /etc/hosts
+echo "${WEBSERVER_PUBLIC_ADDRESS} contest2.vnoi.info" >> /etc/hosts
+
+# Disable nouveau by forcing it to fail to load
+cat - <<'EOM' > /etc/modprobe.d/blacklist.conf
+install nouveau /bin/true
+EOM
 
 # Disable virtual consoles
 
