@@ -160,11 +160,31 @@ EOM
 
 chmod +x /etc/gdm3/PostSession/Default
 
-# Screencast after login and X is fully started
+# Screencast
 mkdir -p /opt/vnoi/misc/records/
-cat - <<'EOM' > /etc/xprofile
-sudo /opt/vnoi/sbin/startup.sh
+
+# After login and X is fully started
+# cat - <<'EOM' > /etc/xprofile
+# sudo /opt/vnoi/sbin/startup.sh
+# EOM
+
+# After login and GUI is fully started
+cat - << 'EOM' > /etc/systemd/system/vnoi-startup.service
+[Unit]
+Description=VNOI startup script
+Wants=graphical.target
+
+[Service]
+ExecStart=/opt/vnoi/sbin/startup.sh
+WantedBy=graphical.target
+Type=notify
+RemainAfterExit=yes
+Restart=on-failure
+
+[Install]
+WantedBy=graphical.target
 EOM
+systemctl start vnoi-startup
 
 # Allow vlc to run as root
 sed -i 's/geteuid/getppid/' /usr/bin/vlc
