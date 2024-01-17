@@ -30,7 +30,7 @@
 -A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {SUBNET} -j ACCEPT -o client
 
 # Backup server
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {WEBSERVER_PUBLIC_ADDRESS} -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d contest2.vnoi.info -j ACCEPT
 
 # VPN outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
 -A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT

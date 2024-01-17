@@ -6,7 +6,6 @@ case "$1" in
 	start)
 		cat /opt/vnoi/misc/iptables.save | \
 			sed -e 's#{SUBNET}#'${SUBNET}'#g' | \
-			sed -e 's/{WEBSERVER_PUBLIC_ADDRESS}/'${WEBSERVER_PUBLIC_ADDRESS}'/g' | \
 			tee | /usr/sbin/iptables-restore
 		/usr/sbin/ip6tables -P INPUT DROP
 		/usr/sbin/ip6tables -P OUTPUT DROP
