@@ -37,18 +37,20 @@
 -A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
 
 # DNS resolver. Restricted to servers managed by Google and Cloudflare (should be enough).
--A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
--A OUTPUT -p udp -m udp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
+# -A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
+# -A OUTPUT -p udp -m udp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
+# Isn't used anymore due to safety concerns
 
 # NTP, time sync. Restricted to
 # Ubuntu's default: ntp.ubuntu.com
 # Windows's choices: time.windows.com, time.nist.gov
 -A OUTPUT -p udp -m udp --dport 123 -d ntp.ubuntu.com,time.windows.com,time.nist.gov -j ACCEPT
+# Resolved using /etc/hosts rather than DNS servers
 
 # HTTP, HTTPS to portal. Used if the VPN is down or portal is not connected to the VPN. Specified in /etc/hosts.
 # -A OUTPUT -p tcp -m tcp -m multiport -d portal.vnoi --dports 80,443 -j ACCEPT
 # External resources. Will be enabled on a case-by-case basis.
--A OUTPUT -p tcp -m multiport -d fonts.gstatic.com,gravatar.com,cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
+# -A OUTPUT -p tcp -m multiport -d fonts.gstatic.com,gravatar.com,cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
 
 # Authentication.
 # -A OUTPUT -p tcp -m tcp -m multiport -d auth.vnoi --dports 80,443,88,749,464,445,135,389 -j ACCEPT
