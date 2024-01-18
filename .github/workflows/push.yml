@@ -9,6 +9,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 env:
   image_name: "VNOI Ubuntu ${{ github.ref }}"
