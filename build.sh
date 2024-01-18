@@ -64,6 +64,9 @@ icpc_build() {
             icpc_image_build
             exit $?
             ;;
+        --github-actions)
+            CLEAR_EARLY=true
+            ;;
         -h | --help)
             echo "Usage: $0 icpc_build [-u|--url <url>] [-f|--force]"
             echo
@@ -150,9 +153,11 @@ icpc_build() {
     log "Done"
 
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -f $CHROOT/dev
+    umount -f $CHROOT/run
     log "Done"
+
+    rm -rf $ICPC_ISO_FILENAME
 
     icpc_image_build
 }
@@ -163,6 +168,12 @@ icpc_image_build() {
     # # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
     cp -r $ICPC $IMAGE
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $ICPC
+        log "Done"
+    fi
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
@@ -185,6 +196,12 @@ icpc_image_build() {
     mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
 
     printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $CHROOT
+        log "Done"
+    fi
 
     log "Building ISO"
     cd $IMAGE
