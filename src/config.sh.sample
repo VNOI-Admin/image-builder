@@ -1,4 +1,4 @@
 WEBSERVER_PUBLIC_ADDRESS="<your webserver public address>"
 AUTH_ADDRESS="<your auth server public address>"
-SUBNET="10.1.0.0/24"
-COACH_SUBNET="10.20.0.0/24"
+ADMIN_SUBNET="10.1.0.0/16"
+COACH_SUBNET="10.20.0.0/16"
