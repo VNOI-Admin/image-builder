@@ -9,6 +9,13 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      generate_iso:
+        description: 'Generate ISO image'
+        required: true
+        type: boolean
+        default: false
 
 env:
   image_name: "VNOI Ubuntu ${{ github.ref }}"
@@ -51,8 +58,10 @@ jobs:
 
       - name: Create Release
         uses: actions/create-release@v1
+        if: ${{ github.event.inputs.generate_iso }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GENERATE_ISO: ${{ github.event.inputs.generate_iso }}
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ env.image_name }}
@@ -60,9 +69,15 @@ jobs:
           prerelease: false
 
       - name: Split ISO
-        run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
+        if: ${{ github.event.inputs.generate_iso }}
+        run: then mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
+        env:
+          GENERATE_ISO: ${{ github.event.inputs.generate_iso }}
 
       - name: Upload ISO
+        if: ${{ github.event.inputs.generate_iso }}
         uses: softprops/action-gh-release@v1
         with:
           files: iso-parts/contestant*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
