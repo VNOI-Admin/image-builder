@@ -12,10 +12,13 @@ on:
   workflow_dispatch:
     inputs:
       generate_iso:
-        description: 'Generate ISO image'
-        required: true
-        type: boolean
-        default: false
+        description: 'Choose generated ISO file storage location'
+        required: false
+        type: choice
+        options:
+          - 'server'
+          - 'release'
+          - 'none'
 
 env:
   image_name: "VNOI Ubuntu ${{ github.ref }}"
@@ -33,35 +36,37 @@ jobs:
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
           CONTENT: ${{ secrets.AUTHORIZED_KEYS }}
-          FILENAME: authorized_keys
-
-      - name: Write local_config.sh
-        run: echo $CONTENT | base64 -d > $FILENAME
-        env:
-          CONTENT: ${{ secrets.LOCAL_CONFIG }}
-          FILENAME: local_config.sh
+          FILENAME: src/misc/authorized_keys
 
       - name: Write config.local.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
-          FILENAME: src/config.local.sh
+          FILENAME: config.local.sh
 
-      - name: Write config.sh
+      - name: Write src/config.local.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
-          CONTENT: ${{ secrets.CONFIG_SH }}
+          CONTENT: ${{ secrets.SRC_CONFIG_LOCAL_SH }}
+          FILENAME: src/config.local.sh
+
+      - name: Write src/config.sh
+        run: echo $CONTENT | base64 -d > $FILENAME
+        env:
+          CONTENT: ${{ secrets.SRC_CONFIG_SH }}
           FILENAME: src/config.sh
 
       - name: Build image
         run: sudo ./build.sh icpc_build
 
+      # ----------------------- #
+      # Push to Github Releases #
+      # ----------------------- #
       - name: Create Release
         uses: actions/create-release@v1
-        if: ${{ github.event.inputs.generate_iso }}
+        if: ${{ github.event.inputs.generate_iso == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GENERATE_ISO: ${{ github.event.inputs.generate_iso }}
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ env.image_name }}
@@ -69,15 +74,26 @@ jobs:
           prerelease: false
 
       - name: Split ISO
-        if: ${{ github.event.inputs.generate_iso }}
+        if: ${{ github.event.inputs.generate_iso == 'release' }}
         run: then mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
-        env:
-          GENERATE_ISO: ${{ github.event.inputs.generate_iso }}
 
       - name: Upload ISO
-        if: ${{ github.event.inputs.generate_iso }}
+        if: ${{ github.event.inputs.generate_iso == 'release' }}
         uses: softprops/action-gh-release@v1
         with:
           files: iso-parts/contestant*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------- #
+      #     Push to Server      #
+      # ----------------------- #
+      - name: Push to Server
+        if: ${{ github.event.inputs.generate_iso == 'server' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SCP_HOST }}
+          username: ${{ secrets.SCP_USERNAME }}
+          password: ${{ secrets.SCP_PASSWORD }}
+          source: live-build/contestant.iso
+          target: /home/${{ secrets.SERVER_USERNAME }}/contestant.iso
