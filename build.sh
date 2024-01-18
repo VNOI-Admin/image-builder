@@ -153,8 +153,8 @@ icpc_build() {
     log "Done"
 
     log "Unmounting /dev and /run from chroot"
-    umount -f $CHROOT/dev
-    umount -f $CHROOT/run
+    umount $CHROOT/dev
+    umount $CHROOT/run
     log "Done"
 
     rm -rf $ICPC_ISO_FILENAME
@@ -199,7 +199,11 @@ icpc_image_build() {
 
     if [ $CLEAR_EARLY = true ]; then
         log "Clearing early to free up space"
-        rm -rf $CHROOT
+        for i in $(ls $CHROOT); do
+            if [ ! $i = "dev" ] && [ ! $i = "run" ]; then
+                rm -rf $CHROOT/$i
+            fi
+        done
         log "Done"
     fi
 

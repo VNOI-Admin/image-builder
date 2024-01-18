@@ -94,6 +94,7 @@ jobs:
         with:
           host: ${{ secrets.SCP_HOST }}
           username: ${{ secrets.SCP_USERNAME }}
-          password: ${{ secrets.SCP_PASSWORD }}
+          key: ${{ secrets.SCP_KEY }}
+          port: 22
           source: live-build/contestant.iso
           target: /home/${{ secrets.SERVER_USERNAME }}/contestant.iso
