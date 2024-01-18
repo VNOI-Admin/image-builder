@@ -13,8 +13,10 @@
 -A INPUT -p icmp -s {SUBNET} -j ACCEPT -i client
 # SSH
 -A INPUT -p tcp -m tcp --dport 22 -s {SUBNET} -j ACCEPT -i client
+# Coach view, vlc output
+-A INPUT -p tcp -m tcp --dport 9090 -s {COACH_SUBNET} -j ACCEPT -i client
 # Internal services
--A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -s {SUBNET} -j ACCEPT -i client
+-A INPUT -p tcp -m tcp --dport 10050 -s {SUBNET} -j ACCEPT -i client
 
 # Loopback (localhost)
 -A OUTPUT -o lo -j ACCEPT

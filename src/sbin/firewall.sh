@@ -6,7 +6,8 @@ case "$1" in
 	start)
 		cat /opt/vnoi/misc/iptables.save | \
 			sed -e 's#{SUBNET}#'${SUBNET}'#g' | \
-			tee | /usr/sbin/iptables-restore
+			sed -e 's#{COACH_SUBNET}#'${COACH_SUBNET}'#g' | \
+			/usr/sbin/iptables-restore
 		/usr/sbin/ip6tables -P INPUT DROP
 		/usr/sbin/ip6tables -P OUTPUT DROP
 		logger -p local0.info "FIREWALL: started"
