@@ -97,4 +97,4 @@ jobs:
           key: ${{ secrets.SCP_KEY }}
           port: 22
           source: live-build/contestant.iso
-          target: /home/${{ secrets.SERVER_USERNAME }}/contestant.iso
+          target: ${{ secrets.SCP_TARGET }}
