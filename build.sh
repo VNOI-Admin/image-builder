@@ -17,8 +17,8 @@ error() {
 	fi
 
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -l $CHROOT/dev
+    umount -l $CHROOT/run
     log "Done"
 
 	exit "${code}"
@@ -42,8 +42,8 @@ fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -l $CHROOT/dev
+    umount -l $CHROOT/run
     log "Done"
 fi
 
@@ -126,8 +126,8 @@ icpc_build() {
     log "Done"
 
     log "Mount /dev and /run to chroot"
-    mount --bind /dev $CHROOT/dev
-    mount --bind /run $CHROOT/run
+    mount --make-rslave --bind /dev $CHROOT/dev
+    mount --make-rslave --bind /run $CHROOT/run
     log "Done"
 
     log "Copy scripts and config to chroot"
@@ -153,8 +153,8 @@ icpc_build() {
     log "Done"
 
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -l $CHROOT/dev
+    umount -l $CHROOT/run
     log "Done"
 
     rm -rf $ICPC_ISO_FILENAME
