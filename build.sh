@@ -17,8 +17,8 @@ error() {
 	fi
 
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -l $CHROOT/dev
+    umount -l $CHROOT/run
     log "Done"
 
 	exit "${code}"
@@ -33,17 +33,17 @@ fi
 
 SUDO_USER="root"
 
-if [ -f local_config.sh ]; then
-    source local_config.sh
+if [ -f config.local.sh ]; then
+    source config.local.sh
 else
-    log "local_config.sh not found, running config.sh"
+    log "config.local.sh not found, running config.sh"
     source config.sh
 fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -l $CHROOT/dev
+    umount -l $CHROOT/run
     log "Done"
 fi
 
@@ -63,6 +63,9 @@ icpc_build() {
         --image-only)
             icpc_image_build
             exit $?
+            ;;
+        --github-actions)
+            CLEAR_EARLY=true
             ;;
         -h | --help)
             echo "Usage: $0 icpc_build [-u|--url <url>] [-f|--force]"
@@ -123,14 +126,14 @@ icpc_build() {
     log "Done"
 
     log "Mount /dev and /run to chroot"
-    mount --bind /dev $CHROOT/dev
-    mount --bind /run $CHROOT/run
+    mount --make-rslave --bind /dev $CHROOT/dev
+    mount --make-rslave --bind /run $CHROOT/run
     log "Done"
 
     log "Copy scripts and config to chroot"
     cp -R build.sh chroot_install.sh config.sh authorized_keys src/ $CHROOT/root
-    if [ -f local_config.sh ]; then
-        cp local_config.sh $CHROOT/root
+    if [ -f config.local.sh ]; then
+        cp config.local.sh $CHROOT/root
     fi
     log "Done"
 
@@ -146,13 +149,15 @@ icpc_build() {
     log "Done"
 
     log "Cleanup scripts and config from chroot"
-    rm -f $CHROOT/root{build.sh,chroot_install.sh,config.sh,local_config.sh,authorized_keys,local_config.sh}
+    rm -f $CHROOT/root{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}
     log "Done"
 
     log "Unmounting /dev and /run from chroot"
-    umount $CHROOT/dev
-    umount $CHROOT/run
+    umount -l $CHROOT/dev
+    umount -l $CHROOT/run
     log "Done"
+
+    rm -rf $ICPC_ISO_FILENAME
 
     icpc_image_build
 }
@@ -163,6 +168,12 @@ icpc_image_build() {
     # # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
     cp -r $ICPC $IMAGE
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $ICPC
+        log "Done"
+    fi
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
@@ -185,6 +196,16 @@ icpc_image_build() {
     mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
 
     printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        for i in $(ls $CHROOT); do
+            if [ ! $i = "dev" ] && [ ! $i = "run" ]; then
+                rm -rf $CHROOT/$i
+            fi
+        done
+        log "Done"
+    fi
 
     log "Building ISO"
     cd $IMAGE
@@ -218,12 +239,60 @@ icpc_image_build() {
     log "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
+generate_actions_secret() {
+    if [ "$(uname)" == "Darwin" ]; then
+        BASE64_ENCODE="base64 -b0"
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        BASE64_ENCODE="base64 -w0"
+    fi
+    # Generate actions secret from config.local.sh
+    if [ -f config.local.sh ]; then
+        CONFIG_LOCAL_SH=$($BASE64_ENCODE < config.local.sh)
+        echo "config.local.sh: $CONFIG_LOCAL_SH"
+    fi
+
+    # from src/config.sh
+    if [ -f config.sh ]; then
+        SRC_CONFIG_SH=$($BASE64_ENCODE < config.sh)
+        echo "src/config.sh: $SRC_CONFIG_SH"
+    fi
+
+    # from src/config.local.sh
+    if [ -f src/config.local.sh ]; then
+        SRC_CONFIG_LOCAL_SH=$($BASE64_ENCODE < src/config.local.sh)
+        echo "src/config.local.sh: $SRC_CONFIG_LOCAL_SH"
+    fi
+
+    # from src/misc/authorized_keys
+    if [ -f src/misc/authorized_keys ]; then
+        AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
+        echo "src/misc/authorized_keys: $AUTHORIZED_KEYS"
+    fi
+
+    # Ask user if they want to use gh cli to push secret to repo
+    read -p "Do you want to use gh cli to push secret to repo? (y/n) " -n 1 -r REPLY
+    echo    # (optional) move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        echo "Set ACTIONS_SECRET to repo"
+        gh secret set CONFIG_LOCAL_SH -b "$CONFIG_LOCAL_SH"
+        gh secret set SRC_CONFIG_SH -b "$SRC_CONFIG_SH"
+        gh secret set SRC_CONFIG_LOCAL_SH -b "$SRC_CONFIG_LOCAL_SH"
+        gh secret set AUTHORIZED_KEYS -b "$AUTHORIZED_KEYS"
+    else
+        echo "Skipping"
+    fi
+}
+
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
 
 help() {
     echo "Usage: $0 {icpc_build}"
     echo
-    echo "  icpc_build <image_file>: Build the ISO image based on the ICPC image"
+    echo "  icpc_build: Build the ISO image based on the ICPC image"
+    echo "  generate_actions_secret: Generate actions secret from config.local.sh"
+    echo "  clean: Clean up all files generated by this script"
+    echo "  help: Show this help"
 }
 
 case $1 in
@@ -232,6 +301,9 @@ case $1 in
         ;;
     icpc_build)
         icpc_build $@
+        ;;
+    generate_actions_secret)
+        generate_actions_secret
         ;;
     help)
         help
