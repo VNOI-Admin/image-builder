@@ -1,4 +1,4 @@
-name: Build ISO Image
+name: Build ISO Image (self-hosted)
 
 # Avoids having multiple instances running
 concurrency:
@@ -10,14 +10,6 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
-    inputs:
-      generate_iso:
-        description: 'Choose generated ISO file storage location'
-        required: false
-        type: choice
-        options:
-          - 'server'
-          - 'release'
 
 env:
   image_name: "VNOI Ubuntu ${{ github.ref }}"
@@ -25,7 +17,7 @@ env:
 jobs:
   build:
     name: Build and push image
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
@@ -71,29 +63,3 @@ jobs:
           release_name: ${{ env.image_name }}
           draft: false
           prerelease: false
-
-      - name: Split ISO
-        if: ${{ github.event.inputs.generate_iso == 'release' }}
-        run: then mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
-
-      - name: Upload ISO
-        if: ${{ github.event.inputs.generate_iso == 'release' }}
-        uses: softprops/action-gh-release@v1
-        with:
-          files: iso-parts/contestant*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # ----------------------- #
-      #     Push to Server      #
-      # ----------------------- #
-      - name: Push to Server
-        if: ${{ github.event.inputs.generate_iso == 'server' }}
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SCP_HOST }}
-          username: ${{ secrets.SCP_USERNAME }}
-          key: ${{ secrets.SCP_KEY }}
-          port: 22
-          source: live-build/contestant.iso
-          target: ${{ secrets.SCP_TARGET }}
