@@ -2,7 +2,7 @@ name: Build ISO Image (self-hosted)
 
 # Avoids having multiple instances running
 concurrency:
-  group: build-iso
+  group: build-iso-self-hosted
   cancel-in-progress: true
 
 on:
