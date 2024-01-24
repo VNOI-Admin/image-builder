@@ -49,6 +49,7 @@ fi
 
 icpc_build() {
     FORCE_DOWNLOAD=false
+    CLEAR_EARLY=false
 
     while [ $# -gt 0 ]; do
     case $1 in
