@@ -158,8 +158,6 @@ icpc_build() {
     umount -l $CHROOT/run
     log "Done"
 
-    rm -rf $ICPC_ISO_FILENAME
-
     icpc_image_build
 }
 
@@ -185,7 +183,7 @@ icpc_image_build() {
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
 
     # # Create manifest
-    chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' | tee $IMAGE/casper/filesystem.manifest
+    chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' > $IMAGE/casper/filesystem.manifest
 
     cp -v $IMAGE/casper/filesystem.manifest $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/ubiquity/d' $IMAGE/casper/filesystem.manifest-desktop
@@ -296,6 +294,8 @@ help() {
     echo "  help: Show this help"
 }
 
+START_TIME=$(date +%s)
+
 case $1 in
     clean)
         rm -rf $INS_DIR
@@ -316,3 +316,5 @@ case $1 in
         help
         ;;
 esac
+
+echo "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"

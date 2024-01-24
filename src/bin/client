@@ -76,22 +76,31 @@ class StartPage(tk.Frame):
 		username = self.username_input.get()
 		password = self.pass_input.get()
 
-		response = requests.post("http://vpn.vnoi.info:8000/login", data={
+		response = requests.post("http://vpn.vnoi.info:8001/auth/login", data={
 			"username": username,
 			"password": password
 		})
 
+		if response.status_code != 201:
+			message_popup(self, "Login failed")
+			return
+
+		access_token = response.json()["accessToken"]
+
+		response = requests.get("http://vpn.vnoi.info:8001/vpn/config", headers={
+			"Authorization": f"Bearer {access_token}"
+		})
+
 		if response.status_code != 200:
-			print("login failed")
-			print(response.json())
-			message_popup(self, response.json()["error"])
+			message_popup(self, "Cannot initialize VPN")
 			return
 
 		print("login success")
+
 		remove_inside_folder("/etc/wireguard")
 
 		with open("/etc/wireguard/client.conf", "w") as f:
-			f.write(response.content.decode("utf-8"))
+			f.write(response.json()["config"])
 
 		os.chmod("/etc/wireguard/client.conf", 0o600)
 

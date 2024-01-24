@@ -163,28 +163,24 @@ chmod +x /etc/gdm3/PostSession/Default
 # Screencast
 mkdir -p /opt/vnoi/misc/records/
 
-# After login and X is fully started
-# cat - <<'EOM' > /etc/xprofile
-# sudo /opt/vnoi/sbin/startup.sh
-# EOM
+# Configure startup script, hidden from vnoi user access
+mkdir -p /home/vnoi/.config/autostart
 
-# After login and GUI is fully started
-cat - << 'EOM' > /etc/systemd/system/vnoi-startup.service
-[Unit]
-Description=VNOI startup script
-Wants=graphical.target
-
-[Service]
-ExecStart=/opt/vnoi/sbin/startup.sh
-WantedBy=graphical.target
-Type=notify
-RemainAfterExit=yes
-Restart=on-failure
-
-[Install]
-WantedBy=graphical.target
+cat - <<'EOM' > /home/vnoi/.config/autostart/vnoi.desktop
+[Desktop Entry]
+Type=Application
+Exec=sudo /opt/vnoi/sbin/startup.sh
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+Name[en_US]=vnoi
+Name=vnoi
+Comment[en_US]=
+Comment=
 EOM
-systemctl start vnoi-startup
+
+chown root:root /home/vnoi/.config/autostart/vnoi.desktop
+# only allow execution
+chmod 744 /home/vnoi/.config/autostart/vnoi.desktop
 
 # Allow vlc to run as root
 sed -i 's/geteuid/getppid/' /usr/bin/vlc
