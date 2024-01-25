@@ -132,10 +132,7 @@ icpc_build() {
     log "Done"
 
     log "Copy scripts and config to chroot"
-    cp -R build.sh chroot_install.sh config.sh authorized_keys src/ $CHROOT/root
-    if [ -f config.local.sh ]; then
-        cp config.local.sh $CHROOT/root
-    fi
+    cp -R build.sh chroot_install.sh src/ $CHROOT/root
     log "Done"
 
     log "Encrypt super password"
