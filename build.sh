@@ -155,6 +155,12 @@ icpc_build() {
     umount -l $CHROOT/run
     log "Done"
 
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $ICPC_ISO_FILENAME
+        log "Done"
+    fi
+
     icpc_image_build
 }
 
@@ -248,8 +254,8 @@ generate_actions_secret() {
     fi
 
     # from src/config.sh
-    if [ -f config.sh ]; then
-        SRC_CONFIG_SH=$($BASE64_ENCODE < config.sh)
+    if [ -f src/config.sh ]; then
+        SRC_CONFIG_SH=$($BASE64_ENCODE < src/config.sh)
         echo "src/config.sh: $SRC_CONFIG_SH"
     fi
 
