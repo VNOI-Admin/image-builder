@@ -20,6 +20,9 @@ BUTTON_SIZE = WIDTH - 2 * MARGIN_LEFT
 LARGE_FONT = ("Verdana", 20)
 SMALL_FONT = ("Arial", 15)
 
+ACCESS_TOKEN = None
+REFRESH_TOKEN = None
+
 def message_popup(win, message="An error has occured"):
    pop = tk.Toplevel(win)
    pop.title("Error")
@@ -85,10 +88,11 @@ class StartPage(tk.Frame):
 			message_popup(self, "Login failed")
 			return
 
-		access_token = response.json()["accessToken"]
+		ACCESS_TOKEN = response.json()["accessToken"]
+		REFRESH_TOKEN = response.json()["refreshToken"]
 
 		response = requests.get("http://vpn.vnoi.info:8001/vpn/config", headers={
-			"Authorization": f"Bearer {access_token}"
+			"Authorization": f"Bearer {ACCESS_TOKEN}"
 		})
 
 		if response.status_code != 200:
@@ -96,6 +100,9 @@ class StartPage(tk.Frame):
 			return
 
 		print("login success")
+
+		ACCESS_TOKEN = None
+		REFRESH_TOKEN = None
 
 		remove_inside_folder("/etc/wireguard")
 
@@ -106,11 +113,6 @@ class StartPage(tk.Frame):
 
 		result = subprocess.run(["systemctl", "restart", "wg-quick@client"], stdout=subprocess.PIPE)
 		print(result.stdout)
-
-		file_path = os.path.abspath(os.path.dirname(__file__))
-		service_command = f"{file_path}/service"
-		subprocess.run(["pkill", "-f", service_command])
-		subprocess.Popen([service_command])
 
 		self.controller.show_frame(MainPage)
 
@@ -146,8 +148,14 @@ class MainPage(tk.Frame):
 			return
 		else:
 			print("sending print request")
-			r = requests.post("http://10.1.0.1:8000/print", files={ 'file': open(self.filename) })
-			print(r.status_code)
+			r = requests.post(
+				"http://10.1.0.1:8001/user/print", files={ 'file': open(self.filename) }
+			)
+
+			if r.status_code != 201:
+				message_popup(self, "Cannot send print request")
+				return
+
 			self.can_send = False
 			self.filename = None
 			self.select_file_button["text"] = "Select file"
