@@ -54,6 +54,9 @@ jobs:
         env:
           CONTENT: ${{ secrets.SRC_CONFIG_SH }}
           FILENAME: src/config.sh
+        
+      - name: Display directory structure
+        run: find . -not -path '*/\.*'
 
       - name: Build image
         run: sudo ./build.sh icpc_build --github-actions
