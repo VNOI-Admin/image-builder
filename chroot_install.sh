@@ -1,12 +1,5 @@
 pwd
 
-if [ -f /root/local_config.sh ]; then
-    source /root/local_config.sh
-else
-    echo "local_config.sh not found, running config.sh"
-    source /root/config.sh
-fi
-
 mount none -t proc /proc
 mount none -t sysfs /sys
 mount none -t devpts /dev/pts
@@ -46,7 +39,6 @@ apt-get install -y \
     p7zip-full \
     wireguard-tools \
     wireguard \
-    python3-pip \
     python3-psutil
 
 # Install Chrome to avoid using Firefox snap. Firefox snap can't read stuffs not in ~/
