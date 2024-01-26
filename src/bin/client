@@ -84,7 +84,7 @@ class StartPage(tk.Frame):
 			"password": password
 		})
 
-		if response.status_code != 201:
+		if response.status_code not in [200, 201, 202]:
 			message_popup(self, "Login failed")
 			return
 
@@ -95,7 +95,7 @@ class StartPage(tk.Frame):
 			"Authorization": f"Bearer {ACCESS_TOKEN}"
 		})
 
-		if response.status_code != 200:
+		if response.status_code not in [200, 201, 202]:
 			message_popup(self, "Cannot initialize VPN")
 			return
 
@@ -152,7 +152,7 @@ class MainPage(tk.Frame):
 				"http://10.1.0.1:8001/user/print", files={ 'file': open(self.filename) }
 			)
 
-			if r.status_code != 201:
+			if r.status_code not in [200, 201, 202]:
 				message_popup(self, "Cannot send print request")
 				return
 

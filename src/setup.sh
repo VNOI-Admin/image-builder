@@ -160,13 +160,16 @@ chmod 744 /home/vnoi/.config/autostart/vnoi.desktop
 
 # Create cronjob to run `python3 /opt/vnoi/sbin/report.py` every 15 seconds
 cat - <<'EOM' > /etc/cron.d/vnoi
-* * * * * python3 /opt/vnoi/sbin/report.py
-* * * * * sleep 10; python3 /opt/vnoi/sbin/report.py
-* * * * * sleep 20; python3 /opt/vnoi/sbin/report.py
-* * * * * sleep 30; python3 /opt/vnoi/sbin/report.py
-* * * * * sleep 40; python3 /opt/vnoi/sbin/report.py
-* * * * * sleep 50; python3 /opt/vnoi/sbin/report.py
+* * * * * /opt/vnoi/sbin/report.py
+* * * * * sleep 10; /opt/vnoi/sbin/report.py
+* * * * * sleep 20; /opt/vnoi/sbin/report.py
+* * * * * sleep 30; /opt/vnoi/sbin/report.py
+* * * * * sleep 40; /opt/vnoi/sbin/report.py
+* * * * * sleep 50; /opt/vnoi/sbin/report.py
 EOM
+
+crontab /etc/cron.d/vnoi
+rm /etc/cron.d/vnoi
 
 # Allow vlc to run as root
 sed -i 's/geteuid/getppid/' /usr/bin/vlc
