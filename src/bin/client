@@ -152,7 +152,7 @@ class MainPage(tk.Frame):
 				"http://10.1.0.1:8001/user/print", files={ 'file': open(self.filename) }
 			)
 
-			if r.status_code != 201:
+			if r.status_code not in [200, 201, 202]:
 				message_popup(self, "Cannot send print request")
 				return
 
