@@ -9,6 +9,6 @@ disk = psutil.disk_usage('/').percent
 
 requests.post("http://10.1.0.1:8001/user/report", json={
     "cpu": cpu,
-    "mem": mem,
+    "memory": mem,
     "disk": disk
 })
