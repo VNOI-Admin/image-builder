@@ -20,6 +20,9 @@ BUTTON_SIZE = WIDTH - 2 * MARGIN_LEFT
 LARGE_FONT = ("Verdana", 20)
 SMALL_FONT = ("Arial", 15)
 
+ACCESS_TOKEN = None
+REFRESH_TOKEN = None
+
 def message_popup(win, message="An error has occured"):
    pop = tk.Toplevel(win)
    pop.title("Error")
@@ -76,32 +79,40 @@ class StartPage(tk.Frame):
 		username = self.username_input.get()
 		password = self.pass_input.get()
 
-		response = requests.post("http://vpn.vnoi.info:8000/login", data={
+		response = requests.post("http://vpn.vnoi.info:8001/auth/login", data={
 			"username": username,
 			"password": password
 		})
 
+		if response.status_code != 201:
+			message_popup(self, "Login failed")
+			return
+
+		ACCESS_TOKEN = response.json()["accessToken"]
+		REFRESH_TOKEN = response.json()["refreshToken"]
+
+		response = requests.get("http://vpn.vnoi.info:8001/vpn/config", headers={
+			"Authorization": f"Bearer {ACCESS_TOKEN}"
+		})
+
 		if response.status_code != 200:
-			print("login failed")
-			print(response.json())
-			message_popup(self, response.json()["error"])
+			message_popup(self, "Cannot initialize VPN")
 			return
 
 		print("login success")
+
+		ACCESS_TOKEN = None
+		REFRESH_TOKEN = None
+
 		remove_inside_folder("/etc/wireguard")
 
 		with open("/etc/wireguard/client.conf", "w") as f:
-			f.write(response.content.decode("utf-8"))
+			f.write(response.json()["config"])
 
 		os.chmod("/etc/wireguard/client.conf", 0o600)
 
 		result = subprocess.run(["systemctl", "restart", "wg-quick@client"], stdout=subprocess.PIPE)
 		print(result.stdout)
-
-		file_path = os.path.abspath(os.path.dirname(__file__))
-		service_command = f"{file_path}/service"
-		subprocess.run(["pkill", "-f", service_command])
-		subprocess.Popen([service_command])
 
 		self.controller.show_frame(MainPage)
 
@@ -137,8 +148,14 @@ class MainPage(tk.Frame):
 			return
 		else:
 			print("sending print request")
-			r = requests.post("http://10.1.0.1:8000/print", files={ 'file': open(self.filename) })
-			print(r.status_code)
+			r = requests.post(
+				"http://10.1.0.1:8001/user/print", files={ 'file': open(self.filename) }
+			)
+
+			if r.status_code != 201:
+				message_popup(self, "Cannot send print request")
+				return
+
 			self.can_send = False
 			self.filename = None
 			self.select_file_button["text"] = "Select file"

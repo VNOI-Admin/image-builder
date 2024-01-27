@@ -4,17 +4,28 @@
 :FORWARD ACCEPT [0:0]
 :OUTPUT DROP [0:0]
 
+
 # Loopback (localhost)
 -A INPUT -i lo -j ACCEPT
 # Already existing connections
 -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
+# Admin controls
 # Pings
--A INPUT -p icmp -s {SUBNET} -j ACCEPT -i client
+-A INPUT -p icmp -s {ADMIN_SUBNET} -j ACCEPT -i client
 # SSH
--A INPUT -p tcp -m tcp --dport 22 -s {SUBNET} -j ACCEPT -i client
+-A INPUT -p tcp -m tcp --dport 22 -s {ADMIN_SUBNET} -j ACCEPT -i client
 # Internal services
--A INPUT -p tcp -m tcp -m multiport --dports 9090,10050 -s {SUBNET} -j ACCEPT -i client
+-A INPUT -p tcp -m tcp --dport 10050 -s {ADMIN_SUBNET} -j ACCEPT -i client
+# VLC output
+-A INPUT -p tcp -m tcp --dport 100 -s {ADMIN_SUBNET} -j ACCEPT -i client
+# HTTP services
+-A INPUT -p tcp -m tcp -m multiport --dports 80,443 -s {ADMIN_SUBNET} -j ACCEPT -i client
+
+# Coach views
+# VLC output
+-A INPUT -p tcp -m tcp --dport 100 -s {COACH_SUBNET} -j ACCEPT -i client
+
 
 # Loopback (localhost)
 -A OUTPUT -o lo -j ACCEPT
@@ -22,35 +33,24 @@
 -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Pings
--A OUTPUT -p icmp -d {SUBNET} -j ACCEPT -o client
+-A OUTPUT -p icmp -d {ADMIN_SUBNET} -j ACCEPT -o client
 -A OUTPUT -p icmp -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
 # HTTP, HTTPS to portal(s)
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {SUBNET} -j ACCEPT -o client
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {ADMIN_SUBNET} -j ACCEPT -o client
 # Internal services
--A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {SUBNET} -j ACCEPT -o client
+-A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {ADMIN_SUBNET} -j ACCEPT -o client
 
 # Backup server
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {WEBSERVER_PUBLIC_ADDRESS} -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d contest2.vnoi.info -j ACCEPT
 
 # VPN outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
--A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
--A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,9000 -j ACCEPT
-
-# DNS resolver. Restricted to servers managed by Google and Cloudflare (should be enough).
--A OUTPUT -p tcp -m tcp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
--A OUTPUT -p udp -m udp --dport 53 -d 8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1 -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 51820,8000,8001,9000 -j ACCEPT
+-A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,8001,9000 -j ACCEPT
 
 # NTP, time sync. Restricted to
 # Ubuntu's default: ntp.ubuntu.com
 # Windows's choices: time.windows.com, time.nist.gov
 -A OUTPUT -p udp -m udp --dport 123 -d ntp.ubuntu.com,time.windows.com,time.nist.gov -j ACCEPT
+# Resolved using /etc/hosts rather than DNS servers
 
-# HTTP, HTTPS to portal. Used if the VPN is down or portal is not connected to the VPN. Specified in /etc/hosts.
-# -A OUTPUT -p tcp -m tcp -m multiport -d portal.vnoi --dports 80,443 -j ACCEPT
-# External resources. Will be enabled on a case-by-case basis.
--A OUTPUT -p tcp -m multiport -d fonts.gstatic.com,gravatar.com,cdnjs.cloudflare.com --dports 80,443 -j ACCEPT
-
-# Authentication.
-# -A OUTPUT -p tcp -m tcp -m multiport -d auth.vnoi --dports 80,443,88,749,464,445,135,389 -j ACCEPT
-# -A OUTPUT -p udp -m udp -m multiport -d auth.vnoi --dports 88,4444,464,53,389 -j ACCEPT
 COMMIT

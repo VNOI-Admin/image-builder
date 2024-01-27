@@ -28,7 +28,8 @@ After cloning the repository, you need to configure the builder. There are sever
 - `src/config.sh`: This a local copy of `src/config.sh` with machine-wide configuration. This contains several important configuration variables:
   - `WEBSERVER_PUBLIC_ADDRESS`: The public address of the webserver, commonly for the backup server. This is accessible by the contestants without the need of VPN, therefore should only be used in case of VPN failure.
   - `AUTH_ADDRESS`: The public address of the authentication and VPN central server.
-  - `SUBNET`: The subnet of the service nodes on the VPN network.
+  - `ADMIN_SUBNET`: The subnet of the admin network. This is used to configure the firewall to allow access to the admin network.
+  - `COACH_SUBNET`: The subnet of the coach network. This is used to configure the firewall to allow access to the coach network.
 - `src/config.local.sh`: This is an optional configuration file of `src/config.local.sh`. By setting the `VERSION` variable, it will store the version of the build to the image. Useful for debugging and tracking the version of the image.
 
 ## Building

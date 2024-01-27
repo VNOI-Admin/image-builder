@@ -49,6 +49,7 @@ fi
 
 icpc_build() {
     FORCE_DOWNLOAD=false
+    CLEAR_EARLY=false
 
     while [ $# -gt 0 ]; do
     case $1 in
@@ -131,10 +132,7 @@ icpc_build() {
     log "Done"
 
     log "Copy scripts and config to chroot"
-    cp -R build.sh chroot_install.sh config.sh authorized_keys src/ $CHROOT/root
-    if [ -f config.local.sh ]; then
-        cp config.local.sh $CHROOT/root
-    fi
+    cp -R build.sh chroot_install.sh src/ $CHROOT/root
     log "Done"
 
     log "Encrypt super password"
@@ -188,7 +186,7 @@ icpc_image_build() {
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
 
     # # Create manifest
-    chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' | tee $IMAGE/casper/filesystem.manifest
+    chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' > $IMAGE/casper/filesystem.manifest
 
     cp -v $IMAGE/casper/filesystem.manifest $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/ubiquity/d' $IMAGE/casper/filesystem.manifest-desktop
@@ -299,6 +297,8 @@ help() {
     echo "  help: Show this help"
 }
 
+START_TIME=$(date +%s)
+
 case $1 in
     clean)
         rm -rf $INS_DIR
@@ -319,3 +319,5 @@ case $1 in
         help
         ;;
 esac
+
+echo "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"

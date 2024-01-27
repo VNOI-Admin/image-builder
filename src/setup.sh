@@ -110,30 +110,6 @@ update-grub2
 
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
-# # Install documentations
-# mkdir /tmp/docs-download/
-# mkdir -p /opt/vnoi/docs/
-# # Regularly built cppreference archive featured on https://en.cppreference.com/w/Cppreference:Archives
-# wget -qO /tmp/docs-download/cppref.zip https://github.com/PeterFeicht/cppreference-doc/releases/download/v20230810/html-book-20230810.zip
-# unzip -q -d /opt/vnoi/docs/cppreference /tmp/docs-download/cppref.zip
-# # Python documentation for 3.10.12
-# wget -qO /tmp/docs-download/python310.zip https://docs.python.org/3.10/archives/python-3.10.12-docs-html.zip
-# unzip -q -d /opt/vnoi/docs/python310 /tmp/docs-download/python310.zip
-# rm -r /tmp/docs-download
-# # Allow everyone to access the docs
-# chmod a+rx -R /opt/vnoi/docs
-
-# # Create local HTML
-
-# cp -a html /opt/vnoi/html
-# mkdir -p /opt/vnoi/html/fonts
-# wget -O /tmp/fira-sans.zip "https://gwfh.mranftl.com/api/fonts/fira-sans?download=zip&subsets=latin&variants=regular"
-# wget -O /tmp/share.zip "https://gwfh.mranftl.com/api/fonts/share?download=zip&subsets=latin&variants=regular"
-# unzip -o /tmp/fira-sans.zip -d /opt/vnoi/html/fonts
-# unzip -o /tmp/share.zip -d /opt/vnoi/html/fonts
-# rm /tmp/fira-sans.zip
-# rm /tmp/share.zip
-
 # Fix CCS shortcut to open VNOJ
 sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser contest.vnoi.info#' /usr/share/applications/ccs.desktop
 
@@ -160,10 +136,36 @@ EOM
 
 chmod +x /etc/gdm3/PostSession/Default
 
-# Screencast after login and X is fully started
+# Screencast
 mkdir -p /opt/vnoi/misc/records/
-cat - <<'EOM' > /etc/xprofile
-sudo /opt/vnoi/sbin/startup.sh
+
+# Configure startup script, hidden from vnoi user access
+mkdir -p /home/vnoi/.config/autostart
+
+cat - <<'EOM' > /home/vnoi/.config/autostart/vnoi.desktop
+[Desktop Entry]
+Type=Application
+Exec=sudo /opt/vnoi/sbin/startup.sh
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+Name[en_US]=vnoi
+Name=vnoi
+Comment[en_US]=
+Comment=
+EOM
+
+chown root:root /home/vnoi/.config/autostart/vnoi.desktop
+# only allow execution
+chmod 744 /home/vnoi/.config/autostart/vnoi.desktop
+
+# Create cronjob to run `python3 /opt/vnoi/sbin/report.py` every 15 seconds
+cat - <<'EOM' > /etc/cron.d/vnoi
+* * * * * python3 /opt/vnoi/sbin/report.py
+* * * * * sleep 10; python3 /opt/vnoi/sbin/report.py
+* * * * * sleep 20; python3 /opt/vnoi/sbin/report.py
+* * * * * sleep 30; python3 /opt/vnoi/sbin/report.py
+* * * * * sleep 40; python3 /opt/vnoi/sbin/report.py
+* * * * * sleep 50; python3 /opt/vnoi/sbin/report.py
 EOM
 
 # Allow vlc to run as root
@@ -187,6 +189,10 @@ touch /etc/cloud/cloud-init.disabled
 echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
 echo "10.1.0.2 contest.vnoi.info" >> /etc/hosts
 echo "${WEBSERVER_PUBLIC_ADDRESS} contest2.vnoi.info" >> /etc/hosts
+# Time servers
+echo 185.125.190.56 ntp.ubuntu.com >> /etc/hosts
+echo 168.61.215.74 time.windows.com >> /etc/hosts
+echo 132.163.96.3 ntp1.glb.nist.gov >> /etc/hosts
 
 # Disable nouveau by forcing it to fail to load
 cat - <<'EOM' > /etc/modprobe.d/blacklist.conf
