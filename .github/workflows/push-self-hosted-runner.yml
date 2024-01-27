@@ -1,4 +1,4 @@
-name: Build ISO Image (self-hosted)
+name: Build ISO Image (self-hosted runner & storage)
 
 # Avoids having multiple instances running
 concurrency:
@@ -6,9 +6,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
 
 env:
@@ -49,17 +46,3 @@ jobs:
 
       - name: Build image
         run: sudo ./build.sh icpc_build --github-actions
-
-      # ----------------------- #
-      # Push to Github Releases #
-      # ----------------------- #
-      - name: Create Release
-        uses: actions/create-release@v1
-        if: ${{ github.event.inputs.generate_iso == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ env.image_name }}
-          draft: false
-          prerelease: false

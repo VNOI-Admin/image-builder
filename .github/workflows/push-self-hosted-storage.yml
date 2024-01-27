@@ -1,0 +1,56 @@
+name: Build ISO Image (self-hosted storage)
+
+# Avoids having multiple instances running
+concurrency:
+  group: build-iso
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Write authorized_keys
+        run: echo $CONTENT | base64 -d > $FILENAME
+        env:
+          CONTENT: ${{ secrets.AUTHORIZED_KEYS }}
+          FILENAME: src/misc/authorized_keys
+
+      - name: Write config.local.sh
+        run: echo $CONTENT | base64 -d > $FILENAME
+        env:
+          CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
+          FILENAME: config.local.sh
+
+      - name: Write src/config.local.sh
+        run: echo $CONTENT | base64 -d > $FILENAME
+        env:
+          CONTENT: ${{ secrets.SRC_CONFIG_LOCAL_SH }}
+          FILENAME: src/config.local.sh
+
+      - name: Write src/config.sh
+        run: echo $CONTENT | base64 -d > $FILENAME
+        env:
+          CONTENT: ${{ secrets.SRC_CONFIG_SH }}
+          FILENAME: src/config.sh
+
+      - name: Build image
+        run: sudo ./build.sh icpc_build --github-actions
+
+      - name: Push to Server
+        if: ${{ github.event.inputs.iso_location == 'server' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SCP_HOST }}
+          username: ${{ secrets.SCP_USERNAME }}
+          key: ${{ secrets.SCP_KEY }}
+          port: ${{ secrets.SCP_PORT }}
+          source: live-build/contestant.iso
+          target: ${{ secrets.SCP_TARGET }}
