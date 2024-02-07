@@ -29,7 +29,4 @@ mkdir -p ~vnoi/.vscode/extensions
 tar jxf /opt/vnoi/misc/vscode-extensions.tar.bz2 -C ~vnoi/.vscode/extensions
 chown -R vnoi.vnoi ~vnoi/.vscode
 
-# vnoi startup
-cp /opt/vnoi/misc/vnoistart.desktop /usr/share/gnome/autostart/
-
 logger -p local0.info "MKVNOIUSER: VNOI user created"

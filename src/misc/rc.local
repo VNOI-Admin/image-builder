@@ -2,6 +2,4 @@
 
 source /opt/vnoi/config.sh
 
-/opt/vnoi/bin/gnome-autostart.sh
-
 # vim: ft=sh ts=4 noet
