@@ -21,7 +21,7 @@ rm -rf /tmp/*
 rm -rf /var/tmp/*
 
 # Clean up home directories
-rm ~vnoi/.bash_history || true
+rm ~icpc/.bash_history || true
 rm ~ansible/.bash_history || true
 rm ~root/.bash_history || true
 

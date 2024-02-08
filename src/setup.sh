@@ -73,16 +73,16 @@ echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 # Default to enable screensaver lock
 touch /opt/vnoi/config/screenlock
 
-# Create vnoi account
-echo "Create vnoi account"
-/opt/vnoi/sbin/mkvnoiuser.sh
+# Create ICPC account
+echo "Create icpc account"
+/opt/vnoi/sbin/mkuser.sh
 
-# Set VNOI user's initial password
-echo "vnoi:vnoi" | chpasswd
+# Set ICPC user's initial password
+echo "icpc:icpc" | chpasswd
 
 # Fix permission and ownership
-chown vnoi.vnoi /opt/vnoi/store/submissions
-chmod 770 /opt/vnoi/store/log
+chown icpc.icpc /opt/vnoi/store/submissions
+chmod 770 /opt/icpc/store/log
 
 # Add our own syslog facility
 
@@ -92,7 +92,7 @@ echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
 
 cat - <<EOM > /etc/systemd/timesyncd.conf
 [Time]
-NTP=time.windows.com time.nist.gov
+NTP=ntp.ubuntu.com time.windows.com
 EOM
 
 # GRUB config: quiet, and password for edit
@@ -140,26 +140,26 @@ chmod +x /etc/gdm3/PostSession/Default
 mkdir -p /opt/vnoi/misc/records/
 
 # Configure startup script, hidden from vnoi user access
-mkdir -p /home/vnoi/.config/autostart
+mkdir -p /home/icpc/.config/autostart
 
-cat - <<'EOM' > /home/vnoi/.config/autostart/vnoi.desktop
+cat - <<'EOM' > /home/icpc/.config/autostart/icpc.desktop
 [Desktop Entry]
 Type=Application
 Exec=sudo /opt/vnoi/sbin/startup.sh
 NoDisplay=true
 X-GNOME-Autostart-enabled=true
-Name[en_US]=vnoi
-Name=vnoi
+Name[en_US]=icpc
+Name=icpc
 Comment[en_US]=
 Comment=
 EOM
 
-chown root:root /home/vnoi/.config/autostart/vnoi.desktop
+chown root:root /home/icpc/.config/autostart/icpc.desktop
 # only allow execution
-chmod 744 /home/vnoi/.config/autostart/vnoi.desktop
+chmod 744 /home/icpc/.config/autostart/icpc.desktop
 
 # Create cronjob to run `python3 /opt/vnoi/sbin/report.py` every 15 seconds
-cat - <<'EOM' > /etc/cron.d/vnoi
+cat - <<'EOM' > /etc/cron.d/icpc
 * * * * * /opt/vnoi/sbin/report.py
 * * * * * sleep 10; /opt/vnoi/sbin/report.py
 * * * * * sleep 20; /opt/vnoi/sbin/report.py
@@ -168,21 +168,21 @@ cat - <<'EOM' > /etc/cron.d/vnoi
 * * * * * sleep 50; /opt/vnoi/sbin/report.py
 EOM
 
-crontab /etc/cron.d/vnoi
-rm /etc/cron.d/vnoi
+crontab /etc/cron.d/icpc
+rm /etc/cron.d/icpc
 
 # Allow vlc to run as root
 sed -i 's/geteuid/getppid/' /usr/bin/vlc
 
 # Allow cvlc, ffmpeg and client to run as root without password
-cat - <<'EOM' > /etc/sudoers.d/02-vnoi
-vnoi ALL=(root) NOPASSWD: /opt/vnoi/bin/client, /opt/vnoi/sbin/startup.sh
+cat - <<'EOM' > /etc/sudoers.d/02-icpc
+icpc ALL=(root) NOPASSWD: /opt/vnoi/bin/client, /opt/vnoi/sbin/startup.sh
 EOM
-chmod 440 /etc/sudoers.d/02-vnoi
+chmod 440 /etc/sudoers.d/02-icpc
 
 # Add aliases to .bashrc
-cat - <<'EOM' >> /home/vnoi/.bashrc
-alias client='sudo /opt/vnoi/bin/client & disown'
+cat - <<'EOM' >> /home/icpc/.bashrc
+alias client='sudo /opt/icpc/bin/client & disown'
 EOM
 
 # Disable cloud-init
@@ -190,12 +190,11 @@ touch /etc/cloud/cloud-init.disabled
 
 # Update /etc/hosts
 echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
-echo "10.1.0.2 contest.vnoi.info" >> /etc/hosts
-echo "${WEBSERVER_PUBLIC_ADDRESS} contest2.vnoi.info" >> /etc/hosts
+echo "10.1.0.1 contest.icpc.info" >> /etc/hosts
+echo "${WEBSERVER_PUBLIC_ADDRESS} contest2.icpc.info" >> /etc/hosts
 # Time servers
 echo 185.125.190.56 ntp.ubuntu.com >> /etc/hosts
 echo 168.61.215.74 time.windows.com >> /etc/hosts
-echo 132.163.96.3 ntp1.glb.nist.gov >> /etc/hosts
 
 # Disable nouveau by forcing it to fail to load
 cat - <<'EOM' > /etc/modprobe.d/blacklist.conf
@@ -273,8 +272,8 @@ if [ -n "$VERSION" ] ; then
 	echo "$VERSION" > /opt/vnoi/misc/VERSION
 fi
 
-# Deny vnoi user from SSH login
-echo "DenyUsers vnoi" >> /etc/ssh/sshd_config
+# Deny icpc user from SSH login
+echo "DenyUsers icpc" >> /etc/ssh/sshd_config
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."

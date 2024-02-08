@@ -8,12 +8,12 @@ reset_home() {
     rm -rf /home
     mkdir /home
     cd /home
-    cp -r /etc/skel /home/vnoi && chown -R vnoi:vnoi /home/vnoi
+    cp -r /etc/skel /home/icpc && chown -R icpc:icpc /home/icpc
 }
 
 help() {
     echo "Usage: $0 [desktop|record|all|help]"
-    echo "desktop: reset /home/vnoi to default"
+    echo "desktop: reset /home/icpc to default"
     echo "record: clean all records"
     echo "all: do both"
     echo "help: show this help"

@@ -14,76 +14,6 @@ check_ip()
 	fi
 }
 
-
-do_config()
-{
-
-	local CONF=$1  # vpn config filepath
-	local CRED=$2  # contestant credential
-
-	if ! test -f "$CONF"; then
-		echo "Can't read $CONF"
-		exit 1
-	fi
-
-	WORKDIR=`mktemp -d`
-
-	tar jxf $CONF -C $WORKDIR
-	if [ $? -ne 0 ]; then
-		echo "Failed to unpack $CONF"
-		rm -rf $WORKDIR
-		exit 1
-	fi
-
-	IP=$(cat $WORKDIR/vpn/ip.conf)
-	MASK=$(cat $WORKDIR/vpn/mask.conf)
-	DNS=$(cat $WORKDIR/vpn/dns.conf)
-
-	if ! check_ip "$IP" || ! check_ip "$MASK"; then
-		echo Bad IP numbers
-		rm -r $WORKDIR
-		exit 1
-	fi
-
-	echo "$IP" > /etc/tinc/vpn/ip.conf
-	echo "$MASK" > /etc/tinc/vpn/mask.conf
-	echo "$DNS" > /etc/tinc/vpn/dns.conf
-	rm /etc/tinc/vpn/hosts/* 2> /dev/null
-	cp $WORKDIR/vpn/hosts/* /etc/tinc/vpn/hosts/
-	cp $WORKDIR/vpn/rsa_key.* /etc/tinc/vpn/
-	cp $WORKDIR/vpn/tinc.conf /etc/tinc/vpn
-	cp $WORKDIR/vpn/vnoibackup* /opt/vnoi/config/ssh/
-
-	rm -r $WORKDIR
-	USERID=$(cat /etc/tinc/vpn/tinc.conf | grep Name | cut -d\  -f3)
-	chfn -f "$USERID" vnoi
-
-	# Stop Zabbix agent
-	systemctl stop zabbix-agent 2> /dev/null
-	systemctl disable zabbix-agent 2> /dev/null
-
-	# Restart firewall and VPN
-	systemctl enable tinc@vpn 2> /dev/null
-	systemctl restart tinc@vpn
-	/opt/vnoi/sbin/firewall.sh start
-
-	# Start Zabbix configuration
-	systemctl enable zabbix-agent 2> /dev/null
-	systemctl start zabbix-agent 2> /dev/null
-
-	# Generate an instance ID to uniquely id this VM
-	if [ ! -f /opt/vnoi/run/instanceid.txt ]; then
-		openssl rand 10 | base32 > /opt/vnoi/run/instanceid.txt
-	fi
-
-	# store credential
-	echo "${CRED%|*}" > /opt/vnoi/run/username.txt
-	echo "${CRED##*|}" > /opt/vnoi/run/password.txt
-
-	exit 0
-}
-
-
 logger -p local0.info "VNOICONF: invoke $1"
 
 case "$1" in
@@ -122,17 +52,8 @@ case "$1" in
 		if [ -e /opt/vnoi/run/lockdown ]; then
 			echo Not allowed to control firewall during lockdown mode
 		else
-			systemctl stop tinc@vpn
-			systemctl disable tinc@vpn 2> /dev/null
-			systemctl stop zabbix-agent
-			systemctl disable zabbix-agent 2> /dev/null
+			systemctl stop wg-quick@client
 			/opt/vnoi/sbin/firewall.sh stop
-			rm /etc/tinc/vpn/ip.conf 2> /dev/null
-			rm /etc/tinc/vpn/mask.conf 2> /dev/null
-			rm /etc/tinc/vpn/hosts/* 2> /dev/null
-			rm /etc/tinc/vpn/rsa_key.* 2> /dev/null
-			rm /etc/tinc/vpn/tinc.conf 2> /dev/null
-			rm /opt/vnoi/config/ssh/vnoibackup* 2> /dev/null
 			chfn -f "" vnoi
 		fi
 		;;
@@ -193,13 +114,13 @@ EOM
 	setscreenlock)
 		if [ "$2" = "on" ]; then
 			touch /opt/vnoi/config/screenlock
-			sudo -Hu vnoi xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled true
+			sudo -Hu icpc xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled true
 			echo Screensaver lock enabled
 		elif [ "$2" = "off" ]; then
 			if [ -f /opt/vnoi/config/screenlock ]; then
 				rm /opt/vnoi/config/screenlock
 			fi
-			sudo -Hu vnoi xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled false
+			sudo -Hu icpc xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled false
 			echo Screensaver lock disabled
 		else
 			cat - <<EOM

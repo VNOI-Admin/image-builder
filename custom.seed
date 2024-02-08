@@ -37,7 +37,7 @@ ubiquity ubiquity/minimal_install boolean true
 ubiquity ubiquity/download_updates boolean false
 
 # Network
-d-i netcfg/get_hostname string vnoi-localhost
+d-i netcfg/get_hostname string icpc-localhost
 d-i netcfg/get_domain string localdomain
 
 # Clock
