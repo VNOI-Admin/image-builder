@@ -32,6 +32,10 @@ d-i debian-installer/locale string en_US
 d-i console-setup/ask_detect boolean false
 d-i console-setup/layoutcode string us
 
+# Choose minimal installation (no extra packages)
+ubiquity ubiquity/minimal_install boolean true
+ubiquity ubiquity/download_updates boolean false
+
 # Network
 d-i netcfg/get_hostname string vnoi-localhost
 d-i netcfg/get_domain string localdomain

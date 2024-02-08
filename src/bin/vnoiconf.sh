@@ -87,6 +87,23 @@ do_config()
 logger -p local0.info "VNOICONF: invoke $1"
 
 case "$1" in
+	set_vpn_server)
+		# Get VPN IP at the first argument and replace the AUTH_ADDRESS in config.sh with it
+		if [ -z "$2" ]; then
+			echo "No VPN server IP specified"
+			exit 1
+		fi
+		if ! check_ip "$2"; then
+			echo "Invalid VPN server IP"
+			exit 1
+		fi
+		sed -i "s/AUTH_ADDRESS=.*/AUTH_ADDRESS=\"$2\"/" /opt/vnoi/config.sh
+		# Replace vpn.vnoi.info in /etc/hosts with the new IP
+		sed -i "s/.*vpn.vnoi.info.*/$2 vpn.vnoi.info/" /etc/hosts
+		# Restart firewall and VPN
+		/opt/vnoi/sbin/firewall.sh restart
+		systemctl restart wg-quick@client
+		;;
 	fwstart)
 		if [ -e /opt/vnoi/run/lockdown ]; then
 			echo Not allowed to control firewall during lockdown mode
@@ -120,33 +137,15 @@ case "$1" in
 		fi
 		;;
 	vpnstart)
-		systemctl start tinc@vpn
+		systemctl start wg-quick@client
 		/opt/vnoi/sbin/firewall.sh start
 		;;
 	vpnrestart)
-		systemctl restart tinc@vpn
+		systemctl restart wg-quick@client
 		/opt/vnoi/sbin/firewall.sh start
 		;;
 	vpnstatus)
-		systemctl status tinc@vpn
-		;;
-	setvpnproto)
-		if [ "$2" = "tcp" ]; then
-			sed -i '/^TCPOnly/ s/= no$/= yes/' /etc/tinc/vpn/tinc.conf
-			echo VPN protocol set to TCP only.
-		elif [ "$2" = "auto" ]; then
-			sed -i '/^TCPOnly/ s/= yes$/= no/' /etc/tinc/vpn/tinc.conf
-			echo VPN procotol set to auto TCP/UDP with fallback to TCP only.
-		else
-			cat - <<EOM
-Invalid argument to setvpnproto. Specify "yes" to use TCP only, or "auto"
-to allow TCP/UDP with fallback to TCP only.
-EOM
-			exit 1
-		fi
-		;;
-	vpnconfig)
-		do_config $2 $3
+		systemctl status wg-quick@client
 		;;
 	settz)
 		tz=$2
@@ -208,25 +207,6 @@ Invalid argument to setscreenlock. Specify "on" to enable screensaver lock,
 or "off" to disable screensaver lock.
 EOM
 		fi
-		;;
-	getpubkey)
-		curl -m 5 -s -f -o /opt/vnoi/misc/id_ansible.pub "https://$POP_SERVER/ansible.pub" > /dev/null 2>&1
-		RC=$?
-		if [ ${RC} -ne 0 ]; then
-			exit ${RC}
-		fi
-		chmod 664 /opt/vnoi/misc/id_ansible.pub
-		chown ansible:ansible /opt/vnoi/misc/id_ansible.pub
-
-		cp /opt/vnoi/misc/id_ansible.pub /home/ansible/.ssh/authorized_keys
-		chmod 600 /home/ansible/.ssh/authorized_keys
-		chown ansible:ansible /home/ansible/.ssh/authorized_keys
-		exit 0
-		;;
-	keyscan)
-		mkdir -p /root/.ssh
-		ssh-keyscan -H ${BACKUP_SERVER} > /root/.ssh/known_hosts 2> /dev/null
-		chmod 600 /root/.ssh/known_hosts
 		;;
 	*)
 		echo Not allowed
