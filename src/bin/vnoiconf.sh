@@ -18,7 +18,7 @@ logger -p local0.info "VNOICONF: invoke $1"
 
 case "$1" in
 	set_vpn_server)
-		# Get VPN IP at the first argument and replace the AUTH_ADDRESS in config.sh with it
+		# Get VPN IP at the first argument and replace the VPN_CORE_ADDRESS in config.sh with it
 		if [ -z "$2" ]; then
 			echo "No VPN server IP specified"
 			exit 1
@@ -27,7 +27,7 @@ case "$1" in
 			echo "Invalid VPN server IP"
 			exit 1
 		fi
-		sed -i "s/AUTH_ADDRESS=.*/AUTH_ADDRESS=\"$2\"/" /opt/vnoi/config.sh
+		sed -i "s/VPN_CORE_ADDRESS=.*/VPN_CORE_ADDRESS=\"$2\"/" /opt/vnoi/config.sh
 		# Replace vpn.vnoi.info in /etc/hosts with the new IP
 		sed -i "s/.*vpn.vnoi.info.*/$2 vpn.vnoi.info/" /etc/hosts
 		# Restart firewall and VPN

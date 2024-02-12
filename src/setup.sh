@@ -23,11 +23,6 @@ trap 'error ${LINENO}' ERR
 
 VERSION="test$(date +%m%d)"
 
-if [ -f "config.local.sh" ]; then
-	echo "Load config.local.sh"
-	. ./config.local.sh
-fi
-
 # Remove tmp_user from preseed
 
 # Check if user exists, if yes, delete it
@@ -189,9 +184,9 @@ EOM
 touch /etc/cloud/cloud-init.disabled
 
 # Update /etc/hosts
-echo "${AUTH_ADDRESS} vpn.vnoi.info" >> /etc/hosts
-echo "10.1.0.1 contest.icpc.info" >> /etc/hosts
-echo "${WEBSERVER_PUBLIC_ADDRESS} contest2.icpc.info" >> /etc/hosts
+echo "${VPN_CORE_ADDRESS} ${VPN_CORE_DOMAIN_NAME}" >> /etc/hosts
+echo "${CONTEST_SITE_ADDRESS} ${CONTEST_SITE_DOMAIN_NAME}" >> /etc/hosts
+echo "${WEBSERVER_PUBLIC_ADDRESS} ${WEBSERVER_PUBLIC_DOMAIN_NAME}" >> /etc/hosts
 # Time servers
 echo 185.125.190.56 ntp.ubuntu.com >> /etc/hosts
 echo 168.61.215.74 time.windows.com >> /etc/hosts

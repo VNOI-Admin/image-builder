@@ -1,4 +1,14 @@
-WEBSERVER_PUBLIC_ADDRESS="<your webserver public address>"
-AUTH_ADDRESS="<your auth server public address>"
+# Name the version. Otherwise we'll default to testMMDD.
+VERSION="v1.0.0"
+
+WEBSERVER_PUBLIC_ADDRESS=""  # Example: 255.255.255.255
+WEBSERVER_PUBLIC_DOMAIN_NAME="" # Example: contest2.icpc.info
+
+VPN_CORE_ADDRESS=""  # Example: 255.255.255.255
+VPN_CORE_DOMAIN_NAME="vpn.vnoi.info"  # Do not change
+
+CONTEST_SITE_ADDRESS=""  # Example: 10.1.0.1
+CONTEST_SITE_DOMAIN_NAME=""  # Example: contest.icpc.info
+
 ADMIN_SUBNET="10.1.0.0/16"
 COACH_SUBNET="10.20.0.0/16"

@@ -147,7 +147,7 @@ icpc_build() {
     log "Done"
 
     log "Cleanup scripts and config from chroot"
-    rm -f $CHROOT/root{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}
+    rm -f $CHROOT/root/{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}
     log "Done"
 
     log "Unmounting /dev and /run from chroot"
@@ -259,12 +259,6 @@ generate_actions_secret() {
         echo "src/config.sh: $SRC_CONFIG_SH"
     fi
 
-    # from src/config.local.sh
-    if [ -f src/config.local.sh ]; then
-        SRC_CONFIG_LOCAL_SH=$($BASE64_ENCODE < src/config.local.sh)
-        echo "src/config.local.sh: $SRC_CONFIG_LOCAL_SH"
-    fi
-
     # from src/misc/authorized_keys
     if [ -f src/misc/authorized_keys ]; then
         AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
@@ -279,7 +273,6 @@ generate_actions_secret() {
         echo "Set ACTIONS_SECRET to repo"
         gh secret set CONFIG_LOCAL_SH -b "$CONFIG_LOCAL_SH"
         gh secret set SRC_CONFIG_SH -b "$SRC_CONFIG_SH"
-        gh secret set SRC_CONFIG_LOCAL_SH -b "$SRC_CONFIG_LOCAL_SH"
         gh secret set AUTHORIZED_KEYS -b "$AUTHORIZED_KEYS"
     else
         echo "Skipping"
