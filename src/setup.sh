@@ -180,6 +180,14 @@ cat - <<'EOM' >> /home/icpc/.bashrc
 alias client='sudo /opt/icpc/bin/client & disown'
 EOM
 
+# Setup nginx and hls config
+cp -f /opt/vnoi/misc/nginx.conf /etc/nginx/nginx.conf
+cp -f /opt/vnoi/misc/hls.conf /etc/nginx/sites-available/hls.conf
+ln -s /etc/nginx/sites-available/hls.conf /etc/nginx/sites-enabled/hls.conf
+rm -f /etc/nginx/sites-enabled/default
+mkdir -p /var/www/html/stream
+systemctl enable --now nginx
+
 # Disable cloud-init
 touch /etc/cloud/cloud-init.disabled
 
