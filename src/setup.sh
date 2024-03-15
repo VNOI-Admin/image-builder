@@ -106,7 +106,7 @@ update-grub2
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
 # Fix CCS shortcut to open VNOJ
-sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser contest.vnoi.info#' /usr/share/applications/ccs.desktop
+sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DOMAIN_NAME}#' /usr/share/applications/ccs.desktop
 
 # # Tinc Setup and Configuration
 
