@@ -20,7 +20,7 @@ truncate -s0 /var/log/lastlog
 rm -rf /tmp/*
 rm -rf /var/tmp/*
 
-# Clean up home directories
+# Clean up terminal history
 rm ~icpc/.bash_history || true
 rm ~ansible/.bash_history || true
 rm ~root/.bash_history || true

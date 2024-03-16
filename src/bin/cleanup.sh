@@ -5,10 +5,12 @@ clean_record() {
 }
 
 reset_home() {
-    rm -rf /home
-    mkdir /home
-    cd /home
+    rm -rf /home/ && mkdir /home
     cp -r /etc/skel /home/icpc && chown -R icpc:icpc /home/icpc
+
+    # Reload icpc.desktop for the new user.
+    # -a to preserve root's ownership and mode 744
+    cp -a /opt/vnoi/misc/icpc.desktop /home/icpc/.config/autostart/icpc.desktop
 }
 
 help() {
