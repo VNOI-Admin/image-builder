@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Exec=sudo /opt/vnoi/sbin/startup.sh
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+Name[en_US]=icpc
+Name=icpc
+Comment[en_US]=
+Comment=
