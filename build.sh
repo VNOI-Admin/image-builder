@@ -179,8 +179,8 @@ icpc_image_build() {
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
-    log "Move custom preseed"
-    cp custom.seed $IMAGE/preseed/custom.seed
+    log "Move prod preseed"
+    cp prod.seed $IMAGE/preseed/icpc.seed
 
     log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
