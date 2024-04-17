@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Custom color echo function, use for debugging
 log() {
     echo -e "\e[32m$1\e[0m"
