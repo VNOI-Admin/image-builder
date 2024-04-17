@@ -25,6 +25,19 @@ error() {
 
 	exit "${code}"
 }
+
+# Install requested packages if system has apt
+install_if_has_apt() {
+    if [ -x "$(command -v apt-get)" ]; then
+        log "Installing $@"
+        apt-get update
+        apt-get install $@ -y
+        log "Done"
+    else
+        log "apt-get not found, skipping installation of $@"
+    fi
+}
+
 trap 'error ${LINENO}' ERR
 
 # Check if user is root
@@ -85,8 +98,8 @@ icpc_build() {
 
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
+        install_if_has_apt aria2
         log "Downloading ICPC image"
-        apt install aria2 -y
         aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
         # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
     fi
@@ -98,8 +111,7 @@ icpc_build() {
         exit 1
     fi
 
-    apt-get update
-    apt-get install \
+    install_if_has_apt \
         binutils \
         squashfs-tools \
         xorriso \
@@ -109,8 +121,7 @@ icpc_build() {
         p7zip-full \
         p7zip-rar \
         unzip \
-        zip \
-        -y
+        zip
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
