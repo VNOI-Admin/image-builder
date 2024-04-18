@@ -68,6 +68,10 @@ EOF
 
 dpkg-reconfigure network-manager
 
+# Set up root password for pre-setup login
+. /root/src/encrypted_passwd.sh
+echo "root:$ENCRYPTED_SUPER_PASSWD" | chpasswd -e
+
 # Clean up the chroot environment
 truncate -s 0 /etc/machine-id
 

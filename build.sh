@@ -28,23 +28,33 @@ error() {
 
 # Install requested packages if system has apt
 install_if_has_apt() {
+    PACKAGES="$@"
     if [ -x "$(command -v apt-get)" ]; then
-        log "Installing $@"
+        log "Installing $PACKAGES"
         apt-get update
         apt-get install $@ -y
         log "Done"
     else
-        log "apt-get not found, skipping installation of $@"
+        log "apt-get not found, skipping installation of $PACKAGES"
     fi
 }
 
 trap 'error ${LINENO}' ERR
 
-# Check if user is root
-if [ "$EUID" -ne 0 ]
-    then echo "Please run as root"
-    exit 1
-fi
+assert_root() {
+    # Check if user is root
+    if [ "$EUID" -ne 0 ]
+        then echo "Please run as root"
+        exit 1
+    fi
+}
+
+assert_nonroot() {
+    if [ "$EUID" -eq 0 ]
+        then echo "Please run as VirtualBox User"
+        exit 1
+    fi
+}
 
 SUDO_USER="root"
 
@@ -57,14 +67,15 @@ fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
     log "Unmounting /dev and /run from chroot"
-    umount -l $CHROOT/dev
-    umount -l $CHROOT/run
+    sudo umount -l $CHROOT/dev
+    sudo umount -l $CHROOT/run
     log "Done"
 fi
 
 icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
+    PROD_DEV="prod"
 
     while [ $# -gt 0 ]; do
     case $1 in
@@ -75,6 +86,9 @@ icpc_build() {
             ;;
         -f | --force)
             FORCE_DOWNLOAD=true
+            ;;
+        --dev)
+            PROD_DEV="dev"
             ;;
         --image-only)
             icpc_image_build
@@ -145,8 +159,17 @@ icpc_build() {
     log "Done"
 
     log "Copy scripts and config to chroot"
-    cp -R build.sh chroot_install.sh src/ $CHROOT/root
+    cp -R build.sh chroot_install.sh $CHROOT/root
     log "Done"
+
+    if [ $PROD_DEV = "prod" ]; then
+        log "Copy src to chroot"
+        cp -R src/ $CHROOT/root
+        log "Done"
+    else
+        mkdir $CHROOT/root/src
+        log "Skipped copying src to chroot"
+    fi
 
     log "Encrypt super password"
     ENCRYPTED_SUPER_PASSWD=$(echo -n $SUPER_PASSWD | python3 -c 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.mksalt(crypt.METHOD_SHA512)))')
@@ -174,11 +197,17 @@ icpc_build() {
         log "Done"
     fi
 
-    icpc_image_build
+    icpc_image_build $PROD_DEV
 }
 
 icpc_image_build() {
     log "Start building ICPC image"
+
+    if [ $1 = "prod" ]; then
+        PRESEED=seeds/prod.preseed
+    else
+        PRESEED=seeds/dev.preseed
+    fi
 
     # # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
@@ -192,8 +221,8 @@ icpc_image_build() {
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
-    log "Move prod preseed"
-    cp seeds/prod.preseed $IMAGE/preseed/icpc.seed
+    log "Move preseed at $PRESEED"
+    cp $PRESEED $IMAGE/preseed/icpc.seed
 
     log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
@@ -292,12 +321,92 @@ generate_actions_secret() {
     fi
 }
 
+dev_create() {
+    log "Building ICPC image for development"
+    sudo ./$0 icpc_build --dev $@
+    log "Done"
+
+    VM_NAME="ICPC-Dev"
+    VM_GUEST_OS_TYPE="Ubuntu22_LTS_64"
+    VM_DIRECTORY="$HOME/VirtualBox VMs/"
+
+    log "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
+    vboxmanage createvm \
+        --register \
+        --default \
+        --name "$VM_NAME" \
+        --groups "/$VM_NAME" \
+        --basefolder "$VM_DIRECTORY" \
+        --ostype $VM_GUEST_OS_TYPE
+    log "Done"
+
+    log "Running configuration"
+    vboxmanage modifyvm "$VM_NAME" \
+        --memory 8192 \
+        --cpus 4 \
+        --firmware efi64
+    log "Done"
+
+    log "Creating disk"
+    DISK_FILENAME=$VM_DIRECTORY/$VM_NAME.vdi
+    vboxmanage createmedium disk \
+        --filename "$DISK_FILENAME" \
+        --size 40960 \
+        --variant Fixed
+    log "Done"
+
+    log "Attaching disk"
+    vboxmanage storageattach "$VM_NAME" \
+        --storagectl SATA \
+        --port 0 \
+        --device 0 \
+        --type hdd \
+        --medium "$DISK_FILENAME" \
+        --nonrotational on
+    log "Done"
+
+    log "Attaching installation image"
+    vboxmanage storageattach "$VM_NAME" \
+        --storagectl IDE \
+        --port 0 \
+        --device 0 \
+        --type dvddrive \
+        --medium "$INS_DIR/contestant.iso"
+    log "Done"
+
+    log "Starting Virtual Machine. Please install contest image using the GUI."
+    vboxmanage startvm "$VM_NAME"
+    log "Done"
+
+    # Wait for Virtual Machine to shutdown
+    log "Waiting for Virtual Machine to shutdown"
+    while true; do
+        if [ $(vboxmanage showvminfo $VM_NAME | grep -c "running") -eq 0 ]; then
+            break
+        fi
+        sleep 5
+    done
+    log "Done"
+
+    log "Creating snapshot"
+    vboxmanage snapshot "$VM_NAME" take "root-install"
+    log "Done"
+
+    log "Mounting Shared Folder"
+    vboxmanage sharedfolder add "$VM_NAME" \
+        --name "src" \
+        --hostpath "$PWD/src" \
+        --readonly
+    log "Done"
+}
+
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
 
 help() {
     echo "Usage: $0 {icpc_build}"
     echo
     echo "  icpc_build: Build the ISO image based on the ICPC image"
+    echo "  dev_create <user>: Build the ISO image for development and create Virtual Machine"
     echo "  generate_actions_secret: Generate actions secret from config.local.sh"
     echo "  clean: Clean up all files generated by this script"
     echo "  help: Show this help"
@@ -310,10 +419,16 @@ case $1 in
         rm -rf $INS_DIR
         ;;
     icpc_build)
+        assert_root
         icpc_build $@
         ;;
     generate_actions_secret)
+        assert_root
         generate_actions_secret
+        ;;
+    dev_create)
+        assert_nonroot
+        dev_create $@
         ;;
     help)
         help
