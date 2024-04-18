@@ -416,6 +416,7 @@ START_TIME=$(date +%s)
 
 case $1 in
     clean)
+        assert_root
         rm -rf $INS_DIR
         ;;
     icpc_build)
