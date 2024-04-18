@@ -99,7 +99,7 @@ d-i finish-install/reboot_in_progress note
 #     cp /opt/install_cleanup.log /target/root/;
 
 # Poweroff after install
-# ubiquity ubiquity/poweroff boolean true
+ubiquity ubiquity/poweroff boolean true
 
 # Reboot after install
-ubiquity ubiquity/reboot boolean true
+# ubiquity ubiquity/reboot boolean true
