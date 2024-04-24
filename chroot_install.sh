@@ -1,3 +1,5 @@
+set -e
+
 pwd
 
 mount none -t proc /proc
@@ -7,6 +9,10 @@ mount none -t devpts /dev/pts
 export DEBIAN_FRONTEND=noninteractive
 export HOME=/root
 export LC_ALL=C
+
+# https://askubuntu.com/a/469213
+rm /etc/resolv.conf
+echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
 
 # Update apt sources
 apt-get update
