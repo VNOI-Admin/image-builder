@@ -187,6 +187,7 @@ icpc_build() {
         TERM="$TERM" \
         PS1=\"[\u@\h \W]\$ \" \
         PATH=/usr/bin:/usr/sbin \
+        PROD_DEV="$PROD_DEV" \
         /bin/bash /root/chroot_install.sh"
     log "Done"
 
@@ -330,9 +331,9 @@ generate_actions_secret() {
 }
 
 dev_create() {
-    log "Building ICPC image for development"
-    sudo ./$0 icpc_build --dev $@
-    log "Done"
+    # log "Building ICPC image for development"
+    # sudo ./$0 icpc_build --dev $@
+    # log "Done"
 
     VM_NAME="ICPC-Dev"
     VM_GUEST_OS_TYPE="Ubuntu22_LTS_64"
@@ -396,15 +397,17 @@ dev_create() {
     done
     log "Done"
 
-    log "Creating snapshot"
-    vboxmanage snapshot "$VM_NAME" take "root-install"
-    log "Done"
-
     log "Mounting Shared Folder"
+    # Mount shared folder to /media/sf_src
     vboxmanage sharedfolder add "$VM_NAME" \
         --name "src" \
         --hostpath "$PWD/src" \
-        --readonly
+        --readonly \
+        --automount
+    log "Done"
+
+    log "Creating snapshot"
+    vboxmanage snapshot "$VM_NAME" take "root-install"
     log "Done"
 }
 

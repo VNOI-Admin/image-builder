@@ -10,11 +10,11 @@ error() {
 		echo "Error at or near line ${lineno}; exiting with status ${code}"
 	fi
 
-    log "Unmounting /dev and /run from chroot"
-    umount /proc
-    umount /sys
-    umount /dev/ptrs
-    log "Done"
+    echo "Unmounting /dev and /run from chroot"
+    umount -l /proc
+    umount -l /sys
+    umount -l /dev/ptrs
+    echo "Done"
 
 	exit "${code}"
 }
@@ -75,6 +75,11 @@ mkdir /tmp/chrome-download/
 wget -qO /tmp/chrome-download/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 dpkg -i /tmp/chrome-download/chrome.deb
 rm -r /tmp/chrome-download
+
+# Install virtualbox ose if creating development environment
+if [ "$PROD_DEV" = "dev" ]; then
+    apt-get -y install virtualbox-guest-x11
+fi
 
 # Reconfigure network-manager
 cat <<EOF > /etc/NetworkManager/NetworkManager.conf

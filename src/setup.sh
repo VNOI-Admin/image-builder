@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "Starting setup.sh"
 
 echo "Change directory to the script's directory"
@@ -77,7 +79,7 @@ echo "icpc:icpc" | chpasswd
 
 # Fix permission and ownership
 chown icpc.icpc /opt/vnoi/store/submissions
-chmod 770 /opt/icpc/store/log
+chmod 770 /opt/vnoi/store/log
 
 # Add our own syslog facility
 
@@ -177,7 +179,7 @@ chmod 440 /etc/sudoers.d/02-icpc
 
 # Add aliases to .bashrc
 cat - <<'EOM' >> /home/icpc/.bashrc
-alias client='sudo /opt/icpc/bin/client & disown'
+alias client='sudo /opt/vnoi/bin/client & disown'
 EOM
 
 # Setup nginx and hls config
