@@ -1,4 +1,25 @@
 set -e
+# Capture error and stop script
+error() {
+	local lineno="$1"
+	local message="$2"
+	local code="${3:-1}"
+	if [[ -n "$message" ]] ; then
+		echo "Error at or near line ${lineno}: ${message}; exiting with status ${code}"
+	else
+		echo "Error at or near line ${lineno}; exiting with status ${code}"
+	fi
+
+    log "Unmounting /dev and /run from chroot"
+    umount /proc
+    umount /sys
+    umount /dev/ptrs
+    log "Done"
+
+	exit "${code}"
+}
+
+trap 'error ${LINENO}' ERR
 
 pwd
 
@@ -84,7 +105,7 @@ truncate -s 0 /etc/machine-id
 apt-get clean
 apt-get autoremove --purge -y
 
-rm /sbin/initctl
+rm -f /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
 
 apt-get clean

@@ -26,6 +26,8 @@ error() {
 	exit "${code}"
 }
 
+trap 'error ${LINENO}' ERR
+
 # Install requested packages if system has apt
 install_if_has_apt() {
     PACKAGES="$@"
@@ -39,7 +41,6 @@ install_if_has_apt() {
     fi
 }
 
-trap 'error ${LINENO}' ERR
 
 assert_root() {
     # Check if user is root
@@ -179,7 +180,14 @@ icpc_build() {
     log "Done"
 
     log "chrooting into $CHROOT"
-    su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh"
+    # Chroot, resetting all environment variables to ensure replicable building
+    # https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
+    su -c "chroot $CHROOT /usr/bin/env -i \
+        HOME=/root \
+        TERM="$TERM" \
+        PS1=\"[\u@\h \W]\$ \" \
+        PATH=/usr/bin:/usr/sbin \
+        /bin/bash /root/chroot_install.sh"
     log "Done"
 
     log "Cleanup scripts and config from chroot"
