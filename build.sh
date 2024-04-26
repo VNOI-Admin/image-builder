@@ -447,6 +447,8 @@ dev_create() {
     done
     log "Done"
 
+    sleep 2
+
     log "Mounting Shared Folder"
     # Mount shared folder to /media/sf_src
     vboxmanage sharedfolder add "$VM_NAME" \
@@ -456,9 +458,13 @@ dev_create() {
         --automount
     log "Done"
 
+    sleep 2
+
     log "Creating snapshot"
     vboxmanage snapshot "$VM_NAME" take "root-install"
     log "Done"
+
+    sleep 2
 
     log "Loading src to Virtual Machine"
     dev_reload
