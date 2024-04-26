@@ -93,7 +93,7 @@ NTP=ntp.ubuntu.com time.windows.com
 EOM
 
 # GRUB config: quiet, and password for edit
-. ./encrypted_passwd.sh
+. /root/src/encrypted_passwd.sh
 echo "root:$ENCRYPTED_SUPER_PASSWD" | chpasswd -e
 
 sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash"/' /etc/default/grub
@@ -112,7 +112,7 @@ sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser contest.vnoi.info
 
 # # Tinc Setup and Configuration
 
-systemctl disable multipathd
+# systemctl disable multipathd
 
 # Configure GDM to copy VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
@@ -191,6 +191,7 @@ mkdir -p /var/www/html/stream
 systemctl enable --now nginx
 
 # Disable cloud-init
+mkdir -p /etc/cloud
 touch /etc/cloud/cloud-init.disabled
 
 # Update /etc/hosts
@@ -222,9 +223,9 @@ EOM
 
 # Remove/clean up unneeded snaps
 
-snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision; do
-	snap remove "$snapname" --revision="$revision"
-done
+# snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision; do
+# 	snap remove "$snapname" --revision="$revision"
+# done
 
 rm -rf /var/lib/snapd/cache/*
 

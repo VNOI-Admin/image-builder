@@ -330,12 +330,61 @@ generate_actions_secret() {
     fi
 }
 
-dev_create() {
-    # log "Building ICPC image for development"
-    # sudo ./$0 icpc_build --dev $@
-    # log "Done"
+VM_NAME="ICPC-Dev"
+dev_reload() {
+    log "Checking if Virtual Machine is running"
+    if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+    | grep -c "VMState=\"running\"") -ne 0 ]; then
+        log "Running. Turning off VM"
+        vboxmanage controlvm "$VM_NAME" poweroff
+        log "Done"
 
-    VM_NAME="ICPC-Dev"
+        log "Polling for shutdown"
+        while true; do
+            if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+            | grep -c "VMState=\"running\"") -eq 0 ]; then
+                break
+            fi
+            sleep 1
+        done
+        log "Done"
+    else
+        log "Not running"
+    fi
+
+    log "Restoring VM to snapshot root-install"
+    vboxmanage snapshot "$VM_NAME" restore "root-install"
+    log "Done"
+
+    sleep 2
+
+    log "Starting Virtual Machine"
+    vboxmanage startvm "$VM_NAME"
+    log "Done"
+
+    log "Polling for guest control"
+    while true; do
+        if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+        | grep -c "GuestAdditionsRunLevel=2") -ne 0 ]; then
+            break
+        fi
+        sleep 1
+    done
+
+    log "Installing from /media/sf_src (mounted Shared Folder)"
+    vboxmanage guestcontrol "$VM_NAME" run \
+        --username $SUDO_USER --password $SUPER_PASSWD \
+        --exe "/bin/bash" \
+        --wait-stdout --wait-stderr \
+        -- -c "cd /root/src && /media/sf_src/setup.sh"
+    log "Done"
+}
+
+dev_create() {
+    log "Building ICPC image for development"
+    sudo ./$0 icpc_build --dev $@
+    log "Done"
+
     VM_GUEST_OS_TYPE="Ubuntu22_LTS_64"
     VM_DIRECTORY="$HOME/VirtualBox VMs/"
 
@@ -390,10 +439,11 @@ dev_create() {
     # Wait for Virtual Machine to shutdown
     log "Waiting for Virtual Machine to shutdown"
     while true; do
-        if [ $(vboxmanage showvminfo $VM_NAME | grep -c "running") -eq 0 ]; then
+        if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+        | grep -c "VMState=\"running\"") -eq 0 ]; then
             break
         fi
-        sleep 5
+        sleep 1
     done
     log "Done"
 
@@ -408,6 +458,10 @@ dev_create() {
 
     log "Creating snapshot"
     vboxmanage snapshot "$VM_NAME" take "root-install"
+    log "Done"
+
+    log "Loading src to Virtual Machine"
+    dev_reload
     log "Done"
 }
 
@@ -437,6 +491,10 @@ case $1 in
     generate_actions_secret)
         assert_root
         generate_actions_secret
+        ;;
+    dev_reload)
+        assert_nonroot
+        dev_reload
         ;;
     dev_create)
         assert_nonroot
