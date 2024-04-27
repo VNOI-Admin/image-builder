@@ -425,7 +425,7 @@ dev_create() {
 
     VM_NAME="ICPC-Dev"
     VM_GUEST_OS_TYPE="Ubuntu22_LTS_64"
-    VM_DIRECTORY="$HOME/VirtualBox \VMs"
+    VM_DIRECTORY="$HOME/VirtualBox VMs"
 
     if [ $NEW = true ]; then
         log "Removing old Virtual Machine"
