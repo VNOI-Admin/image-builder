@@ -418,6 +418,9 @@ dev_create() {
         log "Building ICPC image for development"
         sudo ./$0 icpc_build --dev $@
         log "Done"
+    else
+        log "Skipping building ICPC image for development."
+        log "Do make sure your image is for development (built with icpc_build --dev or dev_create)."
     fi
 
     VM_NAME="ICPC-Dev"
