@@ -182,6 +182,7 @@ icpc_build() {
     log "chrooting into $CHROOT"
     # Chroot, resetting all environment variables to ensure replicable building
     # https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
+    install -v /etc/resolv.conf $CHROOT/etc/
     su -c "chroot $CHROOT /usr/bin/env -i \
         HOME=/root \
         TERM="$TERM" \
@@ -381,12 +382,55 @@ dev_reload() {
 }
 
 dev_create() {
-    log "Building ICPC image for development"
-    sudo ./$0 icpc_build --dev $@
-    log "Done"
+    # add two options, --build and --new
+    BUILD=false
+    NEW=false
+    FIRMWARE=efi64
+    while [ $# -gt 0 ]; do
+    case $1 in
+        --build | -b)
+            BUILD=true
+            ;;
+        --new | -n)
+            NEW=true
+            ;;
+        --firmware | -f)
+            shift
+            FIRMWARE=$1
+            ;;
+        -h | --help)
+            echo "Usage: $0 dev_create [--build] [--new]"
+            echo
+            echo "  --build    Build the ISO image for development"
+            echo "  --new      Create a new Virtual Machine"
+            echo "  -h, --help Show this help"
+            exit 0
+            ;;
+    esac
+    shift
+    done
 
+    # log "Building ICPC image for development"
+    # sudo ./$0 icpc_build --dev $@
+    # log "Done"
+
+    if [ $BUILD = true ]; then
+        log "Building ICPC image for development"
+        sudo ./$0 icpc_build --dev $@
+        log "Done"
+    fi
+
+    VM_NAME="ICPC-Dev"
     VM_GUEST_OS_TYPE="Ubuntu22_LTS_64"
-    VM_DIRECTORY="$HOME/VirtualBox VMs/"
+    VM_DIRECTORY="$HOME/VirtualBox \VMs"
+
+    if [ $NEW = true ]; then
+        log "Removing old Virtual Machine"
+        vboxmanage unregistervm $VM_NAME --delete || true
+        echo $VM_DIRECTORY/$VM_NAME
+        rm -rf $VM_DIRECTORY/$VM_NAME
+        log "Done"
+    fi
 
     log "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
     vboxmanage createvm \
@@ -402,7 +446,7 @@ dev_create() {
     vboxmanage modifyvm "$VM_NAME" \
         --memory 8192 \
         --cpus 4 \
-        --firmware efi64
+        --firmware $FIRMWARE
     log "Done"
 
     log "Creating disk"

@@ -32,12 +32,12 @@ export HOME=/root
 export LC_ALL=C
 
 # https://askubuntu.com/a/469213
-rm /etc/resolv.conf
-echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+# rm /etc/resolv.conf
+# echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
 
 # Update apt sources
 apt-get update
-apt-get -y upgrade
+# apt-get -y upgrade
 
 # Install packages
 apt-get install -y \
