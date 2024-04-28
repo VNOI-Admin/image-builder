@@ -379,6 +379,23 @@ dev_reload() {
         --wait-stdout --wait-stderr \
         -- -c "cd /root/src && /media/sf_src/setup.sh"
     log "Done"
+
+    # Wait for Virtual Machine to shutdown
+    log "Restarting Virtual Machine."
+    vboxmanage controlvm "$VM_NAME" acpipowerbutton
+
+    log "Waiting for Virtual Machine to shutdown"
+    while true; do
+        if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+        | grep -c "VMState=\"running\"") -eq 0 ]; then
+            break
+        fi
+        sleep 1
+    done
+    log "Done"
+
+    vboxmanage startvm "$VM_NAME"
+    log "Virtual Machine started. Have fun coding!"
 }
 
 dev_create() {
