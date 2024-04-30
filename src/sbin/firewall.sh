@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 source /opt/vnoi/config.sh
 
 case "$1" in
