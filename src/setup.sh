@@ -75,6 +75,7 @@ echo "Create icpc account"
 /opt/vnoi/sbin/mkuser.sh
 
 # Set ICPC user's initial password
+echo "Set icpc user's initial password"
 echo "icpc:icpc" | chpasswd
 
 # Fix permission and ownership
