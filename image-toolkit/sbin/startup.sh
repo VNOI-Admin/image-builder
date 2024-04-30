@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e 
+
 /opt/vnoi/bin/client &
 
 killall vlc

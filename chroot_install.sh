@@ -1,3 +1,26 @@
+set -e
+# Capture error and stop script
+error() {
+	local lineno="$1"
+	local message="$2"
+	local code="${3:-1}"
+	if [[ -n "$message" ]] ; then
+		echo "Error at or near line ${lineno}: ${message}; exiting with status ${code}"
+	else
+		echo "Error at or near line ${lineno}; exiting with status ${code}"
+	fi
+
+    echo "Unmounting /dev and /run from chroot"
+    umount -l /proc
+    umount -l /sys
+    umount -l /dev/ptrs
+    echo "Done"
+
+	exit "${code}"
+}
+
+trap 'error ${LINENO}' ERR
+
 pwd
 
 mount none -t proc /proc
@@ -8,9 +31,13 @@ export DEBIAN_FRONTEND=noninteractive
 export HOME=/root
 export LC_ALL=C
 
+# https://askubuntu.com/a/469213
+# rm /etc/resolv.conf
+# echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+
 # Update apt sources
 apt-get update
-apt-get -y upgrade
+# apt-get -y upgrade
 
 # Install packages
 apt-get install -y \
@@ -49,6 +76,11 @@ wget -qO /tmp/chrome-download/chrome.deb https://dl.google.com/linux/direct/goog
 dpkg -i /tmp/chrome-download/chrome.deb
 rm -r /tmp/chrome-download
 
+# Install virtualbox ose if creating development environment
+if [ "$PROD_DEV" = "dev" ]; then
+    apt-get -y install virtualbox-guest-x11
+fi
+
 # Reconfigure network-manager
 cat <<EOF > /etc/NetworkManager/NetworkManager.conf
 [main]
@@ -68,13 +100,17 @@ EOF
 
 dpkg-reconfigure network-manager
 
+# Set up root password for pre-setup login
+. /root/src/encrypted_passwd.sh
+echo "root:$ENCRYPTED_SUPER_PASSWD" | chpasswd -e
+
 # Clean up the chroot environment
 truncate -s 0 /etc/machine-id
 
 apt-get clean
 apt-get autoremove --purge -y
 
-rm /sbin/initctl
+rm -f /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
 
 apt-get clean
