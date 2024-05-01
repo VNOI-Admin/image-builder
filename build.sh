@@ -41,7 +41,6 @@ install_if_has_apt() {
     fi
 }
 
-
 assert_root() {
     # Check if user is root
     if [ "$EUID" -ne 0 ]
@@ -77,6 +76,7 @@ icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
     PROD_DEV="prod"
+    APT_SOURCE="icpc"
 
     while [ $# -gt 0 ]; do
     case $1 in
@@ -97,6 +97,9 @@ icpc_build() {
             ;;
         --github-actions)
             CLEAR_EARLY=true
+            ;;
+        --vnoi-source)
+            APT_SOURCE="vnoi"
             ;;
         -h | --help)
             echo "Usage: $0 icpc_build [-u|--url <url>] [-f|--force]"
@@ -179,6 +182,25 @@ icpc_build() {
     echo "GRUB_PASSWD='$GRUB_PASSWD'" >> $CHROOT/root/src/encrypted_passwd.sh
     log "Done"
 
+    log $APT_SOURCE
+    if [ $APT_SOURCE = "vnoi" ]; then
+        log "Making apt use VNOI and Ubuntu sources"
+        # Change https://sysopspackages.icpc.global/ubuntu to http://archive.ubuntu.com/ubuntu
+        sed -i 's/https:\/\/sysopspackages.icpc.global\/ubuntu/http:\/\/archive.ubuntu.com\/ubuntu/g' $CHROOT/etc/apt/sources.list
+        # Remove the extremely big vscode repo
+        sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
+        # Change https://sysopspackages.icpc.global to https://repo.vnoi.info
+        sed -i 's/https:\/\/sysopspackages.icpc.global/https:\/\/repo.vnoi.info/g' $CHROOT/etc/apt/sources.list
+        for file in $CHROOT/etc/apt/sources.list.d/*; do
+            sed -i 's/https:\/\/sysopspackages.icpc.global\/ubuntu/http:\/\/archive.ubuntu.com\/ubuntu/g' $file
+            sed -i 's/https:\/\/sysopspackages.icpc.global/https:\/\/repo.vnoi.info/g' $file
+        done
+        log "Done"
+
+        log "Make VNOI key trusted"
+        curl https://repo.vnoi.info/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg
+    fi
+
     log "chrooting into $CHROOT"
     # Chroot, resetting all environment variables to ensure replicable building
     # https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
@@ -207,7 +229,7 @@ icpc_build() {
         log "Done"
     fi
 
-    icpc_image_build $PROD_DEV
+    icpc_image_build $PROD_DEV $APT_SOURCE
 }
 
 icpc_image_build() {
@@ -219,7 +241,9 @@ icpc_image_build() {
         PRESEED=seeds/dev.preseed
     fi
 
-    # # Copy $ICPC folder into $IMAGE
+    APT_SOURCE=$2
+
+    # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
     cp -r $ICPC $IMAGE
 
@@ -233,6 +257,13 @@ icpc_image_build() {
 
     log "Move preseed at $PRESEED"
     cp $PRESEED $IMAGE/preseed/icpc.seed
+
+    if [ $APT_SOURCE = "vnoi" ]; then
+        log "Changing seed to make apt use VNOI and Ubuntu sources"
+        sed -i 's/https:\/\/sysopspackages.icpc.global\/ubuntu/http:\/\/archive.ubuntu.com\/ubuntu/g' $IMAGE/preseed/icpc.seed
+        sed -i 's/https:\/\/sysopspackages.icpc.global/https:\/\/repo.vnoi.info/g' $IMAGE/preseed/icpc.seed
+        log "Done"
+    fi
 
     log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
@@ -427,13 +458,9 @@ dev_create() {
     shift
     done
 
-    # log "Building ICPC image for development"
-    # sudo ./$0 icpc_build --dev $@
-    # log "Done"
-
     if [ $BUILD = true ]; then
         log "Building ICPC image for development"
-        sudo ./$0 icpc_build --dev $@
+        sudo ./$0 icpc_build --dev
         log "Done"
     else
         log "Skipping building ICPC image for development."
