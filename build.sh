@@ -58,6 +58,7 @@ assert_nonroot() {
 }
 
 SUDO_USER="root"
+TOOLKIT="image-toolkit"
 
 if [ -f config.local.sh ]; then
     source config.local.sh
@@ -92,8 +93,8 @@ icpc_build() {
             PROD_DEV="dev"
             ;;
         --image-only)
-            icpc_image_build
-            exit $?
+            icpc_image_build $PROD_DEV
+            return
             ;;
         --github-actions)
             CLEAR_EARLY=true
@@ -165,7 +166,7 @@ icpc_build() {
 
     if [ $PROD_DEV = "prod" ]; then
         log "Copy src to chroot"
-        cp -R src/ $CHROOT/root
+        cp -R $TOOLKIT $CHROOT/root/src
         log "Done"
     else
         mkdir $CHROOT/root/src
@@ -308,15 +309,15 @@ generate_actions_secret() {
     fi
 
     # from src/config.sh
-    if [ -f src/config.sh ]; then
+    if [ -f $TOOLKIT/config.sh ]; then
         SRC_CONFIG_SH=$($BASE64_ENCODE < src/config.sh)
-        echo "src/config.sh: $SRC_CONFIG_SH"
+        echo "$TOOLKIT/config.sh: $SRC_CONFIG_SH"
     fi
 
     # from src/misc/authorized_keys
-    if [ -f src/misc/authorized_keys ]; then
+    if [ -f $TOOLKIT/misc/authorized_keys ]; then
         AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
-        echo "src/misc/authorized_keys: $AUTHORIZED_KEYS"
+        echo "$TOOLKIT/misc/authorized_keys: $AUTHORIZED_KEYS"
     fi
 
     # Ask user if they want to use gh cli to push secret to repo
@@ -582,4 +583,4 @@ case $1 in
         ;;
 esac
 
-echo "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
+log "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
