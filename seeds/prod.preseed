@@ -89,8 +89,8 @@ ubiquity ubiquity/reboot boolean true
 ubiquity ubiquity/success_command string  \
     cp -a -R /root/src/ /target/opt/; \
     in-target chmod -R 777 /opt/src/; \
-    in-target --pass-stdout /bin/sh -c /opt/src/setup.sh > /opt/install.log; \
-    in-target --pass-stdout /bin/sh -c /opt/src/cleanup.sh > /opt/install_cleanup.log; \
+    in-target /bin/sh -c "/opt/src/setup.sh 2>&1 | /usr/bin/env tee /opt/install.log"; \
+    in-target /bin/sh -c "/opt/src/cleanup.sh 2>&1 | /usr/bin/env tee /opt/install_cleanup.log"; \
     in-target /bin/rm -rf /opt/src/; \
     cp /opt/install.log /target/root/; \
     cp /opt/install_cleanup.log /target/root/;

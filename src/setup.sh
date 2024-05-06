@@ -38,7 +38,7 @@ fi
 echo "Fix up date/time"
 timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
-hwclock -w
+# hwclock -w
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
