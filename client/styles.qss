@@ -1,0 +1,17 @@
+QWidget {
+    background-color: #272C36;
+}
+
+QLineEdit {
+    font-family: "Montserrat";
+    font-size: 20px;
+    placeholder-text-color: #FFFFFF;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background-color: #3A3F49;
+    height: 40px;
+}
+
+QLineEdit:focus {
+    border: 1px solid #C5C5EC;
+}
