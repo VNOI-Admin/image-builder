@@ -568,7 +568,7 @@ dev_create() {
     # Mount shared folder to /media/sf_src
     vboxmanage sharedfolder add "$VM_NAME" \
         --name "src" \
-        --hostpath "$PWD/src" \
+        --hostpath "$TOOLKIT" \
         --readonly \
         --automount
     log "Done"
