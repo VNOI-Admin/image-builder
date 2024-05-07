@@ -280,13 +280,13 @@ fi
 # Deny icpc user from SSH login
 echo "DenyUsers icpc" >> /etc/ssh/sshd_config
 
-# Auto login as icpc user
-mv /etc/gdm3/custom.conf /etc/gdm3/custom.conf.bak
-cat - <<'EOM' > /etc/gdm3/custom.conf
-[daemon]
-AutomaticLoginEnable=True
-AutomaticLogin=icpc
-EOM
+# # Auto login as icpc user
+# mv /etc/gdm3/custom.conf /etc/gdm3/custom.conf.bak
+# cat - <<'EOM' > /etc/gdm3/custom.conf
+# [daemon]
+# AutomaticLoginEnable=True
+# AutomaticLogin=icpc
+# EOM
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
