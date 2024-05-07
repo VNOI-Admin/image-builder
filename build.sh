@@ -57,6 +57,7 @@ assert_nonroot() {
 }
 
 SUDO_USER="root"
+TOOLKIT="image-toolkit"
 
 if [ -f config.local.sh ]; then
     source config.local.sh
@@ -92,8 +93,8 @@ icpc_build() {
             PROD_DEV="dev"
             ;;
         --image-only)
-            icpc_image_build
-            exit $?
+            icpc_image_build $PROD_DEV
+            return
             ;;
         --github-actions)
             CLEAR_EARLY=true
@@ -237,8 +238,18 @@ icpc_image_build() {
 
     if [ $1 = "prod" ]; then
         PRESEED=seeds/prod.preseed
+        IMAGE_FILENAME="contestant.iso"
     else
         PRESEED=seeds/dev.preseed
+        IMAGE_FILENAME="contestant-dev.iso"
+    fi
+
+    if [ $1 = "prod" ]; then
+        PRESEED=seeds/prod.preseed
+        IMAGE_FILENAME="contestant.iso"
+    else
+        PRESEED=seeds/dev.preseed
+        IMAGE_FILENAME="contestant-dev.iso"
     fi
 
     APT_SOURCE=$2
@@ -319,7 +330,7 @@ icpc_image_build() {
         -eltorito-alt-boot \
         -e '--interval:appended_partition_2:all::' \
             -no-emul-boot \
-        -o "../contestant.iso" \
+        -o "../$IMAGE_FILENAME" \
         .
     log "Build finished. Cleaning up (run clean command for full clean up)."
 }
@@ -337,15 +348,15 @@ generate_actions_secret() {
     fi
 
     # from src/config.sh
-    if [ -f src/config.sh ]; then
+    if [ -f $TOOLKIT/config.sh ]; then
         SRC_CONFIG_SH=$($BASE64_ENCODE < src/config.sh)
-        echo "src/config.sh: $SRC_CONFIG_SH"
+        echo "$TOOLKIT/config.sh: $SRC_CONFIG_SH"
     fi
 
     # from src/misc/authorized_keys
-    if [ -f src/misc/authorized_keys ]; then
+    if [ -f $TOOLKIT/misc/authorized_keys ]; then
         AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
-        echo "src/misc/authorized_keys: $AUTHORIZED_KEYS"
+        echo "$TOOLKIT/misc/authorized_keys: $AUTHORIZED_KEYS"
     fi
 
     # Ask user if they want to use gh cli to push secret to repo
@@ -609,4 +620,4 @@ case $1 in
         ;;
 esac
 
-echo "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
+log "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"

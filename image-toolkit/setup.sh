@@ -70,23 +70,22 @@ echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 # Default to enable screensaver lock
 touch /opt/vnoi/config/screenlock
 
+# Add our own syslog facility
+echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
+
 # Create ICPC account
 echo "Create icpc account"
 /opt/vnoi/sbin/mkuser.sh
 
 # Set ICPC user's initial password
+echo "Set icpc user's initial password"
 echo "icpc:icpc" | chpasswd
 
 # Fix permission and ownership
 chown icpc.icpc /opt/vnoi/store/submissions
 chmod 770 /opt/vnoi/store/log
 
-# Add our own syslog facility
-
-echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
-
 # Add custom NTP to timesyncd config
-
 cat - <<EOM > /etc/systemd/timesyncd.conf
 [Time]
 NTP=ntp.ubuntu.com time.windows.com
