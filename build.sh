@@ -168,12 +168,12 @@ icpc_build() {
     log "Done"
 
     if [ $PROD_DEV = "prod" ]; then
-        log "Copy src to chroot"
-        cp -R src/ $CHROOT/root
+        log "Copy toolkit to chroot"
+        cp -R $TOOLKIT/ $CHROOT/root/src/
         log "Done"
     else
-        mkdir $CHROOT/root/src
-        log "Skipped copying src to chroot"
+        mkdir -p $CHROOT/root/src
+        log "Skipped copying toolkit to chroot"
     fi
 
     log "Encrypt super password"
@@ -347,15 +347,15 @@ generate_actions_secret() {
         echo "config.local.sh: $CONFIG_LOCAL_SH"
     fi
 
-    # from src/config.sh
+    # from $TOOLKIT/config.sh
     if [ -f $TOOLKIT/config.sh ]; then
-        SRC_CONFIG_SH=$($BASE64_ENCODE < src/config.sh)
-        echo "$TOOLKIT/config.sh: $SRC_CONFIG_SH"
+        TOOLKIT_CONFIG_SH=$($BASE64_ENCODE < $TOOLKIT/config.sh)
+        echo "$TOOLKIT/config.sh: $TOOLKIT_CONFIG_SH"
     fi
 
-    # from src/misc/authorized_keys
+    # from $TOOLKIT/misc/authorized_keys
     if [ -f $TOOLKIT/misc/authorized_keys ]; then
-        AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
+        AUTHORIZED_KEYS=$($BASE64_ENCODE < $TOOLKIT/misc/authorized_keys)
         echo "$TOOLKIT/misc/authorized_keys: $AUTHORIZED_KEYS"
     fi
 
@@ -366,7 +366,7 @@ generate_actions_secret() {
     then
         echo "Set ACTIONS_SECRET to repo"
         gh secret set CONFIG_LOCAL_SH -b "$CONFIG_LOCAL_SH"
-        gh secret set SRC_CONFIG_SH -b "$SRC_CONFIG_SH"
+        gh secret set TOOLKIT_CONFIG_SH -b "$TOOLKIT_CONFIG_SH"
         gh secret set AUTHORIZED_KEYS -b "$AUTHORIZED_KEYS"
     else
         echo "Skipping"
@@ -568,7 +568,7 @@ dev_create() {
 
     sleep 2
 
-    log "Loading src to Virtual Machine"
+    log "Loading toolkit to Virtual Machine"
     dev_reload
     log "Done"
 }
