@@ -103,7 +103,7 @@ set superusers="root"
 password_pbkdf2 root $GRUB_PASSWD
 EOM
 
-update-grub2
+# update-grub2
 
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
