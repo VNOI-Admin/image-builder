@@ -445,6 +445,8 @@ dev_create() {
     BUILD=false
     NEW=false
     FIRMWARE=efi64
+    CPUS=4
+    MEM=8192
     while [ $# -gt 0 ]; do
     case $1 in
         --build | -b)
@@ -457,12 +459,23 @@ dev_create() {
             shift
             FIRMWARE=$1
             ;;
+        --cpus)
+            shift
+            CPUS=$1
+            ;;
+        --mem)
+            shift
+            MEM=$1
+            ;;
         -h | --help)
-            echo "Usage: $0 dev_create [--build] [--new]"
+            echo "Usage: $0 dev_create [--build] [--new] [--firmware <firmware>] [--cpus <cpus>] [--mem <mem>]"
             echo
-            echo "  --build    Build the ISO image for development"
-            echo "  --new      Create a new Virtual Machine"
-            echo "  -h, --help Show this help"
+            echo "  --firmware, -f  Set firmware type (default: efi64)"
+            echo "  -b, --build     Build the ICPC image for development"
+            echo "  -n, --new       Create a new Virtual Machine"
+            echo "  --cpus          Set number of CPUs (default: 4)"
+            echo "  --mem           Set memory size in MB (default: 8192)"
+            echo "  -h, --help      Show this help"
             exit 0
             ;;
     esac
@@ -485,8 +498,8 @@ dev_create() {
     if [ $NEW = true ]; then
         log "Removing old Virtual Machine"
         vboxmanage unregistervm $VM_NAME --delete || true
-        echo $VM_DIRECTORY/$VM_NAME
-        rm -rf $VM_DIRECTORY/$VM_NAME
+        echo "$VM_DIRECTORY/$VM_NAME"
+        rm -rf "$VM_DIRECTORY/$VM_NAME"
         log "Done"
     fi
 
@@ -502,13 +515,13 @@ dev_create() {
 
     log "Running configuration"
     vboxmanage modifyvm "$VM_NAME" \
-        --memory 8192 \
-        --cpus 4 \
+        --memory $MEM \
+        --cpus $CPUS \
         --firmware $FIRMWARE
     log "Done"
 
     log "Creating disk"
-    DISK_FILENAME=$VM_DIRECTORY/$VM_NAME.vdi
+    DISK_FILENAME=$VM_DIRECTORY/$VM_NAME/$VM_NAME.vdi
     vboxmanage createmedium disk \
         --filename "$DISK_FILENAME" \
         --size 40960 \
@@ -531,7 +544,7 @@ dev_create() {
         --port 0 \
         --device 0 \
         --type dvddrive \
-        --medium "$INS_DIR/contestant.iso"
+        --medium "$INS_DIR/contestant-dev.iso"
     log "Done"
 
     log "Starting Virtual Machine. Please install contest image using the GUI."
