@@ -10,10 +10,10 @@ error() {
 		echo "Error at or near line ${lineno}; exiting with status ${code}"
 	fi
 
-    echo "Unmounting /dev and /run from chroot"
+    echo "Unmounting /proc and /sys from chroot"
     umount -l /proc
     umount -l /sys
-    umount -l /dev/ptrs
+    umount -l /dev/pts
     echo "Done"
 
 	exit "${code}"
