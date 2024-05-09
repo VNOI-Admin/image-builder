@@ -38,7 +38,7 @@ fi
 echo "Fix up date/time"
 timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
-hwclock -w
+# hwclock -w
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -70,6 +70,9 @@ echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 # Default to enable screensaver lock
 touch /opt/vnoi/config/screenlock
 
+# Add our own syslog facility
+echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
+
 # Create ICPC account
 echo "Create icpc account"
 /opt/vnoi/sbin/mkuser.sh
@@ -82,12 +85,7 @@ echo "icpc:icpc" | chpasswd
 chown icpc.icpc /opt/vnoi/store/submissions
 chmod 770 /opt/vnoi/store/log
 
-# Add our own syslog facility
-
-echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
-
 # Add custom NTP to timesyncd config
-
 cat - <<EOM > /etc/systemd/timesyncd.conf
 [Time]
 NTP=ntp.ubuntu.com time.windows.com
@@ -104,7 +102,7 @@ set superusers="root"
 password_pbkdf2 root $GRUB_PASSWD
 EOM
 
-update-grub2
+# update-grub2
 
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
@@ -271,6 +269,14 @@ fi
 
 # Deny icpc user from SSH login
 echo "DenyUsers icpc" >> /etc/ssh/sshd_config
+
+# # Auto login as icpc user
+# mv /etc/gdm3/custom.conf /etc/gdm3/custom.conf.bak
+# cat - <<'EOM' > /etc/gdm3/custom.conf
+# [daemon]
+# AutomaticLoginEnable=True
+# AutomaticLogin=icpc
+# EOM
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."

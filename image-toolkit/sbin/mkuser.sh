@@ -2,7 +2,7 @@
 
 set -e
 
-logger -p local0.info "MKVNOIUSER: Create a new icpc user"
+# logger -p local0.info "MKVNOIUSER: Create a new icpc user"
 
 # Create vnoi account
 useradd -m icpc
@@ -32,4 +32,4 @@ sudo -Hu icpc bash -c 'echo yes > ~/.config/gnome-initial-setup-done'
 # tar jxf /opt/vnoi/misc/vscode-extensions.tar.bz2 -C ~icpc/.vscode/extensions
 # chown -R icpc.icpc ~icpc/.vscode
 
-logger -p local0.info "MKICPCUSER: ICPC user created"
+# logger -p local0.info "MKICPCUSER: ICPC user created"
