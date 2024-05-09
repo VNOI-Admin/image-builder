@@ -77,7 +77,7 @@ icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
     PROD_DEV="prod"
-    APT_SOURCE="icpc"
+    APT_SOURCE="vnoi"
 
     while [ $# -gt 0 ]; do
     case $1 in
@@ -102,12 +102,18 @@ icpc_build() {
         --vnoi-source)
             APT_SOURCE="vnoi"
             ;;
+        --icpc-source)
+            APT_SOURCE="icpc"
+            ;;
         -h | --help)
             echo "Usage: $0 icpc_build [-u|--url <url>] [-f|--force]"
             echo
             echo "  -u, --url <url>    URL to the original ICPC image"
             echo "  -f, --force        Force download the original ICPC image"
             echo "  --image-only       Only build the image, skip downloading and modifying the original ICPC image"
+            echo "  --github-actions   Clear early to free up space"
+            echo "  --vnoi-source      Use VNOI and Ubuntu sources"
+            echo "  --icpc-source      Use ICPC sources"
             echo "  -h, --help         Show this help"
             exit 0
             ;;
@@ -140,7 +146,8 @@ icpc_build() {
         p7zip-full \
         p7zip-rar \
         unzip \
-        zip
+        zip \
+        curl
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
