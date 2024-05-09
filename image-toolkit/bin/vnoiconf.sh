@@ -111,24 +111,24 @@ non-hidden files less than 1MB in size.
 EOM
 		fi
 		;;
-	setscreenlock)
-		if [ "$2" = "on" ]; then
-			touch /opt/vnoi/config/screenlock
-			sudo -Hu icpc xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled true
-			echo Screensaver lock enabled
-		elif [ "$2" = "off" ]; then
-			if [ -f /opt/vnoi/config/screenlock ]; then
-				rm /opt/vnoi/config/screenlock
-			fi
-			sudo -Hu icpc xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled false
-			echo Screensaver lock disabled
-		else
-			cat - <<EOM
-Invalid argument to setscreenlock. Specify "on" to enable screensaver lock,
-or "off" to disable screensaver lock.
-EOM
-		fi
-		;;
+# 	setscreenlock)
+# 		if [ "$2" = "on" ]; then
+# 			touch /opt/vnoi/config/screenlock
+# 			sudo -Hu icpc xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled true
+# 			echo Screensaver lock enabled
+# 		elif [ "$2" = "off" ]; then
+# 			if [ -f /opt/vnoi/config/screenlock ]; then
+# 				rm /opt/vnoi/config/screenlock
+# 			fi
+# 			sudo -Hu icpc xvfb-run gsettings set org.gnome.desktop.screensaver lock-enabled false
+# 			echo Screensaver lock disabled
+# 		else
+# 			cat - <<EOM
+# Invalid argument to setscreenlock. Specify "on" to enable screensaver lock,
+# or "off" to disable screensaver lock.
+# EOM
+# 		fi
+# 		;;
 	*)
 		echo Not allowed
 		;;

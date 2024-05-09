@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Custom color echo function, use for debugging
 log() {
     echo -e "\e[32m$1\e[0m"
@@ -23,15 +25,40 @@ error() {
 
 	exit "${code}"
 }
+
 trap 'error ${LINENO}' ERR
 
-# Check if user is root
-if [ "$EUID" -ne 0 ]
-    then echo "Please run as root"
-    exit 1
-fi
+# Install requested packages if system has apt
+install_if_has_apt() {
+    PACKAGES="$@"
+    if [ -x "$(command -v apt-get)" ]; then
+        log "Installing $PACKAGES"
+        apt-get update
+        apt-get install $@ -y
+        log "Done"
+    else
+        log "apt-get not found, skipping installation of $PACKAGES"
+    fi
+}
+
+
+assert_root() {
+    # Check if user is root
+    if [ "$EUID" -ne 0 ]
+        then echo "Please run as root"
+        exit 1
+    fi
+}
+
+assert_nonroot() {
+    if [ "$EUID" -eq 0 ]
+        then echo "Please run as VirtualBox User"
+        exit 1
+    fi
+}
 
 SUDO_USER="root"
+TOOLKIT="image-toolkit"
 
 if [ -f config.local.sh ]; then
     source config.local.sh
@@ -42,14 +69,15 @@ fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
     log "Unmounting /dev and /run from chroot"
-    umount -l $CHROOT/dev
-    umount -l $CHROOT/run
+    sudo umount -l $CHROOT/dev
+    sudo umount -l $CHROOT/run
     log "Done"
 fi
 
 icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
+    PROD_DEV="prod"
 
     while [ $# -gt 0 ]; do
     case $1 in
@@ -61,9 +89,12 @@ icpc_build() {
         -f | --force)
             FORCE_DOWNLOAD=true
             ;;
+        --dev)
+            PROD_DEV="dev"
+            ;;
         --image-only)
-            icpc_image_build
-            exit $?
+            icpc_image_build $PROD_DEV
+            return
             ;;
         --github-actions)
             CLEAR_EARLY=true
@@ -83,8 +114,8 @@ icpc_build() {
 
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
+        install_if_has_apt aria2
         log "Downloading ICPC image"
-        apt install aria2 -y
         aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
         # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
     fi
@@ -96,8 +127,7 @@ icpc_build() {
         exit 1
     fi
 
-    apt-get update
-    apt-get install \
+    install_if_has_apt \
         binutils \
         squashfs-tools \
         xorriso \
@@ -107,8 +137,7 @@ icpc_build() {
         p7zip-full \
         p7zip-rar \
         unzip \
-        zip \
-        -y
+        zip
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
@@ -132,8 +161,17 @@ icpc_build() {
     log "Done"
 
     log "Copy scripts and config to chroot"
-    cp -R build.sh chroot_install.sh src/ $CHROOT/root
+    cp -R build.sh chroot_install.sh $CHROOT/root
     log "Done"
+
+    if [ $PROD_DEV = "prod" ]; then
+        log "Copy src to chroot"
+        cp -R $TOOLKIT $CHROOT/root/src
+        log "Done"
+    else
+        mkdir $CHROOT/root/src
+        log "Skipped copying src to chroot"
+    fi
 
     log "Encrypt super password"
     ENCRYPTED_SUPER_PASSWD=$(echo -n $SUPER_PASSWD | python3 -c 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.mksalt(crypt.METHOD_SHA512)))')
@@ -143,7 +181,16 @@ icpc_build() {
     log "Done"
 
     log "chrooting into $CHROOT"
-    su -c "chroot $CHROOT /bin/bash /root/chroot_install.sh"
+    # Chroot, resetting all environment variables to ensure replicable building
+    # https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
+    install -v /etc/resolv.conf $CHROOT/etc/
+    su -c "chroot $CHROOT /usr/bin/env -i \
+        HOME=/root \
+        TERM="$TERM" \
+        PS1=\"[\u@\h \W]\$ \" \
+        PATH=/usr/bin:/usr/sbin \
+        PROD_DEV="$PROD_DEV" \
+        /bin/bash /root/chroot_install.sh"
     log "Done"
 
     log "Cleanup scripts and config from chroot"
@@ -161,11 +208,19 @@ icpc_build() {
         log "Done"
     fi
 
-    icpc_image_build
+    icpc_image_build $PROD_DEV
 }
 
 icpc_image_build() {
     log "Start building ICPC image"
+
+    if [ $1 = "prod" ]; then
+        PRESEED=seeds/prod.preseed
+        IMAGE_FILENAME="contestant.iso"
+    else
+        PRESEED=seeds/dev.preseed
+        IMAGE_FILENAME="contestant-dev.iso"
+    fi
 
     # # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
@@ -179,8 +234,8 @@ icpc_image_build() {
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
-    log "Move custom preseed"
-    cp custom.seed $IMAGE/preseed/custom.seed
+    log "Move preseed at $PRESEED"
+    cp $PRESEED $IMAGE/preseed/icpc.seed
 
     log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
@@ -236,7 +291,7 @@ icpc_image_build() {
         -eltorito-alt-boot \
         -e '--interval:appended_partition_2:all::' \
             -no-emul-boot \
-        -o "../contestant.iso" \
+        -o "../$IMAGE_FILENAME" \
         .
     log "Build finished. Cleaning up (run clean command for full clean up)."
 }
@@ -254,15 +309,15 @@ generate_actions_secret() {
     fi
 
     # from src/config.sh
-    if [ -f src/config.sh ]; then
+    if [ -f $TOOLKIT/config.sh ]; then
         SRC_CONFIG_SH=$($BASE64_ENCODE < src/config.sh)
-        echo "src/config.sh: $SRC_CONFIG_SH"
+        echo "$TOOLKIT/config.sh: $SRC_CONFIG_SH"
     fi
 
     # from src/misc/authorized_keys
-    if [ -f src/misc/authorized_keys ]; then
+    if [ -f $TOOLKIT/misc/authorized_keys ]; then
         AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
-        echo "src/misc/authorized_keys: $AUTHORIZED_KEYS"
+        echo "$TOOLKIT/misc/authorized_keys: $AUTHORIZED_KEYS"
     fi
 
     # Ask user if they want to use gh cli to push secret to repo
@@ -279,12 +334,216 @@ generate_actions_secret() {
     fi
 }
 
+VM_NAME="ICPC-Dev"
+dev_reload() {
+    log "Checking if Virtual Machine is running"
+    if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+    | grep -c "VMState=\"running\"") -ne 0 ]; then
+        log "Running. Turning off VM"
+        vboxmanage controlvm "$VM_NAME" poweroff
+        log "Done"
+
+        log "Polling for shutdown"
+        while true; do
+            if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+            | grep -c "VMState=\"running\"") -eq 0 ]; then
+                break
+            fi
+            sleep 1
+        done
+        log "Done"
+    else
+        log "Not running"
+    fi
+
+    log "Restoring VM to snapshot root-install"
+    vboxmanage snapshot "$VM_NAME" restore "root-install"
+    log "Done"
+
+    sleep 2
+
+    log "Starting Virtual Machine"
+    vboxmanage startvm "$VM_NAME"
+    log "Done"
+
+    log "Polling for guest control"
+    while true; do
+        if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+        | grep -c "GuestAdditionsRunLevel=2") -ne 0 ]; then
+            break
+        fi
+        sleep 1
+    done
+
+    log "Installing from /media/sf_src (mounted Shared Folder)"
+    vboxmanage guestcontrol "$VM_NAME" run \
+        --username $SUDO_USER --password $SUPER_PASSWD \
+        --exe "/bin/bash" \
+        --wait-stdout --wait-stderr \
+        -- -c "cd /root/src && /media/sf_src/setup.sh"
+    log "Done"
+}
+
+dev_create() {
+    # add two options, --build and --new
+    BUILD=false
+    NEW=false
+    FIRMWARE=efi64
+    CPUS=4
+    MEM=8192
+    while [ $# -gt 0 ]; do
+    case $1 in
+        --build | -b)
+            BUILD=true
+            ;;
+        --new | -n)
+            NEW=true
+            ;;
+        --firmware | -f)
+            shift
+            FIRMWARE=$1
+            ;;
+        --cpus)
+            shift
+            CPUS=$1
+            ;;
+        --mem)
+            shift
+            MEM=$1
+            ;;
+        -h | --help)
+            echo "Usage: $0 dev_create [--build] [--new] [--firmware <firmware>] [--cpus <cpus>] [--mem <mem>]"
+            echo
+            echo "  --firmware, -f  Set firmware type (default: efi64)"
+            echo "  -b, --build     Build the ICPC image for development"
+            echo "  -n, --new       Create a new Virtual Machine"
+            echo "  --cpus          Set number of CPUs (default: 4)"
+            echo "  --mem           Set memory size in MB (default: 8192)"
+            echo "  -h, --help      Show this help"
+            exit 0
+            ;;
+    esac
+    shift
+    done
+
+    # log "Building ICPC image for development"
+    # sudo ./$0 icpc_build --dev $@
+    # log "Done"
+
+    if [ $BUILD = true ]; then
+        log "Building ICPC image for development"
+        sudo ./$0 icpc_build --dev $@
+        log "Done"
+    else
+        log "Skipping building ICPC image for development."
+        log "Do make sure your image is for development (built with icpc_build --dev or dev_create)."
+    fi
+
+    VM_NAME="ICPC-Dev"
+    VM_GUEST_OS_TYPE="Ubuntu22_LTS_64"
+    VM_DIRECTORY="$HOME/VirtualBox VMs"
+
+    if [ $NEW = true ]; then
+        log "Removing old Virtual Machine"
+        vboxmanage unregistervm $VM_NAME --delete || true
+        rm -rf "$VM_DIRECTORY/$VM_NAME"
+        log "Done"
+    fi
+
+    # rm -f "$DISK_FILENAME"
+
+    log "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
+    vboxmanage createvm \
+        --register \
+        --default \
+        --name "$VM_NAME" \
+        --groups "/$VM_NAME" \
+        --basefolder "$VM_DIRECTORY" \
+        --ostype $VM_GUEST_OS_TYPE
+    log "Done"
+
+    log "Running configuration"
+    vboxmanage modifyvm "$VM_NAME" \
+        --memory $MEM \
+        --cpus $CPUS \
+        --firmware $FIRMWARE
+    log "Done"
+
+    log "Creating disk"
+    DISK_FILENAME=$VM_DIRECTORY/$VM_NAME/$VM_NAME.vdi
+
+    vboxmanage createmedium disk \
+        --filename "$DISK_FILENAME" \
+        --size 40960 \
+        --variant Fixed
+    log "Done"
+
+    log "Attaching disk"
+    vboxmanage storageattach "$VM_NAME" \
+        --storagectl SATA \
+        --port 0 \
+        --device 0 \
+        --type hdd \
+        --medium "$DISK_FILENAME" \
+        --nonrotational on
+    log "Done"
+
+    log "Attaching installation image"
+    vboxmanage storageattach "$VM_NAME" \
+        --storagectl IDE \
+        --port 0 \
+        --device 0 \
+        --type dvddrive \
+        --medium "$INS_DIR/contestant-dev.iso"
+    log "Done"
+
+    log "Starting Virtual Machine. Please install contest image using the GUI."
+    vboxmanage startvm "$VM_NAME"
+    log "Done"
+
+    # Wait for Virtual Machine to shutdown
+    log "Waiting for Virtual Machine to shutdown"
+    while true; do
+        if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+        | grep -c "VMState=\"running\"") -eq 0 ]; then
+            break
+        fi
+        sleep 1
+    done
+    log "Done"
+
+    sleep 2
+
+    log "Mounting Shared Folder"
+    # Mount shared folder to /media/sf_src
+    vboxmanage sharedfolder add "$VM_NAME" \
+        --name "src" \
+        --hostpath "$PWD/src" \
+        --readonly \
+        --automount
+    log "Done"
+
+    sleep 2
+
+    log "Creating snapshot"
+    vboxmanage snapshot "$VM_NAME" take "root-install"
+    log "Done"
+
+    sleep 2
+
+    log "Loading src to Virtual Machine"
+    dev_reload
+    log "Done"
+}
+
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
 
 help() {
     echo "Usage: $0 {icpc_build}"
     echo
     echo "  icpc_build: Build the ISO image based on the ICPC image"
+    echo "  dev_create: Build the ISO image for development and create Virtual Machine. Run \" $0 dev_create --help\" for more options"
+    echo "  dev_reload: Reload the Virtual Machine with the latest changes"
     echo "  generate_actions_secret: Generate actions secret from config.local.sh"
     echo "  clean: Clean up all files generated by this script"
     echo "  help: Show this help"
@@ -294,13 +553,24 @@ START_TIME=$(date +%s)
 
 case $1 in
     clean)
+        assert_root
         rm -rf $INS_DIR
         ;;
     icpc_build)
+        assert_root
         icpc_build $@
         ;;
     generate_actions_secret)
+        assert_root
         generate_actions_secret
+        ;;
+    dev_reload)
+        assert_nonroot
+        dev_reload
+        ;;
+    dev_create)
+        assert_nonroot
+        dev_create $@
         ;;
     help)
         help
@@ -313,4 +583,4 @@ case $1 in
         ;;
 esac
 
-echo "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
+log "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
