@@ -193,20 +193,20 @@ icpc_build() {
     log $APT_SOURCE
     if [ $APT_SOURCE = "vnoi" ]; then
         log "Making apt use VNOI and Ubuntu sources"
-        # Change https://sysopspackages.icpc.global/ubuntu to http://archive.ubuntu.com/ubuntu
-        sed -i 's/https:\/\/sysopspackages.icpc.global\/ubuntu/http:\/\/archive.ubuntu.com\/ubuntu/g' $CHROOT/etc/apt/sources.list
+        # Change https://sysopspackages.icpc.global/ubuntu to $UBUNTU_APT_SOURCE
+        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
         # Remove the extremely big vscode repo
         sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
-        # Change https://sysopspackages.icpc.global to https://repo.vnoi.info
-        sed -i 's/https:\/\/sysopspackages.icpc.global/https:\/\/repo.vnoi.info/g' $CHROOT/etc/apt/sources.list
+        # Change https://sysopspackages.icpc.global to $CUSTOM_APT_SOURCE
+        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
         for file in $CHROOT/etc/apt/sources.list.d/*; do
-            sed -i 's/https:\/\/sysopspackages.icpc.global\/ubuntu/http:\/\/archive.ubuntu.com\/ubuntu/g' $file
-            sed -i 's/https:\/\/sysopspackages.icpc.global/https:\/\/repo.vnoi.info/g' $file
+            sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $file
+            sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $file
         done
         log "Done"
 
         log "Make VNOI key trusted"
-        curl https://repo.vnoi.info/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg
+        curl $CUSTOM_APT_SOURCE/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg
     fi
 
     log "chrooting into $CHROOT"
@@ -278,8 +278,8 @@ icpc_image_build() {
 
     if [ $APT_SOURCE = "vnoi" ]; then
         log "Changing seed to make apt use VNOI and Ubuntu sources"
-        sed -i 's/https:\/\/sysopspackages.icpc.global\/ubuntu/http:\/\/archive.ubuntu.com\/ubuntu/g' $IMAGE/preseed/icpc.seed
-        sed -i 's/https:\/\/sysopspackages.icpc.global/https:\/\/repo.vnoi.info/g' $IMAGE/preseed/icpc.seed
+        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
         log "Done"
     fi
 
@@ -598,7 +598,7 @@ dev_create() {
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
 
 help() {
-    echo "Usage: $0 {icpc_build}"
+    echo "Usage: $0 {icpc_build|dev_create|dev_reload|generate_actions_secret|clean|help}"
     echo
     echo "  icpc_build: Build the ISO image based on the ICPC image"
     echo "  dev_create: Build the ISO image for development and create Virtual Machine. Run \" $0 dev_create --help\" for more options"

@@ -107,7 +107,7 @@ EOM
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
 # Fix CCS shortcut to open VNOJ
-sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser contest.vnoi.info#' /usr/share/applications/ccs.desktop
+sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DOMAIN_NAME}#' /usr/share/applications/ccs.desktop
 
 # # Tinc Setup and Configuration
 
@@ -137,22 +137,12 @@ mkdir -p /opt/vnoi/misc/records/
 
 # Configure startup script, hidden from vnoi user access
 mkdir -p /home/icpc/.config/autostart
-
-cat - <<'EOM' > /home/icpc/.config/autostart/icpc.desktop
-[Desktop Entry]
-Type=Application
-Exec=sudo /opt/vnoi/sbin/startup.sh
-NoDisplay=true
-X-GNOME-Autostart-enabled=true
-Name[en_US]=icpc
-Name=icpc
-Comment[en_US]=
-Comment=
-EOM
+cp /opt/vnoi/misc/icpc.desktop /home/icpc/.config/autostart/icpc.desktop
 
 chown root:root /home/icpc/.config/autostart/icpc.desktop
-# only allow execution
+# Only allow execution and set as immutable
 chmod 744 /home/icpc/.config/autostart/icpc.desktop
+chattr +i /home/icpc/.config/autostart/icpc.desktop
 
 # Create cronjob to run `python3 /opt/vnoi/sbin/report.py` every 15 seconds
 cat - <<'EOM' > /etc/cron.d/icpc

@@ -148,9 +148,8 @@ class MainPage(tk.Frame):
 			return
 		else:
 			print("sending print request")
-			r = requests.post(
-				"http://10.1.0.1:8001/user/print", files={ 'file': open(self.filename) }
-			)
+			with open(self.filename, 'rb') as f:
+				r = requests.post("http://10.1.0.1:8001/user/print", files={ 'file': f })
 
 			if r.status_code not in [200, 201, 202]:
 				message_popup(self, "Cannot send print request")
