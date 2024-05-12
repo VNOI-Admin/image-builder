@@ -293,7 +293,7 @@ RestartSec=3s
 
 [Install]
 WantedBy=graphical.target
-Alias=vlc
+Alias=vlc.service
 EOF
 
 systemctl enable vlc-screen.service
@@ -311,7 +311,7 @@ RestartSec=3s
 
 [Install]
 WantedBy=vlc-screen.service
-Alias=ffmpeg
+Alias=ffmpeg.service
 EOF
 
 systemctl enable ffmpeg-record.service
