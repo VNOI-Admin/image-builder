@@ -306,6 +306,8 @@ After=vlc-screen.service
 [Service]
 Type=exec
 ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/ffmpeg.sh"
+Restart=always
+RestartSec=3s
 
 [Install]
 WantedBy=vlc-screen.service
