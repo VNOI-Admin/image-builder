@@ -308,6 +308,7 @@ Type=exec
 ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/ffmpeg.sh"
 
 [Install]
+WantedBy=vlc-screen.service
 Alias=ffmpeg
 EOF
 
