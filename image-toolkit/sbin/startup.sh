@@ -2,8 +2,6 @@
 
 exec > /opt/vnoi/startup.log 2>&1
 
-set -e
-
 echo "Starting client"
 /opt/vnoi/bin/client &
 
