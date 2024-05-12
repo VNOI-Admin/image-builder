@@ -1,5 +1,0 @@
-deb [arch=amd64] https://sysopspackages.icpc.global/ubuntu/ jammy main restricted universe multiverse
-deb [arch=amd64] https://sysopspackages.icpc.global/ubuntu/ jammy-security main restricted universe multiverse
-deb [arch=amd64] https://sysopspackages.icpc.global/ubuntu/ jammy-updates main restricted universe multiverse
-deb [arch=amd64] https://sysopspackages.icpc.global/apt/jammy/ jammy main
-deb [arch=amd64] https://sysopspackages.icpc.global/vscode/ stable main
