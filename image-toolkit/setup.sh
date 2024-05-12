@@ -278,6 +278,41 @@ echo "DenyUsers icpc" >> /etc/ssh/sshd_config
 # AutomaticLogin=icpc
 # EOM
 
+# Streaming
+echo "Setting up streaming"
+
+cat <<EOF > /etc/systemd/system/vlc-screen.service
+[Unit]
+Description=VLC Screen Capture
+
+[Service]
+Type=notify
+ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/vlc.sh"
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=graphical.target
+Alias=vlc
+EOF
+
+systemctl enable vlc-screen.service
+
+cat <<EOF > /etc/systemd/system/ffmpeg-record.service
+[Unit]
+Description=FFMPEG Screen Recording
+After=vlc-screen.service
+
+[Service]
+Type=exec
+ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/ffmpeg.sh"
+
+[Install]
+Alias=ffmpeg
+EOF
+
+systemctl enable ffmpeg-record.service
+
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
 
