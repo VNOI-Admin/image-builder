@@ -7,7 +7,7 @@ cvlc -q screen:// --screen-fps=15 --sout \
     }:duplicate{ \
         dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/stream}, \
         dst=std{access=http,mux=ts,dst=:101} \
-    }" & $PID=$!
+    }" & VLC_PID=$!
 
 echo "Polling for cvlc start"
 while ! timeout 0.1 nc -z localhost 101; do
@@ -15,4 +15,4 @@ while ! timeout 0.1 nc -z localhost 101; do
 done
 
 systemd-notify --ready
-wait $PID
+wait $VLC_PID
