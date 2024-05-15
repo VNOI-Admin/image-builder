@@ -1,16 +1,19 @@
 #!/bin/bash
 
-exec > "/opt/vnoi/store/log/startup-$$.log" 2>&1
-
-# Check pgid and pid match
+# https://stackoverflow.com/a/45112755
+# This checks pgid and pid match, and make match if not.
+# Future startup.sh runs will terminate all processes with the same pgid.
+# Since all subprocesses will be in the same process group as the main script,
+# this means terminating all subprocesses of this script.
 if [ ! $$ = $(ps -o pgid -hp $$) ]; then
-    echo "Enabling job control"
     set -m
+    "$0" "$@"
+    exit $?
+else
+    echo "Job control enabled"
 fi
 
-# https://stackoverflow.com/questions/360201/how-do-i-kill-background-processes-jobs-when-my-shell-script-exits/53714583#53714583
-trap "exit \$exit_code" INT TERM
-trap "exit_code=\$?; kill 0" EXIT
+exec > "/opt/vnoi/store/log/startup-$$.log" 2>&1
 
 if [ -f /run/icpc-startup.pid ]; then
     echo "Found existing startup pid file"
@@ -45,8 +48,11 @@ vlc_restart_loop() {
                 dst=std{access=http,mux=ts,dst=:101} \
             }"
         echo "VLC exited, restarting in 3 seconds"
+        # Sleep to prevent CPU hogging and let the processes be killed in any order
         sleep 3
     done
 }
 
 vlc_restart_loop &
+
+sleep infinity
