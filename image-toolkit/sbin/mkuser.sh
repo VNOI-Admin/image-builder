@@ -26,6 +26,12 @@ echo 'export TZ' >> ~icpc/.profile
 # Mark Gnome's initial setup as complete
 sudo -Hu icpc bash -c 'echo yes > ~/.config/gnome-initial-setup-done'
 
+# Set up automatic login
+# Replace the line that contains "AutomaticLoginEnable =" with "AutomaticLoginEnable = true"
+# Replace the line that contains "AutomaticLogin =" with "AutomaticLogin = icpc"
+sed -i '/AutomaticLoginEnable =/c\AutomaticLoginEnable = true' /etc/gdm3/custom.conf
+sed -i '/AutomaticLogin =/c\AutomaticLogin = icpc' /etc/gdm3/custom.conf
+
 # Copy VSCode extensions
 # TODO: Check this out
 # mkdir -p ~icpc/.vscode/extensions
