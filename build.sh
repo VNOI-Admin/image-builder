@@ -443,6 +443,8 @@ dev_reload() {
     done
     log "Done"
 
+    sleep 3
+
     vboxmanage startvm "$VM_NAME"
     log "Virtual Machine started. Have fun coding!"
 }

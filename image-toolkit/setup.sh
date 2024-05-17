@@ -278,6 +278,26 @@ echo "DenyUsers icpc" >> /etc/ssh/sshd_config
 # AutomaticLogin=icpc
 # EOM
 
+# Streaming
+echo "Setting up streaming"
+
+cat <<EOF > /etc/systemd/system/ffmpeg-record.service
+[Unit]
+Description=FFMPEG Screen Recording
+
+[Service]
+Type=notify
+ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/ffmpeg.sh"
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=graphical.target
+Alias=ffmpeg.service
+EOF
+
+systemctl enable ffmpeg-record.service
+
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
 
