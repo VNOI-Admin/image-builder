@@ -36,6 +36,7 @@ d-i time/zone string UTC
 d-i clock-setup/ntp boolean true
 
 # Packages, Mirrors, Image
+ubiquity ubiquity/download_updates boolean false
 # d-i base-installer/kernel/override-image string linux-server
 # d-i base-installer/kernel/override-image string linux-image-amd64
 d-i mirror/country string VN

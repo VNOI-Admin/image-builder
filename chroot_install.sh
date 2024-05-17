@@ -92,6 +92,20 @@ dns=dnsmasq
 managed=false
 EOF
 
+# Ubiquity installer patch
+# https://answers.launchpad.net/ubuntu/+source/ubiquity/+question/353445
+
+sed -i -e '/apt-get -o APT::Get::List-Cleanup=false \\/d' \
+       -e '/-o Dir::Etc::sourcelist="$file" update --print-uris | \\/d' \
+       -e '/grep "^'\''.*'\''")/d' \
+       -e 's|lines="\$($chroot \$ROOT \\|lines="\$($chroot \$ROOT apt-get clean)"|' \
+       -e '$a\' \
+       /usr/lib/ubiquity/apt-setup/apt-setup-signed-release
+
+sed -i -e 's|-o APT::Get::List-Cleanup=false|clean=false|' /usr/lib/ubiquity/apt-setup/apt-setup-verify
+
+# Disable setup
+
 # Create file /etc/modprobe.d/network.conf for enabling drivers for network cards from realtek
 cat <<EOF > /etc/modprobe.d/network.conf
 install r8169 /sbin/modprobe --ignore-install r8169
@@ -107,13 +121,11 @@ echo "root:$ENCRYPTED_SUPER_PASSWD" | chpasswd -e
 # Clean up the chroot environment
 truncate -s 0 /etc/machine-id
 
-apt-get clean
 apt-get autoremove --purge -y
 
 rm -f /sbin/initctl
 dpkg-divert --rename --remove /sbin/initctl
 
-apt-get clean
 rm -rf /tmp/* ~/.bash_history
 umount /proc
 umount /sys
