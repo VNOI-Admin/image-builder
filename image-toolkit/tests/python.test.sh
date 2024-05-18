@@ -11,8 +11,12 @@ EOF
 
 exitcode=0
 output=$( echo "Hello world!" | pypy3 "$src_path" ) || exitcode=$?
-if [[ $output == "Hello world!" && $exitcode -eq 0 ]] ; then
-    pass
+if [[ $exitcode -eq 0 ]] ; then
+    if [[ $output == "Hello world!" ]] ; then
+        pass
+    else
+        fail "Expected 'Hello world!', '$output' received"
+    fi
 else
-    fail
+    fail "Runtime error"
 fi

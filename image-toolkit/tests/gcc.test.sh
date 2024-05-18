@@ -21,8 +21,12 @@ out_path=$(mktemp -q /tmp/main.XXXXX.out)
 if gcc -x c -g -O2 -std=gnu11 -static "$src_path" -lm -o "$out_path"; then
     exitcode=0
     output=$( echo "Hello world!" | "$out_path" ) || exitcode=$?
-    if [[ $output == "Hello world!" && $exitcode -eq 0 ]] ; then
-        pass
+    if [[ $exitcode -eq 0 ]] ; then
+        if [[ $output == "Hello world!" ]] ; then
+            pass
+        else
+            fail "Expected 'Hello world!', '$output' received"
+        fi
     else
         fail "Runtime error"
     fi
@@ -50,8 +54,12 @@ out_path=$(mktemp -q /tmp/main.XXXXX.out)
 if $(g++ -x c++ -g -O2 -std=gnu++20 -static "$src_path" -o "$out_path"); then
     exitcode=0
     output=$( echo "Hello world!" | "$out_path" ) || exitcode=$?
-    if [[ $output == "Hello world!" && $exitcode -eq 0 ]] ; then
-        pass
+    if [[ $exitcode -eq 0 ]] ; then
+        if [[ $output == "Hello world!" ]] ; then
+            pass
+        else
+            fail "Expected 'Hello world!', '$output' received"
+        fi
     else
         fail "Runtime error"
     fi
