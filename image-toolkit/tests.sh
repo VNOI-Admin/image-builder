@@ -40,4 +40,6 @@ run_test() {
 
 log "Running all tests"
 
+run_test network.test.sh
+
 log "Completed with \e[32m$PASS_COUNT PASSED\e[36m, \e[31m$(($CASE_COUNT - $PASS_COUNT)) FAILED\e[0m"
