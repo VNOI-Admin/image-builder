@@ -47,14 +47,17 @@ sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
 echo "Copy VNOI stuffs into /opt"
 mkdir -p /opt/vnoi
-cp -a bin sbin misc /opt/vnoi/
+cp -a bin sbin misc tests /opt/vnoi/
 
 # Limit access and execution to root and its group
 chmod 770 -R /opt/vnoi/bin/
 chmod 770 -R /opt/vnoi/sbin/
 chmod 770 -R /opt/vnoi/misc/
+chmod 770 -R /opt/vnoi/tests/
 
 cp config.sh /opt/vnoi/
+cp tests.sh /opt/vnoi/
+chmod 770 /opt/vnoi/tests.sh
 
 mkdir -p /opt/vnoi/run
 mkdir -p /opt/vnoi/store
