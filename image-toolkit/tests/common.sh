@@ -23,8 +23,14 @@ exit_handler() {
     fi
 }
 
+interrupt_handler() {
+    >&2 echo "Interrupted"
+    exit 2
+}
+
 trap 'unhandled_error ${LINENO}' ERR
 trap 'exit_handler' EXIT
+trap 'interrupt_handler' SIGINT
 
 if [[ -z "${CASE_COUNT+x}" ]] ; then
     CASE_COUNT=0
@@ -42,6 +48,6 @@ pass() {
 }
 
 fail() {
-    HAS_FAILED=$(( $HAS_FAILED | 1 ))
+    HAS_FAILED=1
     echo -e "\e[31mFAIL $1\e[0m"
 }

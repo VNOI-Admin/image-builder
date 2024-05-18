@@ -10,14 +10,28 @@ log() {
 }
 
 run_test() {
-    OUTPUT=$("$DIRNAME/tests/$1")
+    # https://stackoverflow.com/a/12451419
+    exec 5>&1
+    OUTPUT=$( "$DIRNAME/tests/$1" | tee >(cat - >&5); exit ${PIPESTATUS[0]} )
     exitcode=$?
-    echo "$OUTPUT"
 
-    _CASE_COUNT=$(echo "$OUTPUT" | sed -e 's/\x1b\[[0-9;]*m//g' | grep '^CASE [0-9;]*' | wc -l)
-    _PASS_COUNT=$(echo "$OUTPUT" | sed -e 's/\x1b\[[0-9;]*m//g' | grep '^PASS' | wc -l)
-    CASE_COUNT=$(( $CASE_COUNT + $_CASE_COUNT ))
-    PASS_COUNT=$(( $PASS_COUNT + $_PASS_COUNT ))
+    CASE_COUNT=$((
+        $CASE_COUNT +
+        $(
+            echo "$OUTPUT" |
+            sed -e 's/\x1b\[[0-9;]*m//g' |
+            grep '^CASE [0-9;]*' | wc -l
+        )
+    ))
+    PASS_COUNT=$((
+        $PASS_COUNT +
+        $(
+            echo "$OUTPUT" |
+            sed -e 's/\x1b\[[0-9;]*m//g' |
+            grep '^PASS' |
+            wc -l
+        )
+    ))
 
     if [[ $exitcode -eq 2 ]] ; then
         exit 2
