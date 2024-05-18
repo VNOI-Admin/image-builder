@@ -42,5 +42,7 @@ log "Running all tests"
 
 run_test network.test.sh
 run_test stream.test.sh
+run_test gcc.test.sh
+run_test python.test.sh
 
 log "Completed with \e[32m$PASS_COUNT PASSED\e[36m, \e[31m$(($CASE_COUNT - $PASS_COUNT)) FAILED\e[0m"
