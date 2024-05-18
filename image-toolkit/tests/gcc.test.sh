@@ -25,7 +25,7 @@ if gcc -x c -g -O2 -std=gnu11 -static "$src_path" -lm -o "$out_path"; then
         if [[ $output == "Hello world!" ]] ; then
             pass
         else
-            fail "Expected 'Hello world!', '$output' received"
+            fail "Expecting 'Hello world!', '$output' received"
         fi
     else
         fail "Runtime error"
@@ -58,7 +58,7 @@ if $(g++ -x c++ -g -O2 -std=gnu++20 -static "$src_path" -o "$out_path"); then
         if [[ $output == "Hello world!" ]] ; then
             pass
         else
-            fail "Expected 'Hello world!', '$output' received"
+            fail "Expecting 'Hello world!', '$output' received"
         fi
     else
         fail "Runtime error"

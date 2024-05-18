@@ -28,7 +28,7 @@ if [[ $exitcode -eq 0 ]] ; then
     if [[ $output == "Hello world!" ]] ; then
         pass
     else
-        fail "Expected 'Hello world!', '$output' received"
+        fail "Expecting 'Hello world!', '$output' received"
     fi
 else
     fail "Runtime error"
