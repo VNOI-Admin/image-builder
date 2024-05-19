@@ -281,6 +281,13 @@ echo "DenyUsers icpc" >> /etc/ssh/sshd_config
 # AutomaticLogin=icpc
 # EOM
 
+# Enable passwordless login for user icpc with PAM
+cp /etc/pam.d/gdm-password /etc/pam.d/gdm-password.bak
+echo "" >> /etc/pam.d/gdm-password
+echo "auth sufficient pam_succeed_if.so user ingroup contestant" >> /etc/pam.d/gdm-password
+groupadd contestant
+usermod -aG contestant icpc
+
 # Streaming
 echo "Setting up streaming"
 
