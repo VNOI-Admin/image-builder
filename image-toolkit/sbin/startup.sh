@@ -53,6 +53,28 @@ vlc_restart_loop() {
     done
 }
 
+webcam_stream_loop() {
+    while :
+    do
+        DEVICE_NO=0
+        while ! [[ -e "/dev/video$DEVICE_NO" ]]; do
+            sleep 3;
+        done
+
+        echo "Starting cvlc instance for webcam streaming"
+        cvlc -vv -q v4l2:///dev/video$DEVICE_NO --sout \
+            "#transcode{ \
+                vcodec=h264,acodec=none,vb=3000,ab=0,fps=15 \
+            }:duplicate{ \
+                dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
+            }"
+        echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
+        # Sleep to prevent CPU hogging and let the processes be killed in any order
+        sleep 3
+    done
+}
+
 vlc_restart_loop &
+webcam_stream_loop &
 
 sleep infinity
