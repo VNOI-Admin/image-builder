@@ -301,6 +301,10 @@ EOF
 
 systemctl enable ffmpeg-record.service
 
+echo "Replacing plymouth watermark"
+cp /opt/vnoi/misc/logo.png /usr/share/plymouth/ubuntu-logo.png
+cp /opt/vnoi/misc/logo.png /usr/share/plymouth/themes/spinner/watermark.png
+
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
 
