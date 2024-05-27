@@ -1,4 +1,5 @@
 # image-builder
+
 This repo contains script to build a `.iso` file to install customized Ubuntu for ICPC contests.
 
 # Usage
@@ -31,6 +32,7 @@ After cloning the repository, you need to configure the builder. There are sever
   - `ADMIN_SUBNET`: The subnet of the admin network. This is used to configure the firewall to allow access to the admin network.
   - `COACH_SUBNET`: The subnet of the coach network. This is used to configure the firewall to allow access to the coach network.
 - `image-toolkit/config.local.sh`: This is an optional configuration file of `image-toolkit/config.local.sh`. By setting the `VERSION` variable, it will store the version of the build to the image. Useful for debugging and tracking the version of the image.
+- `image-toolkit/misc/logo.png` (optional): Replace the Ubuntu logo on boot screen and login screen with a custom one (the dimension should be 400x400 or smaller).
 
 ## Building
 
