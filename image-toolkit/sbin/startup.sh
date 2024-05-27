@@ -62,7 +62,7 @@ webcam_stream_loop() {
         done
 
         echo "Starting cvlc instance for webcam streaming"
-        cvlc -vv -q v4l2:///dev/video$DEVICE_NO --sout \
+        cvlc -vv -q v4l2:///dev/video$DEVICE_NO --v4l2-width=1280 --v4l2-height=720 --sout \
             "#transcode{ \
                 vcodec=h264,acodec=none,vb=3000,ab=0,fps=15 \
             }:duplicate{ \
