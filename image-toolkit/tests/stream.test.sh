@@ -36,13 +36,6 @@ else
     fi
 fi
 
-test_case "check if ffmpeg-webcam.service is active"
-if systemctl is-active --quiet ffmpeg-webcam.service; then
-    pass
-else
-    fail
-fi
-
 # check for ffmpeg process
 # if pgrep ffmpeg --exact; then
 #     pass

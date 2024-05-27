@@ -299,22 +299,7 @@ WantedBy=graphical.target
 Alias=ffmpeg.service
 EOF
 
-cat <<EOF > /etc/systemd/system/ffmpeg-webcam.service
-[Unit]
-Description=FFMPEG Webcam Recording
-
-[Service]
-Type=notify
-ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/ffmpeg-webcam.sh"
-Restart=always
-RestartSec=3s
-
-[Install]
-WantedBy=graphical.target
-EOF
-
 systemctl enable ffmpeg-record.service
-systemctl enable ffmpeg-webcam.service
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
