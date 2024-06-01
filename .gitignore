@@ -2,3 +2,5 @@ config.local.sh
 live-build/
 *.iso
 authorized_keys
+__pycache__/
+venv
