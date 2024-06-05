@@ -526,7 +526,8 @@ dev_create() {
     vboxmanage modifyvm "$VM_NAME" \
         --memory $MEM \
         --cpus $CPUS \
-        --firmware $FIRMWARE
+        --firmware $FIRMWARE \
+        --usb-xhci=on
     log "Done"
 
     log "Creating disk"
