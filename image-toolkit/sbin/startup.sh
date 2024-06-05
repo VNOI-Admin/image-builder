@@ -67,7 +67,19 @@ webcam_stream_loop() {
                 vcodec=h264,acodec=none,vb=3000,ab=0,fps=15 \
             }:duplicate{ \
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
-            }"
+            }" &
+        CLVC_PID=$!
+        # Monitor the process and device
+        while [[ -e "/dev/video$DEVICE_NO" ]] && ps -p $CLVC_PID > /dev/null; do
+            sleep 3
+        done
+
+        # If device is unplugged, kill existing clvc instance to release /dev/video0
+        if ! [[ -e "/dev/video$DEVICE_NO" ]]; then
+            echo "Device unplugged, proceed to kill cvlc"
+            kill $CLVC_PID 2>/dev/null || :
+        fi
+
         echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
         # Sleep to prevent CPU hogging and let the processes be killed in any order
         sleep 3
