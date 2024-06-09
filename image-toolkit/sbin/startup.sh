@@ -68,20 +68,20 @@ webcam_stream_loop() {
             }:duplicate{ \
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
-        CLVC_PID=$!
+        CVLC_PID=$!
 
         # Monitor the video device using udevadm monitor
         # If device is unplugged, kill existing clvc instance to release /dev/video0
         udevadm monitor --udev -s video4linux | while read -r line; do
             if [[ "$line" == *"remove"*"/video4linux/video$DEVICE_NO"* ]] ; then
                 echo "Device unplugged, proceed to kill cvlc"
-                kill $CLVC_PID 2>/dev/null || :
+                kill $CVLC_PID 2>/dev/null || :
                 break
             fi
         done &
         UDEVADM_PID=$!
 
-        wait $CLVC_PID
+        wait $CVLC_PID
         kill $UDEVADM_PID 2>/dev/null || :
 
         echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
