@@ -54,12 +54,12 @@ vlc_restart_loop() {
 }
 
 webcam_stream_loop() {
+    DEVICE_NO=0
     while :
     do
-        DEVICE_NO=0
-        while ! [[ -e "/dev/video$DEVICE_NO" ]]; do
-            sleep 3;
-        done
+        if ! [[ -e "/dev/video$DEVICE_NO" ]]; then
+            continue
+        fi
 
         echo "Starting cvlc instance for webcam streaming"
         cvlc -vv -q v4l2:///dev/video$DEVICE_NO --v4l2-width=1280 --v4l2-height=720 --sout \
@@ -69,16 +69,20 @@ webcam_stream_loop() {
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
         CLVC_PID=$!
-        # Monitor the process and device
-        while [[ -e "/dev/video$DEVICE_NO" ]] && ps -p $CLVC_PID > /dev/null; do
-            sleep 3
-        done
 
+        # Monitor the video device using udevadm monitor
         # If device is unplugged, kill existing clvc instance to release /dev/video0
-        if ! [[ -e "/dev/video$DEVICE_NO" ]]; then
-            echo "Device unplugged, proceed to kill cvlc"
-            kill $CLVC_PID 2>/dev/null || :
-        fi
+        udevadm monitor --udev -s video4linux | while read -r line; do
+            if [[ "$line" == *"remove"*"/video4linux/video$DEVICE_NO"* ]] ; then
+                echo "Device unplugged, proceed to kill cvlc"
+                kill $CLVC_PID 2>/dev/null || :
+                break
+            fi
+        done &
+        UDEVADM_PID=$!
+
+        wait $CLVC_PID
+        kill $UDEVADM_PID 2>/dev/null || :
 
         echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
         # Sleep to prevent CPU hogging and let the processes be killed in any order
