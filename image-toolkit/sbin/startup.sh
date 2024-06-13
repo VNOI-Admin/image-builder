@@ -54,17 +54,22 @@ vlc_restart_loop() {
 }
 
 webcam_stream_loop() {
-    DEVICE_NO=0
+    VIDEO_DEVICE_NO=0
+    # We might need to use a different device
+    # Find out the correct device using aplay -L
+    AUDIO_DEVICE=alsa://plughw:0,0
     while :
     do
-        if ! [[ -e "/dev/video$DEVICE_NO" ]]; then
+        if ! [[ -e "/dev/video$VIDEO_DEVICE_NO" ]]; then
             continue
         fi
 
         echo "Starting cvlc instance for webcam streaming"
-        cvlc -vv -q v4l2:///dev/video$DEVICE_NO --v4l2-width=1280 --v4l2-height=720 --sout \
+        cvlc -vv -q v4l2:///dev/video$VIDEO_DEVICE_NO --v4l2-width=1280 --v4l2-height=720 \
+        --input-slave $AUDIO_DEVICE \
+        --sout \
             "#transcode{ \
-                vcodec=h264,acodec=none,vb=3000,ab=0,fps=15 \
+                vcodec=h264,acodec=aac,channels=1,vb=3000,ab=128,fps=15 \
             }:duplicate{ \
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
@@ -73,7 +78,7 @@ webcam_stream_loop() {
         # Monitor the video device using udevadm monitor
         # If device is unplugged, kill existing clvc instance to release /dev/video0
         udevadm monitor --udev -s video4linux | while read -r line; do
-            if [[ "$line" == *"remove"*"/video4linux/video$DEVICE_NO"* ]] ; then
+            if [[ "$line" == *"remove"*"/video4linux/video$VIDEO_DEVICE_NO"* ]] ; then
                 echo "Device unplugged, proceed to kill cvlc"
                 kill $CVLC_PID 2>/dev/null || :
                 break
