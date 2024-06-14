@@ -102,13 +102,13 @@ webcam_stream_loop() {
         fi
 
         echo "Sending SIGTERM to cvlc and udevadm"
-        kill $UDEVADM_PID $CVLC_PID || :
+        kill $UDEVADM_PID $CVLC_PID
 
         echo "Waiting for cvlc and udevadm to exit"
         # timeout returns 124 if the command times out
         timeout 3s wait -f $UDEVADM_PID $CVLC_PID; if [ $? -eq 124 ]; then
             echo "Timeout waiting for cvlc and udevadm to exit, sending SIGKILL"
-            kill -9 $UDEVADM_PID $CVLC_PID || :
+            kill -9 $UDEVADM_PID $CVLC_PID
         fi
 
         echo "Restarting in 3 seconds"
