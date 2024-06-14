@@ -55,20 +55,21 @@ vlc_restart_loop() {
 
 webcam_stream_loop() {
     VIDEO_DEVICE_NO=0
+    VIDEO_DEVICE_PATH="/dev/video$VIDEO_DEVICE_NO"
     # We might need to use a different device
     # Find out the correct device using aplay -L
     AUDIO_DEVICE=alsa://plughw:0,0
     while :
     do
-        if ! [[ -e "/dev/video$VIDEO_DEVICE_NO" ]]; then
+        if ! [[ -e $VIDEO_DEVICE_PATH ]]; then
             continue
         fi
 
         # Monitor the video device using udevadm monitor
         # If device is unplugged, kill existing clvc instance to release /dev/video0
         echo "Starting udevadm to monitor video device connection"
-        udevadm monitor --udev -s video4linux | while read -r line; do
-            if [[ "$line" == *"remove"*"/video4linux/video$VIDEO_DEVICE_NO"* ]] ; then
+        udevadm monitor --udev -s video4linux $VIDEO_DEVICE_PATH | while read -r line; do
+            if [[ "$line" =~ "remove" ]] ; then
                 echo "Received video device removal: $line"
                 break
             fi
@@ -76,7 +77,7 @@ webcam_stream_loop() {
         UDEVADM_PID=$!
 
         echo "Starting cvlc instance for webcam streaming"
-        cvlc -vv -q v4l2:///dev/video$VIDEO_DEVICE_NO --v4l2-width=1280 --v4l2-height=720 \
+        cvlc -vv -q v4l2://$VIDEO_DEVICE_PATH --v4l2-width=1280 --v4l2-height=720 \
         --input-slave $AUDIO_DEVICE \
         --sout \
             "#transcode{ \
@@ -86,6 +87,7 @@ webcam_stream_loop() {
             }" &
         CVLC_PID=$!
 
+        echo "Waiting for cvlc or udevadm to exit"
         wait -fn -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
         if [[ $TERMINATED_PID -eq $CVLC_PID ]]; then
             echo "cvlc exited"
