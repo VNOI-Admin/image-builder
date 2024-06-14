@@ -64,6 +64,17 @@ webcam_stream_loop() {
             continue
         fi
 
+        # Monitor the video device using udevadm monitor
+        # If device is unplugged, kill existing clvc instance to release /dev/video0
+        echo "Starting udevadm to monitor video device connection"
+        udevadm monitor --udev -s video4linux | while read -r line; do
+            if [[ "$line" == *"remove"*"/video4linux/video$VIDEO_DEVICE_NO"* ]] ; then
+                echo "Received video device removal: $line"
+                break
+            fi
+        done &
+        UDEVADM_PID=$!
+
         echo "Starting cvlc instance for webcam streaming"
         cvlc -vv -q v4l2:///dev/video$VIDEO_DEVICE_NO --v4l2-width=1280 --v4l2-height=720 \
         --input-slave $AUDIO_DEVICE \
@@ -75,19 +86,14 @@ webcam_stream_loop() {
             }" &
         CVLC_PID=$!
 
-        # Monitor the video device using udevadm monitor
-        # If device is unplugged, kill existing clvc instance to release /dev/video0
-        udevadm monitor --udev -s video4linux | while read -r line; do
-            if [[ "$line" == *"remove"*"/video4linux/video$VIDEO_DEVICE_NO"* ]] ; then
-                echo "Device unplugged, proceed to kill cvlc"
-                kill $CVLC_PID 2>/dev/null || :
-                break
-            fi
-        done &
-        UDEVADM_PID=$!
+        wait -n -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
+        if [[ $TERMINATED_PID -eq $CVLC_PID ]]; then
+            echo "cvlc exited"
+        else
+            echo "udevadm exited"
+        fi
 
-        wait $CVLC_PID
-        kill $UDEVADM_PID 2>/dev/null || :
+        kill $UDEVADM_PID $CVLC_PID || :
 
         echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
         # Sleep to prevent CPU hogging and let the processes be killed in any order
