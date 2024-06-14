@@ -48,6 +48,7 @@ vlc_restart_loop() {
                 dst=std{access=http,mux=ts,dst=:101} \
             }"
         echo "VLC exited, restarting in 3 seconds"
+
         # Sleep to prevent CPU hogging and let the processes be killed in any order
         sleep 3
     done
@@ -100,9 +101,17 @@ webcam_stream_loop() {
             echo "udevadm exited"
         fi
 
+        echo "Sending SIGTERM to cvlc and udevadm"
         kill $UDEVADM_PID $CVLC_PID || :
 
-        echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
+        echo "Waiting for cvlc and udevadm to exit"
+        # timeout returns 124 if the command times out
+        timeout 3s wait -f $UDEVADM_PID $CVLC_PID; if [ $? -eq 124 ]; then
+            echo "Timeout waiting for cvlc and udevadm to exit, sending SIGKILL"
+            kill -9 $UDEVADM_PID $CVLC_PID || :
+        fi
+
+        echo "Restarting in 3 seconds"
 
         # Sleep to prevent CPU hogging and let the processes be killed in any order
         sleep 3
