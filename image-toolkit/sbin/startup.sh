@@ -86,7 +86,7 @@ webcam_stream_loop() {
             }" &
         CVLC_PID=$!
 
-        wait -n -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
+        wait -fn -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
         if [[ $TERMINATED_PID -eq $CVLC_PID ]]; then
             echo "cvlc exited"
         else
