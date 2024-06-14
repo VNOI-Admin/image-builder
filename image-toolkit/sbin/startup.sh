@@ -62,6 +62,11 @@ webcam_stream_loop() {
     while :
     do
         if ! [[ -e $VIDEO_DEVICE_PATH ]]; then
+            echo "Video device not found at $VIDEO_DEVICE_PATH. Available video devices"
+            echo "============"
+            ls -l "/dev/video"*
+            echo "============"
+            sleep 3
             continue
         fi
 
@@ -98,6 +103,7 @@ webcam_stream_loop() {
         kill $UDEVADM_PID $CVLC_PID || :
 
         echo "VLC instance for webcam streaming exited, restarting in 3 seconds"
+
         # Sleep to prevent CPU hogging and let the processes be killed in any order
         sleep 3
     done
