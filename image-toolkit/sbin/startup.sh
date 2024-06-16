@@ -23,6 +23,14 @@ if [ -f /run/icpc-startup.pid ]; then
     if kill -0 $STARTUP_PID && diff /proc/$STARTUP_PID/cmdline /proc/$$/cmdline; then
         echo "Killing existing startup"
         kill -- -$(cat /run/icpc-startup.pid)
+
+        echo "Waiting for 1s before sending SIGKILL"
+        sleep 1
+
+        echo "Sending SIGKILL"
+        kill -9 -- -$(cat /run/icpc-startup.pid)
+
+        sleep 0.1
     else
         echo "Removing stale startup pid file"
     fi
