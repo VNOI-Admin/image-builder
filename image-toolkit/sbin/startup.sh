@@ -91,12 +91,12 @@ webcam_stream_loop() {
         # Monitor the video device using udevadm monitor
         # If device is unplugged, kill existing clvc instance to release /dev/video0
         echo "Starting udevadm to monitor video device connection"
-        udevadm monitor --udev -s video4linux $VIDEO_DEVICE_PATH | while read -r line; do
+        while read -r line; do
             if [[ "$line" =~ "remove" ]] ; then
                 echo "Received video device removal: $line"
                 break
             fi
-        done &
+        done < <(udevadm monitor --udev -s video4linux) &
         UDEVADM_PID=$!
 
         echo "Starting cvlc instance for streaming webcam $VIDEO_DEVICE_PATH"
