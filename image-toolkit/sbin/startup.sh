@@ -113,19 +113,23 @@ webcam_stream_loop() {
         echo "Waiting for cvlc or udevadm to exit"
         wait -fn -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
         if [[ $TERMINATED_PID -eq $CVLC_PID ]]; then
-            echo "cvlc exited"
+            echo "cvlc exited. Sending SIGTERM to udevadm"
+            RUNNING_PID=$UDEVADM_PID
         else
-            echo "udevadm exited"
+            echo "udevadm exited. Sending SIGTERM to cvlc"
+            RUNNING_PID=$CVLC_PID
         fi
 
-        echo "Sending SIGTERM to cvlc and udevadm"
-        kill $UDEVADM_PID $CVLC_PID
+        kill $RUNNING_PID
 
-        echo "Waiting for cvlc and udevadm to exit"
-        # timeout returns 124 if the command times out
-        timeout 3s wait -f $UDEVADM_PID $CVLC_PID; if [ $? -eq 124 ]; then
-            echo "Timeout waiting for cvlc and udevadm to exit, sending SIGKILL"
-            kill -9 $UDEVADM_PID $CVLC_PID
+        echo "Waiting 3s for exit"
+        sleep 3 & SLEEP_PID=$!
+
+        # if sleep terminates first, RUNNING_PID will have to be killed
+        wait -fn -p TERMINATED_PID $RUNNING_PID $SLEEP_PID
+        if [ $TERMINATED_PID -eq $SLEEP_PID ]; then
+            echo "Timed out, sending SIGKILL"
+            kill -9 $RUNNING_PID
         fi
     }
 
