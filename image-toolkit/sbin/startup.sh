@@ -113,24 +113,21 @@ webcam_stream_loop() {
         echo "Waiting for cvlc or udevadm to exit"
         wait -fn -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
         if [[ $TERMINATED_PID -eq $CVLC_PID ]]; then
-            echo "cvlc exited. Sending SIGTERM to udevadm"
-            RUNNING_PID=$UDEVADM_PID
+            echo "cvlc exited"
         else
-            echo "udevadm exited. Sending SIGTERM to cvlc"
-            RUNNING_PID=$CVLC_PID
+            echo "udevadm exited"
         fi
 
-        kill $RUNNING_PID
+        echo "Sending SIGTERM"
+        kill $UDEVADM_PID $CVLC_PID
 
-        echo "Waiting 3s for exit"
-        sleep 3 & SLEEP_PID=$!
+        echo "Waiting for 1s before sending SIGKILL"
+        sleep 1
 
-        # if sleep terminates first, RUNNING_PID will have to be killed
-        wait -fn -p TERMINATED_PID $RUNNING_PID $SLEEP_PID
-        if [ $TERMINATED_PID -eq $SLEEP_PID ]; then
-            echo "Timed out, sending SIGKILL"
-            kill -9 $RUNNING_PID
-        fi
+        echo "Sending SIGKILL"
+        kill -9 $UDEVADM_PID $CVLC_PID
+
+        sleep 0.1
     }
 
     webcam_pick_devices
@@ -154,7 +151,6 @@ webcam_stream_loop() {
         webcam_stream
 
         echo "Stream stopped. Restarting in 3s"
-
         # Sleep to prevent CPU hogging and let the processes be killed in any order
         sleep 3
     done
