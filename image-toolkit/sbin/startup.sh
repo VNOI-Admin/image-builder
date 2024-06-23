@@ -87,12 +87,55 @@ webcam_stream_loop() {
 
             VIDEO_DEVICE_PATH=${VIDEO_DEVICES[0]}
             echo "Using $VIDEO_DEVICE_PATH"
-
-            # We might need to use a different device
-            # Find out the correct device using aplay -L
-            AUDIO_DEVICE=alsa://plughw:0,0
             return
         done
+    }
+
+    audio_pick_devices() {
+        local AUDIO_DEVICE_NAME
+        source /opt/vnoi/config.sh
+
+        # Fallback source, vlc will choose default device from system
+        AUDIO_SOURCE="alsa://default"
+
+        if [[ -z "${AUDIO_DEVICE_NAME+x}" ]] ; then
+            echo "AUDIO_DEVICE_NAME is not defined, will use system default"
+            AUDIO_DEVICE_NAME="system"
+        fi
+
+        if [[ "$AUDIO_DEVICE_NAME" = "system" ]] ; then
+            return
+        fi
+
+        local AUDIO_DEVICE_INFO
+        mapfile -t AUDIO_DEVICE_INFO < <(find /proc/asound/ -regex ".*card[0-9]+/pcm[0-9]+c/info")
+
+        if [[ ${#AUDIO_DEVICE_INFO[@]} -eq 0 ]]; then
+            echo "No audio devices found"
+            return
+        fi
+
+        local found=false
+
+        for info_file in "${AUDIO_DEVICE_INFO[@]}"; do
+            local CARD_NO=$(sed -n "s/^card: //p" "$info_file")
+            local DEVICE_NO=$(sed -n "s/^device: //p" "$info_file")
+            local NAME=$(sed -n "s/^name: //p" "$info_file")
+            local SYSFS_PATH=$(udevadm info -q path "/dev/snd/pcmC${CARD_NO}D${DEVICE_NO}c")
+
+            if [[ "$AUDIO_DEVICE_NAME" = "any" ]] || [[ "$NAME" = "$AUDIO_DEVICE_NAME" ]]; then
+                AUDIO_DEVICE_NAME="$NAME"
+                # https://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html#pcm_dev_names
+                AUDIO_SOURCE="alsa://plughw:$CARD_NO,$DEVICE_NO"
+                echo "Using $AUDIO_DEVICE_NAME at $SYSFS_PATH"
+                found=true
+                break
+            fi
+        done
+
+        if [[ "$found" = false ]]; then
+            echo "Warning: No audio devices match the name $AUDIO_DEVICE_NAME"
+        fi
     }
 
     webcam_stream() {
@@ -107,9 +150,9 @@ webcam_stream_loop() {
         done < <(udevadm monitor --udev -s video4linux) &
         UDEVADM_PID=$!
 
-        echo "Starting cvlc instance for streaming webcam $VIDEO_DEVICE_PATH"
+        echo "Starting cvlc instance for streaming webcam $VIDEO_DEVICE_PATH with audio source $AUDIO_SOURCE"
         cvlc -vv -q v4l2://$VIDEO_DEVICE_PATH --v4l2-width=1280 --v4l2-height=720 \
-        --input-slave $AUDIO_DEVICE \
+        --input-slave $AUDIO_SOURCE \
         --sout \
             "#transcode{ \
                 venc=x264{keyint=15},vcodec=h264,acodec=aac,channels=1,vb=3000,ab=128,fps=15 \
@@ -117,6 +160,7 @@ webcam_stream_loop() {
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
         CVLC_PID=$!
+        echo $CVLC_PID > /run/icpc-webcam-stream.pid
 
         echo "Waiting for cvlc or udevadm to exit"
         wait -fn -p TERMINATED_PID $UDEVADM_PID $CVLC_PID
@@ -156,6 +200,7 @@ webcam_stream_loop() {
             fi
         fi
 
+        audio_pick_devices
         webcam_stream
 
         echo "Stream stopped. Restarting in 3s"
