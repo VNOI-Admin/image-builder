@@ -13,7 +13,10 @@ CONTEST_SITE_DOMAIN_NAME=""  # Example: contest.icpc.info
 ADMIN_SUBNET="10.1.0.0/16"
 COACH_SUBNET="10.20.0.0/16"
 
-# Name of the audio device used for streaming (Example: "Intel 82801AA-ICH - MIC ADC")
+# Name of the audio device used for streaming (Example: "Intel 82801AA-ICH - MIC ADC", can be a glob pattern)
 # "any" will be the first available hardware capture device
 # "system" will be the default device of the system
 AUDIO_DEVICE_NAME="any"
+
+# If AUDIO_DEVICE_SOURCE is provided, AUDIO_DEVICE_NAME check is bypassed and AUDIO_DEVICE_SOURCE will be used directly
+# AUDIO_DEVICE_SOURCE="alsa://plughw:1,0"

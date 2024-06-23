@@ -24,7 +24,7 @@ check_audio_device() {
 	for info_file in "${AUDIO_DEVICE_INFO[@]}"; do
 		local NAME=$(sed -n "s/^name: //p" "$info_file")
 
-		if [[ "$NAME" = "$1" ]]; then
+		if [[ "$NAME" = $1 ]]; then
 			return 0
 		fi
 	done

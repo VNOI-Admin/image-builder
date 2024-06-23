@@ -93,7 +93,14 @@ webcam_stream_loop() {
 
     audio_pick_devices() {
         local AUDIO_DEVICE_NAME
+        local AUDIO_DEVICE_SOURCE
         source /opt/vnoi/config.sh
+
+        if [[ -v AUDIO_DEVICE_SOURCE ]] ; then
+            echo "AUDIO_DEVICE_SOURCE provided, will use $AUDIO_DEVICE_SOURCE"
+            AUDIO_SOURCE="$AUDIO_DEVICE_SOURCE"
+            return
+        fi
 
         # Fallback source, vlc will choose default device from system
         AUDIO_SOURCE="alsa://default"
@@ -123,7 +130,7 @@ webcam_stream_loop() {
             local NAME=$(sed -n "s/^name: //p" "$info_file")
             local SYSFS_PATH=$(udevadm info -q path "/dev/snd/pcmC${CARD_NO}D${DEVICE_NO}c")
 
-            if [[ "$AUDIO_DEVICE_NAME" = "any" ]] || [[ "$NAME" = "$AUDIO_DEVICE_NAME" ]]; then
+            if [[ "$AUDIO_DEVICE_NAME" = "any" ]] || [[ "$NAME" = $AUDIO_DEVICE_NAME ]]; then
                 AUDIO_DEVICE_NAME="$NAME"
                 # https://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html#pcm_dev_names
                 AUDIO_SOURCE="alsa://plughw:$CARD_NO,$DEVICE_NO"
