@@ -96,14 +96,14 @@ webcam_stream_loop() {
         local AUDIO_DEVICE_SOURCE
         source /opt/vnoi/config.sh
 
+        # Fallback source, vlc will choose default device from system
+        AUDIO_SOURCE="alsa://default"
+
         if [[ -v AUDIO_DEVICE_SOURCE ]] ; then
             echo "AUDIO_DEVICE_SOURCE provided, will use $AUDIO_DEVICE_SOURCE"
             AUDIO_SOURCE="$AUDIO_DEVICE_SOURCE"
             return
         fi
-
-        # Fallback source, vlc will choose default device from system
-        AUDIO_SOURCE="alsa://default"
 
         if [[ -z "${AUDIO_DEVICE_NAME+x}" ]] ; then
             echo "AUDIO_DEVICE_NAME is not defined, will use system default"
