@@ -156,6 +156,7 @@ EOM
 		if ! check_audio_device "$2"; then
 			echo "Warning: No audio devices match the name $2"
 		fi
+		# Matches whole line starting with "AUDIO_DEVICE_NAME="
 		sed -i "s/AUDIO_DEVICE_NAME=.*/AUDIO_DEVICE_NAME=\"$2\"/" /opt/vnoi/config.sh
 		# Restart stream
 		if [[ -f "/run/icpc-webcam-stream.pid" ]]; then
@@ -163,6 +164,7 @@ EOM
 		fi
 		;;
 	list_audio_devices)
+		# "[0-9]+" matches one or more digits
 		mapfile -t AUDIO_DEVICE_INFO < <(find /proc/asound/ -regex ".*card[0-9]+/pcm[0-9]+c/info")
 		for info_file in "${AUDIO_DEVICE_INFO[@]}"; do
 			CARD_NO=$(sed -n "s/^card: //p" "$info_file")
