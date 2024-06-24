@@ -24,6 +24,8 @@ check_audio_device() {
 	for info_file in "${AUDIO_DEVICE_INFO[@]}"; do
 		local NAME=$(sed -n "s/^name: //p" "$info_file")
 
+		# Pattern matching is used
+		# https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html#Bash-Conditional-Expressions
 		if [[ "$NAME" = $1 ]]; then
 			return 0
 		fi

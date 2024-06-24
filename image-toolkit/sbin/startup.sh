@@ -130,6 +130,8 @@ webcam_stream_loop() {
             local NAME=$(sed -n "s/^name: //p" "$info_file")
             local SYSFS_PATH=$(udevadm info -q path "/dev/snd/pcmC${CARD_NO}D${DEVICE_NO}c")
 
+            # Pattern matching is used
+            # https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html#Bash-Conditional-Expressions
             if [[ "$AUDIO_DEVICE_NAME" = "any" ]] || [[ "$NAME" = $AUDIO_DEVICE_NAME ]]; then
                 AUDIO_DEVICE_NAME="$NAME"
                 # https://www.alsa-project.org/alsa-doc/alsa-lib/pcm.html#pcm_dev_names
