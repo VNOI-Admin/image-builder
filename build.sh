@@ -621,7 +621,6 @@ case $1 in
         icpc_build $@
         ;;
     generate_actions_secret)
-        assert_root
         generate_actions_secret
         ;;
     dev_reload)
