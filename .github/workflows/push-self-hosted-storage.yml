@@ -32,7 +32,7 @@ jobs:
       - name: Write image-toolkit/config.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
-          CONTENT: ${{ secrets.SRC_CONFIG_SH }}
+          CONTENT: ${{ secrets.TOOLKIT_CONFIG_SH }}
           FILENAME: image-toolkit/config.sh
 
       - name: Build image
