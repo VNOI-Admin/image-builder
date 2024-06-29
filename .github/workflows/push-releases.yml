@@ -34,12 +34,6 @@ jobs:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
           FILENAME: config.local.sh
 
-      - name: Write image-toolkit/config.local.sh
-        run: echo $CONTENT | base64 -d > $FILENAME
-        env:
-          CONTENT: ${{ secrets.SRC_CONFIG_LOCAL_SH }}
-          FILENAME: image-toolkit/config.local.sh
-
       - name: Write image-toolkit/config.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
@@ -58,7 +52,7 @@ jobs:
           release_name: ${{ env.image_name }}
           draft: false
           prerelease: false
-      
+
       - name: Split ISO
         run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
 

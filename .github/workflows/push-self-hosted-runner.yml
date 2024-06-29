@@ -32,12 +32,6 @@ jobs:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
           FILENAME: config.local.sh
 
-      - name: Write image-toolkit/config.local.sh
-        run: echo $CONTENT | base64 -d > $FILENAME
-        env:
-          CONTENT: ${{ secrets.SRC_CONFIG_LOCAL_SH }}
-          FILENAME: image-toolkit/config.local.sh
-
       - name: Write image-toolkit/config.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
