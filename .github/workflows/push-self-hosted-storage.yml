@@ -60,3 +60,4 @@ jobs:
           port: ${{ secrets.SCP_PORT }}
           source: live-build/contestant.iso
           target: ${{ secrets.SCP_TARGET }}
+          tar_tmp_path: live-build/
