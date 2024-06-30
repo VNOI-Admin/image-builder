@@ -51,13 +51,24 @@ jobs:
       - name: Build image
         run: sudo ./build.sh icpc_build --github-actions
 
+      - name: Write secret key
+        run: echo $CONTENT | base64 -d > $FILENAME
+        env:
+          CONTENT: ${{ secrets.SCP_KEY }}
+          FILENAME: scp_key
+
+      # - name: Push to Server
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.SCP_HOST }}
+      #     username: ${{ secrets.SCP_USERNAME }}
+      #     key: ${{ secrets.SCP_KEY }}
+      #     port: ${{ secrets.SCP_PORT }}
+      #     source: live-build/contestant.iso
+      #     target: ${{ secrets.SCP_TARGET }}
+      #     tar_tmp_path: live-build/
+
       - name: Push to Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SCP_HOST }}
-          username: ${{ secrets.SCP_USERNAME }}
-          key: ${{ secrets.SCP_KEY }}
-          port: ${{ secrets.SCP_PORT }}
-          source: live-build/contestant.iso
-          target: ${{ secrets.SCP_TARGET }}
-          tar_tmp_path: live-build/
+        run: |
+          scp -i scp_key live-build/contestant.iso \
+          ${{ secrets.SCP_USERNAME }}@${{ secrets.SCP_HOST }}:${{ secrets.SCP_TARGET }}
