@@ -307,8 +307,6 @@ icpc_image_build() {
                 rm -rf $CHROOT/$i
             fi
         done
-        rm -rf $IMAGE
-        rm -rf $ICPC
         log "Done"
     fi
 
@@ -341,6 +339,13 @@ icpc_image_build() {
             -no-emul-boot \
         -o "../$IMAGE_FILENAME" \
         .
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $IMAGE
+        log "Done"
+    fi
+
     log "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
