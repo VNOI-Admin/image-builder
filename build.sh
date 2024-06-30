@@ -307,6 +307,8 @@ icpc_image_build() {
                 rm -rf $CHROOT/$i
             fi
         done
+        rm -rf $IMAGE
+        rm -rf $ICPC
         log "Done"
     fi
 
