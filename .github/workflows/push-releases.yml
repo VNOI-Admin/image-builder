@@ -19,6 +19,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-docker-images: 'true'
+          remove-codeql: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+
+      - name: Check free space
+        run: echo "Free space $(df -h /)"
+
       - name: Checkout Repository
         uses: actions/checkout@v3
 
@@ -34,16 +48,10 @@ jobs:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
           FILENAME: config.local.sh
 
-      - name: Write image-toolkit/config.local.sh
-        run: echo $CONTENT | base64 -d > $FILENAME
-        env:
-          CONTENT: ${{ secrets.SRC_CONFIG_LOCAL_SH }}
-          FILENAME: image-toolkit/config.local.sh
-
       - name: Write image-toolkit/config.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
-          CONTENT: ${{ secrets.SRC_CONFIG_SH }}
+          CONTENT: ${{ secrets.TOOLKIT_CONFIG_SH }}
           FILENAME: image-toolkit/config.sh
 
       - name: Build image
@@ -58,7 +66,7 @@ jobs:
           release_name: ${{ env.image_name }}
           draft: false
           prerelease: false
-      
+
       - name: Split ISO
         run: mkdir iso-parts; split -b 2000MB live-build/contestant.iso iso-parts/contestant
 

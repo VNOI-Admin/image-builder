@@ -14,6 +14,26 @@ check_ip()
 	fi
 }
 
+check_audio_device() {
+	if [[ "$1" = "any" ]] || [[ "$1" = "system" ]]; then
+		return 0
+	fi
+
+	local AUDIO_DEVICE_INFO
+	mapfile -t AUDIO_DEVICE_INFO < <(find /proc/asound/ -regex ".*card[0-9]+/pcm[0-9]+c/info")
+	for info_file in "${AUDIO_DEVICE_INFO[@]}"; do
+		local NAME=$(sed -n "s/^name: //p" "$info_file")
+
+		# Pattern matching is used
+		# https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html#Bash-Conditional-Expressions
+		if [[ "$NAME" = $1 ]]; then
+			return 0
+		fi
+	done
+
+	return 1
+}
+
 logger -p local0.info "VNOICONF: invoke $1"
 
 case "$1" in
@@ -129,6 +149,33 @@ EOM
 # EOM
 # 		fi
 # 		;;
+	set_audio_device)
+		# Get device name at the first argument and replace the AUDIO_DEVICE_NAME in config.sh with it
+		if [ -z "$2" ]; then
+			echo "No device name specified"
+			exit 1
+		fi
+		if ! check_audio_device "$2"; then
+			echo "Warning: No audio devices match the name $2"
+		fi
+		# Matches whole line starting with "AUDIO_DEVICE_NAME="
+		sed -i "s/AUDIO_DEVICE_NAME=.*/AUDIO_DEVICE_NAME=\"$2\"/" /opt/vnoi/config.sh
+		# Restart stream
+		if [[ -f "/run/icpc-webcam-stream.pid" ]]; then
+			kill -9 $(cat /run/icpc-webcam-stream.pid) 2> /dev/null
+		fi
+		;;
+	list_audio_devices)
+		# "[0-9]+" matches one or more digits
+		mapfile -t AUDIO_DEVICE_INFO < <(find /proc/asound/ -regex ".*card[0-9]+/pcm[0-9]+c/info")
+		for info_file in "${AUDIO_DEVICE_INFO[@]}"; do
+			CARD_NO=$(sed -n "s/^card: //p" "$info_file")
+			DEVICE_NO=$(sed -n "s/^device: //p" "$info_file")
+			NAME=$(sed -n "s/^name: //p" "$info_file")
+
+			echo "$CARD_NO,$DEVICE_NO: $NAME"
+		done
+		;;
 	*)
 		echo Not allowed
 		;;
