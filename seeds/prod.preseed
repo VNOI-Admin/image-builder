@@ -80,7 +80,6 @@ d-i passwd/user-default-groups string adm audio cdrom dip lpadmin sudo plugdev s
 # Grub
 d-i grub-installer/grub2_instead_of_grub_legacy boolean true
 d-i grub-installer/only_debian boolean true
-d-i grub-installer/bootdev string default
 d-i finish-install/reboot_in_progress note
 
 # Reboot after install
