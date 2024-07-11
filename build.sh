@@ -339,6 +339,13 @@ icpc_image_build() {
             -no-emul-boot \
         -o "../$IMAGE_FILENAME" \
         .
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $IMAGE
+        log "Done"
+    fi
+
     log "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
@@ -526,7 +533,8 @@ dev_create() {
     vboxmanage modifyvm "$VM_NAME" \
         --memory $MEM \
         --cpus $CPUS \
-        --firmware $FIRMWARE
+        --firmware $FIRMWARE \
+        --usb-xhci=on
     log "Done"
 
     log "Creating disk"
@@ -620,7 +628,6 @@ case $1 in
         icpc_build $@
         ;;
     generate_actions_secret)
-        assert_root
         generate_actions_secret
         ;;
     dev_reload)

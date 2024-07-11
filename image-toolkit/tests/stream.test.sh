@@ -22,6 +22,20 @@ else
     fail
 fi
 
+test_case "check if webcam.m3u8 exists for hls"
+file_path='/var/www/html/stream/hls/webcam.m3u8'
+if [[ -f "$file_path" ]] ; then
+    pass
+else
+    echo "webcam.m3u8 not found, retrying in 2 minutes..."
+    sleep 120
+    if [[ -f "$file" ]] ; then
+      pass
+    else
+      fail "webcam.m3u8 not found"
+    fi
+fi
+
 # check for ffmpeg process
 # if pgrep ffmpeg --exact; then
 #     pass
