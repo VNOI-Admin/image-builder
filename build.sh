@@ -123,14 +123,14 @@ icpc_build() {
 
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
-        install_if_has_apt aria2
+        install_if_has_apt aria2 genisoimage
         log "Downloading ICPC image"
         aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
         # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
     fi
 
     # Check if $2 file type is iso
-    if [ ! $(file $ICPC_ISO_FILENAME --extension | cut -d' ' -f2) = "iso/iso9660" ]; then
+    if [ ! isoinfo -d -i filename.iso > /dev/null 2>&1 ]; then
         log "File is not an ISO"
         rm -f $ICPC_ISO_FILENAME
         exit 1
@@ -163,6 +163,12 @@ icpc_build() {
 
     log "Extracting squashfs filesystem from ISO"
     unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $ICPC/casper/filesystem.squashfs
+        log "Done"
+    fi
     log "Done"
 
     log "Mount /dev and /run to chroot"

@@ -180,7 +180,7 @@ cp -f /opt/vnoi/misc/hls.conf /etc/nginx/sites-available/hls.conf
 ln -s /etc/nginx/sites-available/hls.conf /etc/nginx/sites-enabled/hls.conf
 rm -f /etc/nginx/sites-enabled/default
 mkdir -p /var/www/html/stream
-systemctl enable --now nginx
+systemctl enable nginx
 
 # Disable cloud-init
 mkdir -p /etc/cloud

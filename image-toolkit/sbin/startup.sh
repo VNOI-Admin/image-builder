@@ -164,7 +164,7 @@ webcam_stream_loop() {
         --input-slave $AUDIO_SOURCE \
         --sout \
             "#transcode{ \
-                venc=x264{keyint=15},vcodec=h264,acodec=aac,channels=1,vb=3000,ab=128,fps=15 \
+                venc=x264{keyint=15},vcodec=h264,acodec=aac,channels=1,vb=3000,ab=128,fps=24 \
             }:duplicate{ \
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
