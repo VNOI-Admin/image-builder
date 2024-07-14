@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 echo "Starting setup.sh"
 
 echo "Change directory to the script's directory"
@@ -96,8 +94,11 @@ EOM
 
 # GRUB config: quiet, and password for edit
 . /root/src/encrypted_passwd.sh
+
+echo "Set root password"
 echo "root:$ENCRYPTED_SUPER_PASSWD" | chpasswd -e
 
+echo "Set GRUB password"
 sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash"/' /etc/default/grub
 sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestricted \$/' /etc/grub.d/10_linux
 cat - <<EOM >> /etc/grub.d/40_custom
@@ -106,15 +107,10 @@ password_pbkdf2 root $GRUB_PASSWD
 EOM
 
 # update-grub2
-
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
 # Fix CCS shortcut to open VNOJ
 sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DOMAIN_NAME}#' /usr/share/applications/ccs.desktop
-
-# # Tinc Setup and Configuration
-
-# systemctl disable multipathd
 
 # Configure GDM to copy VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
@@ -214,11 +210,6 @@ APT::Periodic::Unattended-Upgrade "0";
 EOM
 
 # Remove/clean up unneeded snaps
-
-# snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision; do
-# 	snap remove "$snapname" --revision="$revision"
-# done
-
 rm -rf /var/lib/snapd/cache/*
 
 # Remove desktop backgrounds
@@ -272,15 +263,6 @@ fi
 
 # Deny icpc user from SSH login
 echo "DenyUsers icpc" >> /etc/ssh/sshd_config
-
-# # Auto login as icpc user
-# mv /etc/gdm3/custom.conf /etc/gdm3/custom.conf.bak
-# cat - <<'EOM' > /etc/gdm3/custom.conf
-# [daemon]
-# AutomaticLoginEnable=True
-# AutomaticLogin=icpc
-# EOM
-
 # Streaming
 echo "Setting up streaming"
 
