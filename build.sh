@@ -76,6 +76,7 @@ fi
 icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
+    COMPACT=false
     PROD_DEV="prod"
     APT_SOURCE="vnoi"
 
@@ -104,6 +105,9 @@ icpc_build() {
             ;;
         --icpc-source)
             APT_SOURCE="icpc"
+            ;;
+        --compact)
+            COMPACT=true
             ;;
         -h | --help)
             echo "Usage: $0 icpc_build [-u|--url <url>] [-f|--force]"
@@ -302,7 +306,13 @@ icpc_image_build() {
     sed -i '/laptop-detect/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/os-prober/d' $IMAGE/casper/filesystem.manifest-desktop
     # Compress filesystem
-    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
+    if [ $COMPACT = true ]; then
+        log "Compressing filesystem with xz (slow, smaller size)"
+        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -b 1048576 -comp xz -Xdict-size 100%
+    else
+        log "Compressing filesystem with gzip (fast, larger size)"
+        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
+    fi
 
     printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
 
