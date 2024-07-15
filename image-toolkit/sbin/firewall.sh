@@ -9,6 +9,7 @@ case "$1" in
 		cat /opt/vnoi/misc/iptables.save | \
 			sed -e 's#{ADMIN_SUBNET}#'${ADMIN_SUBNET}'#g' | \
 			sed -e 's#{COACH_SUBNET}#'${COACH_SUBNET}'#g' | \
+			sed -e 's#{WEBSERVER_PUBLIC_DOMAIN_NAME}#'${WEBSERVER_PUBLIC_DOMAIN_NAME}'#g' | \
 			/usr/sbin/iptables-restore
 		/usr/sbin/ip6tables -P INPUT DROP
 		/usr/sbin/ip6tables -P OUTPUT DROP

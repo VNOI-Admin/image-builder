@@ -23,8 +23,15 @@ else
     pass
 fi
 
-test_case "check port 8001 at vpn.vnoi.info"
-if nc -z -w5 vpn.vnoi.info 8001; then
+test_case "check port 80 at vpn.vnoi.info"
+if nc -z -w5 vpn.vnoi.info 80; then
+    pass
+else
+    fail
+fi
+
+test_case "check port 443 at vpn.vnoi.info"
+if nc -z -w5 vpn.vnoi.info 443; then
     pass
 else
     fail

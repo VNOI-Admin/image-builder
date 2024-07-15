@@ -41,11 +41,11 @@
 -A OUTPUT -p tcp -m tcp -m multiport --dports 8000:9000 -d {ADMIN_SUBNET} -j ACCEPT -o client
 
 # Backup server
--A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d contest2.icpc.info -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport --dports 80,443 -d {WEBSERVER_PUBLIC_DOMAIN_NAME} -j ACCEPT
 
 # VPN outgoing. Restricted to central server at the address "vpn.vnoi.info". Specified in /etc/hosts.
--A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 51820,8000,8001,9000 -j ACCEPT
--A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 51820,8000,8001,9000 -j ACCEPT
+-A OUTPUT -p tcp -m tcp -m multiport -d vpn.vnoi.info --dports 80,443,51820 -j ACCEPT
+-A OUTPUT -p udp -m udp -m multiport -d vpn.vnoi.info --dports 80,443,51820 -j ACCEPT
 
 # NTP, time sync. Restricted to
 # Ubuntu's default: ntp.ubuntu.com
