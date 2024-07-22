@@ -149,6 +149,19 @@ EOM
 # EOM
 # 		fi
 # 		;;
+	set_video_device)
+		# Get device path at the first argument and replace the VIDEO_DEVICE_SOURCE in config.sh with it
+		if [ -z "$2" ]; then
+			echo "No device specified"
+			exit 1
+		fi
+		# Matches whole line starting with "VIDEO_DEVICE_SOURCE="
+		sed -i "s/VIDEO_DEVICE_SOURCE=.*/VIDEO_DEVICE_SOURCE=\"$2\"/" /opt/vnoi/config.sh
+		# Restart stream
+		if [[ -f "/run/icpc-webcam-stream.pid" ]]; then
+			kill -9 $(cat /run/icpc-webcam-stream.pid) 2> /dev/null
+		fi
+		;;
 	set_audio_device)
 		# Get device name at the first argument and replace the AUDIO_DEVICE_NAME in config.sh with it
 		if [ -z "$2" ]; then

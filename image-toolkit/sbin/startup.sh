@@ -64,6 +64,16 @@ vlc_restart_loop() {
 
 webcam_stream_loop() {
     webcam_pick_devices() {
+        local VIDEO_DEVICE_SOURCE
+        source /opt/vnoi/config.sh
+
+        if [[ -v VIDEO_DEVICE_SOURCE ]] && [[ -n "$VAR" ]] ; then
+            echo "VIDEO_DEVICE_SOURCE provided"
+            VIDEO_DEVICE_PATH="$VIDEO_DEVICE_SOURCE"
+            echo "Using $VIDEO_DEVICE_PATH"
+            return
+        fi
+
         # Find device by unique identifiers
         # https://docs.kernel.org/userspace-api/media/v4l/open.html#v4l2-device-node-naming
         while :
