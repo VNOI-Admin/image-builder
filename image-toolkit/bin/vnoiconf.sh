@@ -156,7 +156,7 @@ EOM
 			exit 1
 		fi
 		# Matches whole line starting with "VIDEO_DEVICE_SOURCE="
-		sed -i "s/VIDEO_DEVICE_SOURCE=.*/VIDEO_DEVICE_SOURCE=\"$2\"/" /opt/vnoi/config.sh
+		sed -i "s#VIDEO_DEVICE_SOURCE=.*#VIDEO_DEVICE_SOURCE=\"$2\"#" /opt/vnoi/config.sh
 		# Restart stream
 		if [[ -f "/run/icpc-webcam-stream.pid" ]]; then
 			kill -9 $(cat /run/icpc-webcam-stream.pid) 2> /dev/null
