@@ -20,3 +20,7 @@ AUDIO_DEVICE_NAME="any"
 
 # If AUDIO_DEVICE_SOURCE is provided, AUDIO_DEVICE_NAME check is bypassed and AUDIO_DEVICE_SOURCE will be used directly
 # AUDIO_DEVICE_SOURCE="alsa://plughw:1,0"
+
+# If VIDEO_DEVICE_SOURCE is not empty, VIDEO_DEVICE_SOURCE will be used as the webcam device path for streaming
+# Example: "/dev/v4l/by-id/usb-mywebcam-video-index0"
+VIDEO_DEVICE_SOURCE=""
