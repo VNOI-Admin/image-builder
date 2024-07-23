@@ -151,7 +151,7 @@ EOM
 # 		;;
 	set_video_device)
 		# Get device path at the first argument and replace the VIDEO_DEVICE_SOURCE in config.sh with it
-		if [ -z "$2" ]; then
+		if [ "$#" -ne 2 ]; then
 			echo "No device specified"
 			exit 1
 		fi
