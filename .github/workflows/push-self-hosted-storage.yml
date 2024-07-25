@@ -14,6 +14,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-codeql: 'true'
+          remove-haskell: 'true'
+          remove-android: 'true'
+
+      - name: Check free space
+        run: echo "Free space $(df -h /)"
+
       - name: Checkout Repository
         uses: actions/checkout@v3
 
@@ -29,28 +42,32 @@ jobs:
           CONTENT: ${{ secrets.CONFIG_LOCAL_SH }}
           FILENAME: config.local.sh
 
-      - name: Write image-toolkit/config.local.sh
-        run: echo $CONTENT | base64 -d > $FILENAME
-        env:
-          CONTENT: ${{ secrets.SRC_CONFIG_LOCAL_SH }}
-          FILENAME: image-toolkit/config.local.sh
-
       - name: Write image-toolkit/config.sh
         run: echo $CONTENT | base64 -d > $FILENAME
         env:
-          CONTENT: ${{ secrets.SRC_CONFIG_SH }}
+          CONTENT: ${{ secrets.TOOLKIT_CONFIG_SH }}
           FILENAME: image-toolkit/config.sh
 
       - name: Build image
         run: sudo ./build.sh icpc_build --github-actions
 
+      # - name: Push to Server
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.SCP_HOST }}
+      #     username: ${{ secrets.SCP_USERNAME }}
+      #     key: ${{ secrets.SCP_KEY }}
+      #     port: ${{ secrets.SCP_PORT }}
+      #     source: live-build/contestant.iso
+      #     target: ${{ secrets.SCP_TARGET }}
+      #     tar_tmp_path: live-build/
+
       - name: Push to Server
-        if: ${{ github.event.inputs.iso_location == 'server' }}
-        uses: appleboy/scp-action@v0.1.7
+        uses: nogsantos/scp-deploy@master
         with:
+          src: live-build/contestant.iso
           host: ${{ secrets.SCP_HOST }}
-          username: ${{ secrets.SCP_USERNAME }}
-          key: ${{ secrets.SCP_KEY }}
+          remote: ${{ secrets.SCP_TARGET }}
           port: ${{ secrets.SCP_PORT }}
-          source: live-build/contestant.iso
-          target: ${{ secrets.SCP_TARGET }}
+          user: ${{ secrets.SCP_USERNAME }}
+          key: ${{ secrets.SCP_KEY }}

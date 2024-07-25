@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 echo "Starting setup.sh"
 
 echo "Change directory to the script's directory"
@@ -38,7 +36,7 @@ fi
 echo "Fix up date/time"
 timedatectl set-timezone Asia/Jakarta
 # vmware-toolbox-cmd timesync enable
-hwclock -w
+# hwclock -w
 
 # Change default shell for useradd
 sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
@@ -47,14 +45,17 @@ sed -i '/^SHELL/ s/\/sh$/\/bash/' /etc/default/useradd
 
 echo "Copy VNOI stuffs into /opt"
 mkdir -p /opt/vnoi
-cp -a bin sbin misc /opt/vnoi/
+cp -a bin sbin misc tests /opt/vnoi/
 
 # Limit access and execution to root and its group
 chmod 770 -R /opt/vnoi/bin/
 chmod 770 -R /opt/vnoi/sbin/
 chmod 770 -R /opt/vnoi/misc/
+chmod 770 -R /opt/vnoi/tests/
 
 cp config.sh /opt/vnoi/
+cp tests.sh /opt/vnoi/
+chmod 770 /opt/vnoi/tests.sh
 
 mkdir -p /opt/vnoi/run
 mkdir -p /opt/vnoi/store
@@ -70,6 +71,9 @@ echo "Asia/Bangkok" > /opt/vnoi/config/timezone
 # Default to enable screensaver lock
 touch /opt/vnoi/config/screenlock
 
+# Add our own syslog facility
+echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
+
 # Create ICPC account
 echo "Create icpc account"
 /opt/vnoi/sbin/mkuser.sh
@@ -82,12 +86,7 @@ echo "icpc:icpc" | chpasswd
 chown icpc.icpc /opt/vnoi/store/submissions
 chmod 770 /opt/vnoi/store/log
 
-# Add our own syslog facility
-
-echo "local0.* /opt/vnoi/store/log/local.log" >> /etc/rsyslog.d/10-vnoi.conf
-
 # Add custom NTP to timesyncd config
-
 cat - <<EOM > /etc/systemd/timesyncd.conf
 [Time]
 NTP=ntp.ubuntu.com time.windows.com
@@ -95,8 +94,11 @@ EOM
 
 # GRUB config: quiet, and password for edit
 . /root/src/encrypted_passwd.sh
+
+echo "Set root password"
 echo "root:$ENCRYPTED_SUPER_PASSWD" | chpasswd -e
 
+echo "Set GRUB password"
 sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT/ s/"$/ quiet splash"/' /etc/default/grub
 sed -i '/\$(echo "\$os" | grub_quote)'\'' \${CLASS}/ s/'\'' \$/'\'' --unrestricted \$/' /etc/grub.d/10_linux
 cat - <<EOM >> /etc/grub.d/40_custom
@@ -104,16 +106,11 @@ set superusers="root"
 password_pbkdf2 root $GRUB_PASSWD
 EOM
 
-update-grub2
-
+# update-grub2
 sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 
 # Fix CCS shortcut to open VNOJ
-sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser contest.vnoi.info#' /usr/share/applications/ccs.desktop
-
-# # Tinc Setup and Configuration
-
-# systemctl disable multipathd
+sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DOMAIN_NAME}#' /usr/share/applications/ccs.desktop
 
 # Configure GDM to copy VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
@@ -139,22 +136,12 @@ mkdir -p /opt/vnoi/misc/records/
 
 # Configure startup script, hidden from vnoi user access
 mkdir -p /home/icpc/.config/autostart
-
-cat - <<'EOM' > /home/icpc/.config/autostart/icpc.desktop
-[Desktop Entry]
-Type=Application
-Exec=sudo /opt/vnoi/sbin/startup.sh
-NoDisplay=true
-X-GNOME-Autostart-enabled=true
-Name[en_US]=icpc
-Name=icpc
-Comment[en_US]=
-Comment=
-EOM
+cp /opt/vnoi/misc/icpc.desktop /home/icpc/.config/autostart/icpc.desktop
 
 chown root:root /home/icpc/.config/autostart/icpc.desktop
-# only allow execution
+# Only allow execution and set as immutable
 chmod 744 /home/icpc/.config/autostart/icpc.desktop
+chattr +i /home/icpc/.config/autostart/icpc.desktop
 
 # Create cronjob to run `python3 /opt/vnoi/sbin/report.py` every 15 seconds
 cat - <<'EOM' > /etc/cron.d/icpc
@@ -189,7 +176,7 @@ cp -f /opt/vnoi/misc/hls.conf /etc/nginx/sites-available/hls.conf
 ln -s /etc/nginx/sites-available/hls.conf /etc/nginx/sites-enabled/hls.conf
 rm -f /etc/nginx/sites-enabled/default
 mkdir -p /var/www/html/stream
-systemctl enable --now nginx
+systemctl enable nginx
 
 # Disable cloud-init
 mkdir -p /etc/cloud
@@ -223,11 +210,6 @@ APT::Periodic::Unattended-Upgrade "0";
 EOM
 
 # Remove/clean up unneeded snaps
-
-# snap list --all | awk '/disabled/{print $1, $3}' | while read snapname revision; do
-# 	snap remove "$snapname" --revision="$revision"
-# done
-
 rm -rf /var/lib/snapd/cache/*
 
 # Remove desktop backgrounds
@@ -281,6 +263,31 @@ fi
 
 # Deny icpc user from SSH login
 echo "DenyUsers icpc" >> /etc/ssh/sshd_config
+# Streaming
+echo "Setting up streaming"
+
+cat <<EOF > /etc/systemd/system/ffmpeg-record.service
+[Unit]
+Description=FFMPEG Screen Recording
+
+[Service]
+Type=notify
+ExecStart=/bin/bash -c "exec /opt/vnoi/sbin/streaming/ffmpeg.sh"
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=graphical.target
+Alias=ffmpeg.service
+EOF
+
+systemctl enable ffmpeg-record.service
+
+if [[ -f '/opt/vnoi/misc/logo.png' ]] ; then
+	echo "Replacing plymouth watermark"
+	cp /opt/vnoi/misc/logo.png /usr/share/plymouth/ubuntu-logo.png
+	cp /opt/vnoi/misc/logo.png /usr/share/plymouth/themes/spinner/watermark.png
+fi
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."

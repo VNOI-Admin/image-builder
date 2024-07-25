@@ -41,7 +41,6 @@ install_if_has_apt() {
     fi
 }
 
-
 assert_root() {
     # Check if user is root
     if [ "$EUID" -ne 0 ]
@@ -77,7 +76,9 @@ fi
 icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
+    COMPACT=false
     PROD_DEV="prod"
+    APT_SOURCE="vnoi"
 
     while [ $# -gt 0 ]; do
     case $1 in
@@ -99,12 +100,24 @@ icpc_build() {
         --github-actions)
             CLEAR_EARLY=true
             ;;
+        --vnoi-source)
+            APT_SOURCE="vnoi"
+            ;;
+        --icpc-source)
+            APT_SOURCE="icpc"
+            ;;
+        --compact)
+            COMPACT=true
+            ;;
         -h | --help)
             echo "Usage: $0 icpc_build [-u|--url <url>] [-f|--force]"
             echo
             echo "  -u, --url <url>    URL to the original ICPC image"
             echo "  -f, --force        Force download the original ICPC image"
             echo "  --image-only       Only build the image, skip downloading and modifying the original ICPC image"
+            echo "  --github-actions   Clear early to free up space"
+            echo "  --vnoi-source      Use VNOI and Ubuntu sources"
+            echo "  --icpc-source      Use ICPC sources"
             echo "  -h, --help         Show this help"
             exit 0
             ;;
@@ -114,14 +127,14 @@ icpc_build() {
 
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
-        install_if_has_apt aria2
+        install_if_has_apt aria2 genisoimage
         log "Downloading ICPC image"
         aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
         # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
     fi
 
     # Check if $2 file type is iso
-    if [ ! $(file $ICPC_ISO_FILENAME --extension | cut -d' ' -f2) = "iso/iso9660" ]; then
+    if [ ! isoinfo -d -i filename.iso > /dev/null 2>&1 ]; then
         log "File is not an ISO"
         rm -f $ICPC_ISO_FILENAME
         exit 1
@@ -137,7 +150,8 @@ icpc_build() {
         p7zip-full \
         p7zip-rar \
         unzip \
-        zip
+        zip \
+        curl
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
@@ -153,6 +167,12 @@ icpc_build() {
 
     log "Extracting squashfs filesystem from ISO"
     unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $ICPC/casper/filesystem.squashfs
+        log "Done"
+    fi
     log "Done"
 
     log "Mount /dev and /run to chroot"
@@ -165,12 +185,12 @@ icpc_build() {
     log "Done"
 
     if [ $PROD_DEV = "prod" ]; then
-        log "Copy src to chroot"
-        cp -R $TOOLKIT $CHROOT/root/src
+        log "Copy toolkit to chroot"
+        cp -R $TOOLKIT/ $CHROOT/root/src/
         log "Done"
     else
-        mkdir $CHROOT/root/src
-        log "Skipped copying src to chroot"
+        mkdir -p $CHROOT/root/src
+        log "Skipped copying toolkit to chroot"
     fi
 
     log "Encrypt super password"
@@ -179,6 +199,25 @@ icpc_build() {
     echo "ENCRYPTED_SUPER_PASSWD='$ENCRYPTED_SUPER_PASSWD'" > $CHROOT/root/src/encrypted_passwd.sh
     echo "GRUB_PASSWD='$GRUB_PASSWD'" >> $CHROOT/root/src/encrypted_passwd.sh
     log "Done"
+
+    log $APT_SOURCE
+    if [ $APT_SOURCE = "vnoi" ]; then
+        log "Making apt use VNOI and Ubuntu sources"
+        # Change https://sysopspackages.icpc.global/ubuntu to $UBUNTU_APT_SOURCE
+        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
+        # Remove the extremely big vscode repo
+        sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
+        # Change https://sysopspackages.icpc.global to $CUSTOM_APT_SOURCE
+        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
+        for file in $CHROOT/etc/apt/sources.list.d/*; do
+            sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $file
+            sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $file
+        done
+        log "Done"
+
+        log "Make VNOI key trusted"
+        curl $CUSTOM_APT_SOURCE/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg
+    fi
 
     log "chrooting into $CHROOT"
     # Chroot, resetting all environment variables to ensure replicable building
@@ -208,7 +247,7 @@ icpc_build() {
         log "Done"
     fi
 
-    icpc_image_build $PROD_DEV
+    icpc_image_build $PROD_DEV $APT_SOURCE
 }
 
 icpc_image_build() {
@@ -222,7 +261,17 @@ icpc_image_build() {
         IMAGE_FILENAME="contestant-dev.iso"
     fi
 
-    # # Copy $ICPC folder into $IMAGE
+    if [ $1 = "prod" ]; then
+        PRESEED=seeds/prod.preseed
+        IMAGE_FILENAME="contestant.iso"
+    else
+        PRESEED=seeds/dev.preseed
+        IMAGE_FILENAME="contestant-dev.iso"
+    fi
+
+    APT_SOURCE=$2
+
+    # Copy $ICPC folder into $IMAGE
     rm -rf $IMAGE
     cp -r $ICPC $IMAGE
 
@@ -237,6 +286,13 @@ icpc_image_build() {
     log "Move preseed at $PRESEED"
     cp $PRESEED $IMAGE/preseed/icpc.seed
 
+    if [ $APT_SOURCE = "vnoi" ]; then
+        log "Changing seed to make apt use VNOI and Ubuntu sources"
+        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+        log "Done"
+    fi
+
     log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
     cp grub.cfg $IMAGE/boot/grub/grub.cfg
 
@@ -250,7 +306,13 @@ icpc_image_build() {
     sed -i '/laptop-detect/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/os-prober/d' $IMAGE/casper/filesystem.manifest-desktop
     # Compress filesystem
-    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
+    if [ $COMPACT = true ]; then
+        log "Compressing filesystem with xz (slow, smaller size)"
+        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -b 1048576 -comp xz -Xdict-size 100%
+    else
+        log "Compressing filesystem with gzip (fast, larger size)"
+        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
+    fi
 
     printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
 
@@ -293,6 +355,13 @@ icpc_image_build() {
             -no-emul-boot \
         -o "../$IMAGE_FILENAME" \
         .
+
+    if [ $CLEAR_EARLY = true ]; then
+        log "Clearing early to free up space"
+        rm -rf $IMAGE
+        log "Done"
+    fi
+
     log "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
@@ -308,15 +377,15 @@ generate_actions_secret() {
         echo "config.local.sh: $CONFIG_LOCAL_SH"
     fi
 
-    # from src/config.sh
+    # from $TOOLKIT/config.sh
     if [ -f $TOOLKIT/config.sh ]; then
-        SRC_CONFIG_SH=$($BASE64_ENCODE < src/config.sh)
-        echo "$TOOLKIT/config.sh: $SRC_CONFIG_SH"
+        TOOLKIT_CONFIG_SH=$($BASE64_ENCODE < $TOOLKIT/config.sh)
+        echo "$TOOLKIT/config.sh: $TOOLKIT_CONFIG_SH"
     fi
 
-    # from src/misc/authorized_keys
+    # from $TOOLKIT/misc/authorized_keys
     if [ -f $TOOLKIT/misc/authorized_keys ]; then
-        AUTHORIZED_KEYS=$($BASE64_ENCODE < src/misc/authorized_keys)
+        AUTHORIZED_KEYS=$($BASE64_ENCODE < $TOOLKIT/misc/authorized_keys)
         echo "$TOOLKIT/misc/authorized_keys: $AUTHORIZED_KEYS"
     fi
 
@@ -327,7 +396,7 @@ generate_actions_secret() {
     then
         echo "Set ACTIONS_SECRET to repo"
         gh secret set CONFIG_LOCAL_SH -b "$CONFIG_LOCAL_SH"
-        gh secret set SRC_CONFIG_SH -b "$SRC_CONFIG_SH"
+        gh secret set TOOLKIT_CONFIG_SH -b "$TOOLKIT_CONFIG_SH"
         gh secret set AUTHORIZED_KEYS -b "$AUTHORIZED_KEYS"
     else
         echo "Skipping"
@@ -382,6 +451,25 @@ dev_reload() {
         --wait-stdout --wait-stderr \
         -- -c "cd /root/src && /media/sf_src/setup.sh"
     log "Done"
+
+    # Wait for Virtual Machine to shutdown
+    log "Restarting Virtual Machine."
+    vboxmanage controlvm "$VM_NAME" acpipowerbutton
+
+    log "Waiting for Virtual Machine to shutdown"
+    while true; do
+        if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
+        | grep -c "VMState=\"running\"") -eq 0 ]; then
+            break
+        fi
+        sleep 1
+    done
+    log "Done"
+
+    sleep 3
+
+    vboxmanage startvm "$VM_NAME"
+    log "Virtual Machine started. Have fun coding!"
 }
 
 dev_create() {
@@ -426,13 +514,9 @@ dev_create() {
     shift
     done
 
-    # log "Building ICPC image for development"
-    # sudo ./$0 icpc_build --dev $@
-    # log "Done"
-
     if [ $BUILD = true ]; then
         log "Building ICPC image for development"
-        sudo ./$0 icpc_build --dev $@
+        sudo ./$0 icpc_build --dev
         log "Done"
     else
         log "Skipping building ICPC image for development."
@@ -446,11 +530,10 @@ dev_create() {
     if [ $NEW = true ]; then
         log "Removing old Virtual Machine"
         vboxmanage unregistervm $VM_NAME --delete || true
+        echo "$VM_DIRECTORY/$VM_NAME"
         rm -rf "$VM_DIRECTORY/$VM_NAME"
         log "Done"
     fi
-
-    # rm -f "$DISK_FILENAME"
 
     log "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
     vboxmanage createvm \
@@ -466,12 +549,12 @@ dev_create() {
     vboxmanage modifyvm "$VM_NAME" \
         --memory $MEM \
         --cpus $CPUS \
-        --firmware $FIRMWARE
+        --firmware $FIRMWARE \
+        --usb-xhci=on
     log "Done"
 
     log "Creating disk"
     DISK_FILENAME=$VM_DIRECTORY/$VM_NAME/$VM_NAME.vdi
-
     vboxmanage createmedium disk \
         --filename "$DISK_FILENAME" \
         --size 40960 \
@@ -518,7 +601,7 @@ dev_create() {
     # Mount shared folder to /media/sf_src
     vboxmanage sharedfolder add "$VM_NAME" \
         --name "src" \
-        --hostpath "$PWD/src" \
+        --hostpath "$TOOLKIT" \
         --readonly \
         --automount
     log "Done"
@@ -531,7 +614,7 @@ dev_create() {
 
     sleep 2
 
-    log "Loading src to Virtual Machine"
+    log "Loading toolkit to Virtual Machine"
     dev_reload
     log "Done"
 }
@@ -539,7 +622,7 @@ dev_create() {
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
 
 help() {
-    echo "Usage: $0 {icpc_build}"
+    echo "Usage: $0 {icpc_build|dev_create|dev_reload|generate_actions_secret|clean|help}"
     echo
     echo "  icpc_build: Build the ISO image based on the ICPC image"
     echo "  dev_create: Build the ISO image for development and create Virtual Machine. Run \" $0 dev_create --help\" for more options"
@@ -561,7 +644,6 @@ case $1 in
         icpc_build $@
         ;;
     generate_actions_secret)
-        assert_root
         generate_actions_secret
         ;;
     dev_reload)

@@ -4,3 +4,4 @@ live-build/
 authorized_keys
 __pycache__/
 venv
+image-toolkit/misc/logo.png
