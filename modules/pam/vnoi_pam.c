@@ -16,8 +16,14 @@ void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
   fprintf(stderr, "%s: %s\n", p_msg, error_msg);
 }
 
+void access_token_cleanup(pam_handle_t *pamh, void *data, int error_status){
+  if (data != NULL){
+    free(data);
+  }
+}
+
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
-                               int argc, const char **argv){
+    int argc, const char **argv){
   int pam_rcode, auth_rcode;
   const char *error_msg = NULL;
 
@@ -56,6 +62,15 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     return PAM_USER_UNKNOWN;
   }
 
+  printf("Authentication successful\n. Welcome %s\n", username);
+
+  /* Store access token */
+  pam_rcode = pam_set_data(pamh, "vnoi_access_token", access_token, access_token_cleanup);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Access token store failed", pamh, pam_rcode);
+    return PAM_AUTH_ERR;
+  }
+
   /* Change authentication username to default */
   pam_rcode = pam_set_item(pamh, PAM_USER, VNOI_DEFAULT_USERNAME);
   if (pam_rcode != PAM_SUCCESS){
@@ -72,3 +87,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
   return PAM_SUCCESS;
 }
+
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
+    int argc, const char **argv);
