@@ -8,10 +8,11 @@ struct memory {
 int memory_create(struct memory *buf);
 int memory_extend(struct memory *buf, size_t new_size);
 
+// Returns 0 if successful, -1 if error. Not handling overwrite.
 int memory_create(struct memory *buf){
   buf->data = malloc(1);
   if (buf->data == NULL){
-    fprintf(stderr, "Memory creation failed");
+    fprintf(stderr, "Memory creation failed\n");
     return -1;
   }
 
@@ -29,10 +30,15 @@ int memory_extend(struct memory *buf, size_t new_size){
 
   char *new_data = realloc(buf->data, new_real_size);
   if (new_data == NULL){
-    fprintf(stderr, "Memory extend failed");
+    fprintf(stderr, "Memory extend failed\n");
     return -1;
   }
 
   buf->real_size = new_real_size;
   return 0;
+}
+
+void memory_destroy(struct memory *buf){
+  if (buf->data != NULL)
+    free(buf->data);
 }
