@@ -3,3 +3,4 @@ live-build/
 *.iso
 authorized_keys
 image-toolkit/misc/logo.png
+.vscode

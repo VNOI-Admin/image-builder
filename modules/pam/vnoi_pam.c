@@ -10,17 +10,12 @@
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
 
-void authenticate_contestant(const char *username, const char *password){
-
-}
-
-int handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
+void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
   const char *error_msg = pam_strerror(pamh, pam_rcode);
   fprintf(stderr, "%s: %s", p_msg, error_msg);
-  return PAM_PERM_DENIED;
 }
 
-extern int pam_sm_authenticate(pam_handle_t *pamh, int flags,
+PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
                                int argc, const char **argv){
   int pam_rcode;
   const char *error_msg = NULL;
@@ -31,13 +26,17 @@ extern int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
   /* Prompt user for username */
   pam_rcode = pam_get_user(pamh, &username, VNOI_USER_PROMPT);
-  if (pam_rcode != PAM_SUCCESS)
-    return handle_pam_error("Username prompt failed", pamh, pam_rcode);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Username prompt failed", pamh, pam_rcode);
+    return PAM_CRED_INSUFFICIENT;
+  }
 
   /* Prompt user for password */
-  pam_rcode = pam_get_authtok(pamh, PAM_AUTHTOK, password, VNOI_PASSWD_PROMPT);
-  if (pam_rcode != PAM_SUCCESS)
-    return handle_pam_error("Password prompt failed", pamh, pam_rcode);
+  pam_rcode = pam_get_authtok(pamh, PAM_AUTHTOK, &password, VNOI_PASSWD_PROMPT);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Password prompt failed", pamh, pam_rcode);
+    return PAM_CRED_INSUFFICIENT;
+  }
 
   /* Authenticate user */
 
@@ -49,13 +48,17 @@ extern int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
   /* Change authentication username to default */
   pam_rcode = pam_set_item(pamh, PAM_USER, VNOI_DEFAULT_USERNAME);
-  if (pam_rcode != PAM_SUCCESS)
-    return handle_pam_error("Username modify failed", pamh, pam_rcode);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Username modify failed", pamh, pam_rcode);
+    return PAM_AUTH_ERR;
+  }
 
   /* Change authentication password to default */
   pam_rcode = pam_set_item(pamh, PAM_AUTHTOK, VNOI_DEFAULT_PASSWORD);
-  if (pam_rcode != PAM_SUCCESS)
-    return handle_pam_error("Password modify failed", pamh, pam_rcode);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Password modify failed", pamh, pam_rcode);
+    return PAM_AUTH_ERR;
+  }
 
   return PAM_SUCCESS;
 }
