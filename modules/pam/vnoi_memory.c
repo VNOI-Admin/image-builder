@@ -1,12 +1,15 @@
 #include <malloc.h>
 
+struct memory;
+int memory_create(struct memory *buf);
+int memory_extend(struct memory *buf, size_t new_size);
+void memory_destroy(struct memory *buf);
+size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata);
+
 struct memory {
   char *data;
   size_t real_size, size;
 };
-
-int memory_create(struct memory *buf);
-int memory_extend(struct memory *buf, size_t new_size);
 
 // Returns 0 if successful, -1 if error. Not handling overwrite.
 int memory_create(struct memory *buf){
@@ -41,4 +44,18 @@ int memory_extend(struct memory *buf, size_t new_size){
 void memory_destroy(struct memory *buf){
   if (buf->data != NULL)
     free(buf->data);
+}
+
+size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata){
+  int child_rcode = 0;
+
+  struct memory *buf = (struct memory *) userdata;
+
+  child_rcode = memory_extend(buf, buf->size + size * nmemb);
+  if (child_rcode < 0) return CURL_WRITEFUNC_ERROR;
+
+  memcpy(buf->data + buf->size, ptr, size * nmemb); // Return value can be discarded
+  buf->size += size * nmemb;
+
+  return size * nmemb;
 }

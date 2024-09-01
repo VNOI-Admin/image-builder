@@ -24,7 +24,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   const char *username = NULL;
   const char *password = NULL;
 
-  char *access_token = NULL;
+  const char *access_token = NULL;
 
   /* Prompt user for username */
   pam_rcode = pam_get_user(pamh, &username, VNOI_USER_PROMPT);
@@ -40,16 +40,14 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     return PAM_CRED_INSUFFICIENT;
   }
 
-  /* Authenticate user */
-
   // We let root do their thing.
   if (strcmp(username, VNOI_ROOT)){
     printf("Welcome Root\n");
     return PAM_SUCCESS;
   }
 
-  // Authenticate contestant
-  auth_rcode = authenticate_contestant(username, password, access_token);
+  /* Authenticate contestant */
+  auth_rcode = authenticate_contestant(username, password, &access_token);
   if (auth_rcode < 0){
     fprintf(stderr, "Authentication failed due to internal error\n");
     return PAM_AUTH_ERR;
