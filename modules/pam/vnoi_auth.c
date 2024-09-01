@@ -225,7 +225,7 @@ int authenticate_contestant(const char *username, const char *password,
   return return_code;
 }
 
-// Returns 1 if successful, 0 if not found, -1 if error.
+// Returns 1 if successful, 0 if server-side error, -1 if internal error.
 // Free config_file after use.
 int get_contestant_config(const char *access_token, const char **config_file){
   const struct memory *header_buf = NULL, *body_buf = NULL;

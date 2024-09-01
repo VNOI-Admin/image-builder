@@ -10,6 +10,7 @@
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
 #include "vnoi_auth.c"
+#include "vnoi_dir.c"
 
 void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
   const char *error_msg = pam_strerror(pamh, pam_rcode);
@@ -20,6 +21,62 @@ void access_token_cleanup(pam_handle_t *pamh, void *data, int error_status){
   if (data != NULL){
     free(data);
   }
+}
+
+// Returns 0 if successful, -1 if error encountered.
+int wireguard_config_write(const char *config_content){
+  int child_rcode, return_code = 0;
+  
+  int config_fd = -1;
+  FILE *config_fp = NULL;
+
+  /* Clear wireguard past configs */
+  child_rcode = remove_tree(VNOI_WIREGUARD_DIR);
+  if (child_rcode < 0){
+    fprintf(stderr, "Wireguard config removal failed\n");
+    return_code = -1;
+    goto cleanup;
+  }
+
+  /* Write new wireguard config */
+  child_rcode = mkdir(VNOI_WIREGUARD_DIR, 0700);
+  if (child_rcode < 0){
+    fprintf(stderr, "Wireguard config directory creation failed: %s\n",
+      strerror(errno));
+    return_code = -1;
+    goto cleanup;
+  }
+
+  config_fd = open(VNOI_WIREGUARD_DIR "/client.conf", O_CREAT | O_WRONLY, 0600);
+  if (config_fd < 0){
+    fprintf(stderr, "Wireguard config file creation failed: %s\n",
+      strerror(errno));
+    return_code = -1;
+    goto cleanup;
+  }
+
+  config_fp = fdopen(config_fd, "/client.conf", "w");
+  if (config_fp == NULL){
+    fprintf(stderr, "Wireguard config file fdopen failed: %s\n",
+      strerror(errno));
+    return_code = -1;
+    goto cleanup;
+  }
+
+  child_rcode = fprintf(config_fp, "%s", config_content);
+  if (child_rcode < 0){
+    fprintf(stderr, "Wireguard config file write failed\n");
+    return_code = -1;
+    goto cleanup;
+  }
+
+  cleanup:
+  if (config_fp){
+    fclose(config_fp);
+  } else if (config_fd >= 0){
+    close(config_fd);
+  }
+  return return_code;
 }
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
@@ -89,4 +146,41 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 }
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
-    int argc, const char **argv);
+    int argc, const char **argv){
+  int pam_rcode, config_rcode, child_rcode, return_code = PAM_SUCCESS;
+
+  const char *access_token = NULL;
+  const char *config_content = NULL;
+
+  pam_rcode = pam_get_data(pamh, "vnoi_access_token", (const void**) &access_token);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Access token retrieval failed", pamh, pam_rcode);
+    return_code = PAM_SESSION_ERR;
+    goto cleanup;
+  }
+
+  config_rcode = get_contestant_config(access_token, &config_content);
+  if (config_rcode < 0){
+    fprintf(stderr, "Config file retrieval failed due to internal error\n");
+    return_code = PAM_SESSION_ERR;
+    goto cleanup;
+  } else if (config_rcode == 0){
+    fprintf(stderr, "Config file retrieval failed due to server-side error\n");
+    return_code = PAM_SESSION_ERR;
+    goto cleanup;
+  }
+
+  printf("Config file retrieval successful\n");
+  /* Write config file */
+  child_rcode = wireguard_config_write(config_content);
+  if (child_rcode < 0){
+    fprintf(stderr, "Config file write failed\n");
+    return_code = PAM_SESSION_ERR;
+    goto cleanup;
+  }
+
+  
+
+  cleanup:
+  return return_code;
+}
