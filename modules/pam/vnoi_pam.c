@@ -179,7 +179,12 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
     goto cleanup;
   }
 
-  
+  child_rcode = restart_systemd_unit("wg-quick@client");
+  if (child_rcode < 0){
+    fprintf(stderr, "Wireguard restart failed\n");
+    return_code = PAM_SESSION_ERR;
+    goto cleanup;
+  }
 
   cleanup:
   return return_code;
