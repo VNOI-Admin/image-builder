@@ -5,12 +5,14 @@
   It is basically a toned down Kerberos.
 */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
 #include "vnoi_auth.c"
 #include "vnoi_dir.c"
+#include "vnoi_systemd.c"
 
 void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
   const char *error_msg = pam_strerror(pamh, pam_rcode);
@@ -47,7 +49,7 @@ int wireguard_config_write(const char *config_content){
     goto cleanup;
   }
 
-  config_fd = open(VNOI_WIREGUARD_DIR "/client.conf", O_CREAT | O_WRONLY, 0600);
+  config_fd = creat(VNOI_WIREGUARD_DIR "/client.conf", 0600);
   if (config_fd < 0){
     fprintf(stderr, "Wireguard config file creation failed: %s\n",
       strerror(errno));
@@ -55,7 +57,7 @@ int wireguard_config_write(const char *config_content){
     goto cleanup;
   }
 
-  config_fp = fdopen(config_fd, "/client.conf", "w");
+  config_fp = fdopen(config_fd, "w");
   if (config_fp == NULL){
     fprintf(stderr, "Wireguard config file fdopen failed: %s\n",
       strerror(errno));
@@ -87,7 +89,14 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   const char *username = NULL;
   const char *password = NULL;
 
-  const char *access_token = NULL;
+  const char *access_token = calloc(1, 1);
+
+  /* Store placeholder access token */
+  pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Access token placeholder store failed", pamh, pam_rcode);
+    return PAM_AUTH_ERR;
+  }
 
   /* Prompt user for username */
   pam_rcode = pam_get_user(pamh, &username, VNOI_USER_PROMPT);
@@ -104,10 +113,11 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   }
 
   // We let root do their thing.
-  if (strcmp(username, VNOI_ROOT)){
+  if (strcmp(username, VNOI_ROOT) == 0){
     printf("Welcome Root\n");
     return PAM_SUCCESS;
   }
+  printf("Welcome %s\n", username);
 
   /* Authenticate contestant */
   auth_rcode = authenticate_contestant(username, password, &access_token);
@@ -122,7 +132,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   printf("Authentication successful\n. Welcome %s\n", username);
 
   /* Store access token */
-  pam_rcode = pam_set_data(pamh, "vnoi_access_token", access_token, access_token_cleanup);
+  pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
   if (pam_rcode != PAM_SUCCESS){
     handle_pam_error("Access token store failed", pamh, pam_rcode);
     return PAM_AUTH_ERR;

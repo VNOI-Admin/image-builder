@@ -22,8 +22,9 @@ void handle_curl_error(const char *p_msg, CURLcode curl_rcode){
   fprintf(stderr, "%s: %s\n", p_msg, error_msg);
 }
 
-int curl_init_wrapper(CURL **curlh, const char *endpoint,
-    const struct memory **header_buf, const struct memory **body_buf){
+int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
+    struct memory **header_buf, struct memory **body_buf){
+  CURL *curlh = NULL;
   CURLcode curl_rcode;
   int child_rcode, http_status;
 
@@ -33,7 +34,7 @@ int curl_init_wrapper(CURL **curlh, const char *endpoint,
     return -1;
   }
 
-  curlh = curl_easy_init();
+  *curlh_return = curlh = curl_easy_init();
   if (curlh == NULL){
     fprintf(stderr, "curl_easy_init failed\n");
     return -1;
@@ -43,8 +44,8 @@ int curl_init_wrapper(CURL **curlh, const char *endpoint,
   curl_setopt_and_handle_error(CURLOPT_URL, endpoint);
 
   /* Set write callback */
-  header_buf = malloc(sizeof(struct memory));
-  if (header_buf == NULL){
+  *header_buf = malloc(sizeof(struct memory));
+  if (*header_buf == NULL){
     fprintf(stderr, "Header buffer creation failed\n");
     return -1;
   }
@@ -55,7 +56,7 @@ int curl_init_wrapper(CURL **curlh, const char *endpoint,
   }
 
   *body_buf = malloc(sizeof(struct memory));
-  if (body_buf == NULL){
+  if (*body_buf == NULL){
     fprintf(stderr, "Body buffer creation failed\n");
     return -1;
   }
@@ -96,8 +97,8 @@ int curl_perform_wrapper(CURL *curlh){
 
 // Returns 1 if successful, -1 if internal error, 0 if server-side error/unauthorized.
 // Free header_buf and body_buf after use.
-int perform_POST(const char *endpoint, const char *post_fields,
-    const struct memory **header_buf, const struct memory **body_buf){
+int perform_POST(const char *endpoint, char *post_fields,
+    struct memory **header_buf, struct memory **body_buf){
   CURL *curlh = NULL;
   CURLcode curl_rcode;
   int child_rcode = 0, return_code = 0;
@@ -108,7 +109,8 @@ int perform_POST(const char *endpoint, const char *post_fields,
     goto cleanup;
   }
 
-  curl_setopt_and_handle_error(CURLOPT_POSTFIELDS, post_fields);
+  printf("Post fields: %s\n", post_fields);
+  curl_setopt_and_handle_error(CURLOPT_COPYPOSTFIELDS, post_fields);
 
   /* Perform POST */
   child_rcode = curl_perform_wrapper(curlh);
@@ -128,8 +130,8 @@ int perform_POST(const char *endpoint, const char *post_fields,
   return return_code;
 }
 
-int perform_GET(const char *endpoint, const curl_slist *header_list,
-    const struct memory **header_buf, const struct memory **body_buf){
+int perform_GET(const char *endpoint, const struct curl_slist *header_list,
+    struct memory **header_buf, struct memory **body_buf){
   CURL *curlh = NULL;
   CURLcode curl_rcode;
   int child_rcode = 0, return_code = 0;
@@ -167,7 +169,7 @@ int authenticate_contestant(const char *username, const char *password,
   const char *escaped_username = NULL, *escaped_password = NULL;
   char post_fields[FIELD_MAXLEN];
   int child_rcode = 0, return_code = 0;
-  const struct memory *header_buf = NULL, *body_buf = NULL;
+  struct memory *header_buf = NULL, *body_buf = NULL;
 
   /* Escape fields */
   #define curl_escape_and_handle_error(str) \
@@ -228,9 +230,9 @@ int authenticate_contestant(const char *username, const char *password,
 // Returns 1 if successful, 0 if server-side error, -1 if internal error.
 // Free config_file after use.
 int get_contestant_config(const char *access_token, const char **config_file){
-  const struct memory *header_buf = NULL, *body_buf = NULL;
   int child_rcode = 0, return_code = 0;
   char bearer_header[FIELD_MAXLEN];
+  struct memory *header_buf = NULL, *body_buf = NULL;
 
   /* Make GET header */
   child_rcode = snprintf(bearer_header, FIELD_MAXLEN,
@@ -241,7 +243,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
     goto cleanup;
   }
 
-  curl_slist *header_list = NULL;
+  struct curl_slist *header_list = NULL;
   header_list = curl_slist_append(header_list, bearer_header);
   if (header_list == NULL){
     fprintf(stderr, "Header list creation failed\n");

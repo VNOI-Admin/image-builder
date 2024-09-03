@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+
+#define __USE_XOPEN_EXTENDED 1 /* https://stackoverflow.com/questions/782338/warning-with-nftw */
 #include <ftw.h>
 
 // Callback function for nftw.
