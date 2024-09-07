@@ -31,16 +31,18 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
   const char *username = NULL;
   const char *password = NULL;
-
-  const char *access_token = calloc(1, 1);
+  const char *access_token = NULL;
 
   // Uncomment if this module is not required/requisite
-  // /* Store placeholder access token */
-  // pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
-  // if (pam_rcode != PAM_SUCCESS){
-  //   handle_pam_error("Access token placeholder store failed", pamh, pam_rcode);
-  //   return PAM_AUTH_ERR;
-  // }
+  /*
+    const char *access_token = calloc(1, 1);
+    // Store placeholder access token
+    pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
+    if (pam_rcode != PAM_SUCCESS){
+      handle_pam_error("Access token placeholder store failed", pamh, pam_rcode);
+      return PAM_AUTH_ERR;
+    }
+  */
 
   /* Prompt user for username */
   pam_rcode = pam_get_user(pamh, &username, VNOI_USER_PROMPT);
@@ -105,6 +107,17 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 
   const char *access_token = NULL;
   const char *config_content = NULL;
+  const char *username = NULL;
+
+  pam_rcode = pam_get_user(pamh, &username, VNOI_USER_PROMPT);
+  if (pam_rcode != PAM_SUCCESS){
+    handle_pam_error("Username prompt failed", pamh, pam_rcode);
+    return PAM_CRED_INSUFFICIENT;
+  }
+
+  /* Skip if this is root, since no action is needed */
+  if (strcmp(username, VNOI_ROOT) == 0)
+    return PAM_SUCCESS;
 
   pam_rcode = pam_get_data(pamh, "vnoi_access_token", (const void**) &access_token);
   if (pam_rcode != PAM_SUCCESS){
