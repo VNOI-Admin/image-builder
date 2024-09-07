@@ -12,12 +12,13 @@
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
 
+#include "vnoi_log.h"
 #include "vnoi_auth.h"
 #include "vnoi_wg.h"
 
 void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
   const char *error_msg = pam_strerror(pamh, pam_rcode);
-  fprintf(stderr, "%s: %s\n", p_msg, error_msg);
+  write_log("%s: %s\n", p_msg, error_msg);
 }
 
 void access_token_cleanup(pam_handle_t *pamh, void *data, int error_status){
@@ -68,10 +69,10 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   /* Authenticate contestant */
   auth_rcode = authenticate_contestant(username, password, &access_token);
   if (auth_rcode < 0){
-    fprintf(stderr, "Authentication failed due to internal error\n");
+    write_log("Authentication failed due to internal error\n");
     return PAM_AUTH_ERR;
   } else if (auth_rcode == 0){
-    fprintf(stderr, "Authentication failed, wrong username or password\n");
+    write_log("Authentication failed, wrong username or password\n");
     return PAM_USER_UNKNOWN;
   }
 
@@ -128,11 +129,11 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 
   config_rcode = get_contestant_config(access_token, &config_content);
   if (config_rcode < 0){
-    fprintf(stderr, "Config file retrieval failed due to internal error\n");
+    write_log("Config file retrieval failed due to internal error\n");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   } else if (config_rcode == 0){
-    fprintf(stderr, "Config file retrieval failed due to server-side error\n");
+    write_log("Config file retrieval failed due to server-side error\n");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   }
@@ -142,7 +143,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
   /* Write config file */
   child_rcode = wireguard_restart_overwrite_config(config_content);
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard restart/overwrite failed\n");
+    write_log("Wireguard restart/overwrite failed\n");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   }

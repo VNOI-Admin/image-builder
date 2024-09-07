@@ -1,5 +1,7 @@
 #include <malloc.h>
 #include <string.h>
+
+#include "vnoi_log.h"
 #include "vnoi_buffer.h"
 
 struct buffer {
@@ -34,7 +36,7 @@ int buffer_extend(struct buffer *buf, size_t new_size){
 
   char *new_data = realloc(buf->data, new_real_size);
   if (new_data == NULL){
-    fprintf(stderr, "buffer extend failed\n");
+    write_log("buffer extend failed\n");
     return -1;
   }
 

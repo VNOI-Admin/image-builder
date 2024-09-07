@@ -7,7 +7,8 @@ CDEF	=	'-DVNOI_ROOT="root"' \
 			'-DVNOI_DEFAULT_PASSWORD="icpc"' \
 			'-DVNOI_LOGIN_ENDPOINT="http://localhost:8080/login"' \
 			'-DVNOI_CONFIG_ENDPOINT="http://localhost:8080/config"' \
-			'-DVNOI_WIREGUARD_DIR="/etc/wireguard"'
+			'-DVNOI_WIREGUARD_DIR="/etc/wireguard"' \
+			'-DVNOI_PAM_LOGFILE="/var/log/vnoi_pam.log"'
 
 LD		= ld
 LDFLAGS = -x --shared

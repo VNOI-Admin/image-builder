@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+
 #include <json-c/json.h>
+
+#include "vnoi_log.h"
 #include "vnoi_json.h"
 
 // Returned string must be freed after use.
@@ -13,20 +16,20 @@ char *get_json_value(const char *json_str, const char *key){
   json_bool child_rcode;
 
   if (json_obj == NULL){
-    fprintf(stderr, "JSON parse failed\n");
+    write_log("JSON parse failed\n");
     goto cleanup;
   }
 
   child_rcode = json_object_object_get_ex(json_obj, key, &value_obj);
   if (!child_rcode || value_obj == NULL){
-    fprintf(stderr, "Key not found\n");
+    write_log("Key not found\n");
     goto cleanup;
   }
 
   value_str = json_object_get_string(value_obj);
   return_str = strdup(value_str);
   if (return_str == NULL){
-    fprintf(stderr, "String duplication failed: %s\n", strerror(errno));
+    write_log("String duplication failed: %s\n", strerror(errno));
     goto cleanup;
   }
 

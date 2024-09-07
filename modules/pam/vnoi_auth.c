@@ -1,7 +1,9 @@
 #include <malloc.h>
 #include <string.h>
-#include <stdio.h>
+
 #include <curl/curl.h>
+
+#include "vnoi_log.h"
 #include "vnoi_buffer.h"
 #include "vnoi_json.h"
 #include "vnoi_auth.h"
@@ -17,7 +19,7 @@ const int FIELD_MAXLEN = 4096; // 4KB
 
 void handle_curl_error(const char *p_msg, CURLcode curl_rcode){
   const char *error_msg = curl_easy_strerror(curl_rcode);
-  fprintf(stderr, "%s: %s\n", p_msg, error_msg);
+  write_log("%s: %s\n", p_msg, error_msg);
 }
 
 int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
@@ -33,7 +35,7 @@ int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
 
   *curlh_return = curlh = curl_easy_init();
   if (curlh == NULL){
-    fprintf(stderr, "curl_easy_init failed\n");
+    write_log("curl_easy_init failed\n");
     return -1;
   }
 
@@ -43,13 +45,13 @@ int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
   /* Set write callback */
   *header_buf = buffer_create();
   if (*header_buf == NULL){
-    fprintf(stderr, "Header buffer creation failed\n");
+    write_log("Header buffer creation failed\n");
     return -1;
   }
 
   *body_buf = buffer_create();
   if (*body_buf == NULL){
-    fprintf(stderr, "Body buffer creation failed\n");
+    write_log("Body buffer creation failed\n");
     return -1;
   }
 
@@ -76,7 +78,7 @@ int curl_perform_wrapper(CURL *curlh){
     return -1;
   }
   if (http_code != 200 && http_code != 201 && http_code != 202){
-    fprintf(stderr, "HTTP status code: %ld\n", http_code);
+    write_log("HTTP status code: %ld\n", http_code);
     return 0;
   }
 
@@ -162,7 +164,7 @@ int authenticate_contestant(const char *username, const char *password,
   #define curl_escape_and_handle_error(str) \
     escaped_ ## str = curl_escape(str, 0); \
     if (str == NULL){ \
-      fprintf(stderr, #str " escape failed\n"); \
+      write_log(#str " escape failed\n"); \
       return_code = -1; \
       goto cleanup; \
     }
@@ -175,7 +177,7 @@ int authenticate_contestant(const char *username, const char *password,
   child_rcode = snprintf(post_fields, FIELD_MAXLEN,
     "username=%s&password=%s", escaped_username, escaped_password);
   if (child_rcode < 0 || child_rcode >= FIELD_MAXLEN){
-    fprintf(stderr, "Post fields snprintf failed\n");
+    write_log("Post fields snprintf failed\n");
     return_code = -1;
     goto cleanup;
   }
@@ -186,7 +188,7 @@ int authenticate_contestant(const char *username, const char *password,
 
   /* Check response */
   if (child_rcode < 0){
-    fprintf(stderr, "POST failed\n");
+    write_log("POST failed\n");
     return_code = -1;
     goto cleanup;
   } else if (child_rcode == 0){
@@ -198,7 +200,7 @@ int authenticate_contestant(const char *username, const char *password,
   const char *body_buf_data = buffer_extract(body_buf);
   *access_token = get_json_value(body_buf_data, "accessToken");
   if (*access_token == NULL){
-    fprintf(stderr, "Access token extraction failed\nJSON Content: %s\n", body_buf_data);
+    write_log("Access token extraction failed\nJSON Content: %s\n", body_buf_data);
     return_code = -1;
     goto cleanup;
   }
@@ -226,7 +228,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
   child_rcode = snprintf(bearer_header, FIELD_MAXLEN,
     "Authorization: Bearer %s", access_token);
   if (child_rcode < 0 || child_rcode >= FIELD_MAXLEN){
-    fprintf(stderr, "Bearer header snprintf failed\n");
+    write_log("Bearer header snprintf failed\n");
     return_code = -1;
     goto cleanup;
   }
@@ -234,7 +236,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
   struct curl_slist *header_list = NULL;
   header_list = curl_slist_append(header_list, bearer_header);
   if (header_list == NULL){
-    fprintf(stderr, "Header list creation failed\n");
+    write_log("Header list creation failed\n");
     return_code = -1;
     goto cleanup;
   }
@@ -242,7 +244,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
   /* Perform GET */
   child_rcode = perform_GET(VNOI_CONFIG_ENDPOINT, header_list, &header_buf, &body_buf);
   if (child_rcode < 0){
-    fprintf(stderr, "GET failed\n");
+    write_log("GET failed\n");
     return_code = -1;
     goto cleanup;
   } else if (child_rcode == 0){
@@ -253,7 +255,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
   /* Extract config file */
   *config_file = strdup(buffer_extract(body_buf));
   if (*config_file == NULL){
-    fprintf(stderr, "Config file duplication failed\n");
+    write_log("Config file duplication failed\n");
     return_code = -1;
     goto cleanup;
   }

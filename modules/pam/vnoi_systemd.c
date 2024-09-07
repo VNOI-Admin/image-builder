@@ -1,6 +1,9 @@
 #include <string.h>
 #include <malloc.h>
+
 #include <systemd/sd-bus.h>
+
+#include "vnoi_log.h"
 
 struct job_info_list {
   char *job_path;
@@ -53,7 +56,7 @@ int restart_systemd_unit(const char *unit_name){
   /* Connect to the system bus */
   r = sd_bus_open_system(&bus);
   if (r < 0){
-    fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+    write_log("Failed to connect to system bus: %s\n", strerror(-r));
     goto cleanup;
   }
 
@@ -62,7 +65,7 @@ int restart_systemd_unit(const char *unit_name){
   // // https://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing-match-rules
   // r = sd_bus_match_signal(bus, NULL, service_name, object_path, interface_name, "JobRemoved", NULL, NULL);
   // if (r < 0){
-  //   fprintf(stderr, "Failed to add match signal: %s\n", strerror(-r));
+  //   write_log("Failed to add match signal: %s\n", strerror(-r));
   //   goto cleanup;
   // }
 
@@ -75,14 +78,14 @@ int restart_systemd_unit(const char *unit_name){
                          unit_name,                           /* first argument */
                          "replace");                          /* second argument */
   if (r < 0){
-    fprintf(stderr, "Failed to issue method call: %s\n", error.message);
+    write_log("Failed to issue method call: %s\n", error.message);
     goto cleanup;
   }
 
   /* Parse the response message */
   r = sd_bus_message_read(m, "o", &path);
   if (r < 0){
-    fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
+    write_log("Failed to parse response message: %s\n", strerror(-r));
     goto cleanup;
   }
 

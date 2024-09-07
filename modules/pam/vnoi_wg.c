@@ -6,8 +6,10 @@
 
 #define __USE_XOPEN_EXTENDED 1 /* https://stackoverflow.com/questions/782338/warning-with-nftw */
 #include <ftw.h>
+
 #include "vnoi_wg.h"
 #include "vnoi_systemd.h"
+#include "vnoi_log.h"
 
 // Callback function for nftw.
 // Removes the file or directory at path.
@@ -16,7 +18,7 @@ int remove_callback(const char *path, const struct stat *sb, int typeflag, struc
 
   child_rcode = remove(path);
   if (child_rcode < 0){
-    fprintf(stderr, "Error removing %s: %s\n", path, strerror(errno));
+    write_log("Error removing %s: %s\n", path, strerror(errno));
     return -1;
   }
   return 0;
@@ -41,7 +43,7 @@ int wireguard_config_write(const char *config_content){
   /* Clear wireguard past configs */
   child_rcode = remove_tree(VNOI_WIREGUARD_DIR);
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config removal failed\n");
+    write_log("Wireguard config removal failed\n");
     return_code = -1;
     goto cleanup;
   }
@@ -49,7 +51,7 @@ int wireguard_config_write(const char *config_content){
   /* Write new wireguard config */
   child_rcode = mkdir(VNOI_WIREGUARD_DIR, 0700);
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config directory creation failed: %s\n",
+    write_log("Wireguard config directory creation failed: %s\n",
       strerror(errno));
     return_code = -1;
     goto cleanup;
@@ -57,7 +59,7 @@ int wireguard_config_write(const char *config_content){
 
   config_fd = creat(VNOI_WIREGUARD_DIR "/client.conf", 0600);
   if (config_fd < 0){
-    fprintf(stderr, "Wireguard config file creation failed: %s\n",
+    write_log("Wireguard config file creation failed: %s\n",
       strerror(errno));
     return_code = -1;
     goto cleanup;
@@ -65,7 +67,7 @@ int wireguard_config_write(const char *config_content){
 
   config_fp = fdopen(config_fd, "w");
   if (config_fp == NULL){
-    fprintf(stderr, "Wireguard config file fdopen failed: %s\n",
+    write_log("Wireguard config file fdopen failed: %s\n",
       strerror(errno));
     return_code = -1;
     goto cleanup;
@@ -73,7 +75,7 @@ int wireguard_config_write(const char *config_content){
 
   child_rcode = fprintf(config_fp, "%s", config_content);
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config file write failed\n");
+    write_log("Wireguard config file write failed\n");
     return_code = -1;
     goto cleanup;
   }
@@ -91,13 +93,13 @@ int wireguard_restart_overwrite_config(const char *config_content){
   int child_rcode;
   child_rcode = wireguard_config_write(config_content);
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config write failed\n");
+    write_log("Wireguard config write failed\n");
     return -1;
   }
 
   child_rcode = restart_systemd_unit("wg-quick@client");
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard restart failed\n");
+    write_log("Wireguard restart failed\n");
     return -1;
   }
 
