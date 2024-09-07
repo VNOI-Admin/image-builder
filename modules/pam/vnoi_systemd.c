@@ -1,4 +1,5 @@
 #include <string.h>
+#include <malloc.h>
 #include <systemd/sd-bus.h>
 
 struct job_info_list {
@@ -84,8 +85,6 @@ int restart_systemd_unit(const char *unit_name){
     fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
     goto cleanup;
   }
-
-  // *job_path = strdup(path);
 
   cleanup:
   sd_bus_error_free(&error);

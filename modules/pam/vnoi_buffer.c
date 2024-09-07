@@ -1,31 +1,32 @@
 #include <malloc.h>
+#include <string.h>
+#include "vnoi_buffer.h"
 
-struct memory;
-int memory_create(struct memory *buf);
-int memory_extend(struct memory *buf, size_t new_size);
-void memory_destroy(struct memory *buf);
-size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata);
-
-struct memory {
+struct buffer {
   char *data;
   size_t real_size, size;
 };
 
 // Returns 0 if successful, -1 if error. Not handling overwrite.
-int memory_create(struct memory *buf){
+struct buffer *buffer_create(){
+  struct buffer *buf = malloc(sizeof(struct buffer));
+  if (buf == NULL)
+    return NULL;
+
   buf->data = malloc(1);
   if (buf->data == NULL){
-    fprintf(stderr, "Memory creation failed\n");
-    return -1;
+    free(buf);
+    return NULL;
   }
 
   buf->real_size = 1;
   buf->size = 0;
-  return 0;
+
+  return buf;
 }
 
 // Returns 0 if successful, -1 if error
-int memory_extend(struct memory *buf, size_t new_size){
+int buffer_extend(struct buffer *buf, size_t new_size){
   if (new_size <= buf->real_size) return 0;
 
   size_t new_real_size = buf->real_size;
@@ -33,7 +34,7 @@ int memory_extend(struct memory *buf, size_t new_size){
 
   char *new_data = realloc(buf->data, new_real_size);
   if (new_data == NULL){
-    fprintf(stderr, "Memory extend failed\n");
+    fprintf(stderr, "buffer extend failed\n");
     return -1;
   }
 
@@ -42,7 +43,7 @@ int memory_extend(struct memory *buf, size_t new_size){
   return 0;
 }
 
-void memory_destroy(struct memory *buf){
+void buffer_destroy(struct buffer *buf){
   if (buf->data != NULL)
     free(buf->data);
 }
@@ -50,10 +51,10 @@ void memory_destroy(struct memory *buf){
 size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata){
   int child_rcode = 0;
 
-  struct memory *buf = (struct memory *) userdata;
+  struct buffer *buf = (struct buffer *) userdata;
 
-  child_rcode = memory_extend(buf, buf->size + size * nmemb);
-  if (child_rcode < 0) return CURL_WRITEFUNC_ERROR;
+  child_rcode = buffer_extend(buf, buf->size + size * nmemb);
+  if (child_rcode < 0) return -1;
 
   memcpy(buf->data + buf->size, ptr, size * nmemb); // Return value can be discarded
   buf->size += size * nmemb;
@@ -61,7 +62,7 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata){
   return size * nmemb;
 }
 
-const char *memory_extract(struct memory *buf){
+const char *buffer_extract(struct buffer *buf){
   if (buf->data[buf->size-1])
     write_callback("", 1, 1, buf); // Add null terminator
   return buf->data;

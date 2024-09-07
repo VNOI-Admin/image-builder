@@ -5,14 +5,15 @@
   It is basically a toned down Kerberos.
 */
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
-#include "vnoi_auth.c"
-#include "vnoi_dir.c"
-#include "vnoi_systemd.c"
+
+#include "vnoi_auth.h"
+#include "vnoi_wg.h"
 
 void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
   const char *error_msg = pam_strerror(pamh, pam_rcode);
@@ -22,62 +23,6 @@ void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
 void access_token_cleanup(pam_handle_t *pamh, void *data, int error_status){
   if (data == NULL) return;
   free(data);
-}
-
-// Returns 0 if successful, -1 if error encountered.
-int wireguard_config_write(const char *config_content){
-  int child_rcode, return_code = 0;
-  
-  int config_fd = -1;
-  FILE *config_fp = NULL;
-
-  /* Clear wireguard past configs */
-  child_rcode = remove_tree(VNOI_WIREGUARD_DIR);
-  if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config removal failed\n");
-    return_code = -1;
-    goto cleanup;
-  }
-
-  /* Write new wireguard config */
-  child_rcode = mkdir(VNOI_WIREGUARD_DIR, 0700);
-  if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config directory creation failed: %s\n",
-      strerror(errno));
-    return_code = -1;
-    goto cleanup;
-  }
-
-  config_fd = creat(VNOI_WIREGUARD_DIR "/client.conf", 0600);
-  if (config_fd < 0){
-    fprintf(stderr, "Wireguard config file creation failed: %s\n",
-      strerror(errno));
-    return_code = -1;
-    goto cleanup;
-  }
-
-  config_fp = fdopen(config_fd, "w");
-  if (config_fp == NULL){
-    fprintf(stderr, "Wireguard config file fdopen failed: %s\n",
-      strerror(errno));
-    return_code = -1;
-    goto cleanup;
-  }
-
-  child_rcode = fprintf(config_fp, "%s", config_content);
-  if (child_rcode < 0){
-    fprintf(stderr, "Wireguard config file write failed\n");
-    return_code = -1;
-    goto cleanup;
-  }
-
-  cleanup:
-  if (config_fp){
-    fclose(config_fp);
-  } else if (config_fd >= 0){
-    close(config_fd);
-  }
-  return return_code;
 }
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
@@ -180,17 +125,11 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
   }
 
   printf("Config file retrieval successful\n");
-  /* Write config file */
-  child_rcode = wireguard_config_write(config_content);
-  if (child_rcode < 0){
-    fprintf(stderr, "Config file write failed\n");
-    return_code = PAM_SESSION_ERR;
-    goto cleanup;
-  }
 
-  child_rcode = restart_systemd_unit("wg-quick@client");
+  /* Write config file */
+  child_rcode = wireguard_restart_overwrite_config(config_content);
   if (child_rcode < 0){
-    fprintf(stderr, "Wireguard restart failed\n");
+    fprintf(stderr, "Wireguard restart/overwrite failed\n");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   }

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 #include <json-c/json.h>
+#include "vnoi_json.h"
 
 // Returned string must be freed after use.
 char *get_json_value(const char *json_str, const char *key){

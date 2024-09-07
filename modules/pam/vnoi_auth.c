@@ -2,8 +2,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <curl/curl.h>
-#include "vnoi_memory.c"
-#include "vnoi_json.c"
+#include "vnoi_buffer.h"
+#include "vnoi_json.h"
+#include "vnoi_auth.h"
 
 #define curl_setopt_and_handle_error(opt, value) \
   curl_rcode = curl_easy_setopt(curlh, opt, value); \
@@ -11,9 +12,6 @@
     handle_curl_error(#opt " setopt failed", curl_rcode); \
     return -1; \
   }
-
-int authenticate_contestant(const char *username, const char *password, const char **access_token);
-int get_contestant_config(const char *access_token, const char **config_file);
 
 const int FIELD_MAXLEN = 4096; // 4KB
 
@@ -23,10 +21,9 @@ void handle_curl_error(const char *p_msg, CURLcode curl_rcode){
 }
 
 int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
-    struct memory **header_buf, struct memory **body_buf){
+    struct buffer **header_buf, struct buffer **body_buf){
   CURL *curlh = NULL;
   CURLcode curl_rcode;
-  int child_rcode;
 
   curl_rcode = curl_global_init(CURL_GLOBAL_ALL);
   if (curl_rcode != CURLE_OK){
@@ -44,24 +41,15 @@ int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
   curl_setopt_and_handle_error(CURLOPT_URL, endpoint);
 
   /* Set write callback */
-  *header_buf = malloc(sizeof(struct memory));
+  *header_buf = buffer_create();
   if (*header_buf == NULL){
     fprintf(stderr, "Header buffer creation failed\n");
     return -1;
   }
 
-  child_rcode = memory_create(*header_buf);
-  if (child_rcode < 0){
-    return -1;
-  }
-
-  *body_buf = malloc(sizeof(struct memory));
+  *body_buf = buffer_create();
   if (*body_buf == NULL){
     fprintf(stderr, "Body buffer creation failed\n");
-    return -1;
-  }
-  child_rcode = memory_create(*body_buf);
-  if (child_rcode < 0){
     return -1;
   }
 
@@ -98,7 +86,7 @@ int curl_perform_wrapper(CURL *curlh){
 // Returns 1 if successful, -1 if internal error, 0 if server-side error/unauthorized.
 // Free header_buf and body_buf after use.
 int perform_POST(const char *endpoint, char *post_fields,
-    struct memory **header_buf, struct memory **body_buf){
+    struct buffer **header_buf, struct buffer **body_buf){
   CURL *curlh = NULL;
   CURLcode curl_rcode;
   int child_rcode = 0, return_code = 0;
@@ -130,7 +118,7 @@ int perform_POST(const char *endpoint, char *post_fields,
 }
 
 int perform_GET(const char *endpoint, const struct curl_slist *header_list,
-    struct memory **header_buf, struct memory **body_buf){
+    struct buffer **header_buf, struct buffer **body_buf){
   CURL *curlh = NULL;
   CURLcode curl_rcode;
   int child_rcode = 0, return_code = 0;
@@ -168,7 +156,7 @@ int authenticate_contestant(const char *username, const char *password,
   const char *escaped_username = NULL, *escaped_password = NULL;
   char post_fields[FIELD_MAXLEN];
   int child_rcode = 0, return_code = 1;
-  struct memory *header_buf = NULL, *body_buf = NULL;
+  struct buffer *header_buf = NULL, *body_buf = NULL;
 
   /* Escape fields */
   #define curl_escape_and_handle_error(str) \
@@ -207,7 +195,7 @@ int authenticate_contestant(const char *username, const char *password,
   }
 
   /* Extract access token */
-  const char *body_buf_data = memory_extract(body_buf);
+  const char *body_buf_data = buffer_extract(body_buf);
   *access_token = get_json_value(body_buf_data, "accessToken");
   if (*access_token == NULL){
     fprintf(stderr, "Access token extraction failed\nJSON Content: %s\n", body_buf_data);
@@ -216,10 +204,10 @@ int authenticate_contestant(const char *username, const char *password,
   }
 
   cleanup:
-  memory_destroy(header_buf);
+  buffer_destroy(header_buf);
   free(header_buf);
 
-  memory_destroy(body_buf);
+  buffer_destroy(body_buf);
   free(body_buf);
 
   curl_free((void*) escaped_username);
@@ -232,7 +220,7 @@ int authenticate_contestant(const char *username, const char *password,
 int get_contestant_config(const char *access_token, const char **config_file){
   int child_rcode = 0, return_code = 1;
   char bearer_header[FIELD_MAXLEN];
-  struct memory *header_buf = NULL, *body_buf = NULL;
+  struct buffer *header_buf = NULL, *body_buf = NULL;
 
   /* Make GET header */
   child_rcode = snprintf(bearer_header, FIELD_MAXLEN,
@@ -263,7 +251,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
   }
 
   /* Extract config file */
-  *config_file = strdup(memory_extract(body_buf));
+  *config_file = strdup(buffer_extract(body_buf));
   if (*config_file == NULL){
     fprintf(stderr, "Config file duplication failed\n");
     return_code = -1;
