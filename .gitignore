@@ -4,3 +4,5 @@ live-build/
 authorized_keys
 image-toolkit/misc/logo.png
 .vscode
+*.o
+*.so

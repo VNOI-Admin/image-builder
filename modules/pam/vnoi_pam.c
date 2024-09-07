@@ -20,9 +20,8 @@ void handle_pam_error(const char *p_msg, pam_handle_t *pamh, int pam_rcode){
 }
 
 void access_token_cleanup(pam_handle_t *pamh, void *data, int error_status){
-  if (data != NULL){
-    free(data);
-  }
+  if (data == NULL) return;
+  free(data);
 }
 
 // Returns 0 if successful, -1 if error encountered.
@@ -91,12 +90,13 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
   const char *access_token = calloc(1, 1);
 
-  /* Store placeholder access token */
-  pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
-  if (pam_rcode != PAM_SUCCESS){
-    handle_pam_error("Access token placeholder store failed", pamh, pam_rcode);
-    return PAM_AUTH_ERR;
-  }
+  // Uncomment if this module is not required/requisite
+  // /* Store placeholder access token */
+  // pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
+  // if (pam_rcode != PAM_SUCCESS){
+  //   handle_pam_error("Access token placeholder store failed", pamh, pam_rcode);
+  //   return PAM_AUTH_ERR;
+  // }
 
   /* Prompt user for username */
   pam_rcode = pam_get_user(pamh, &username, VNOI_USER_PROMPT);
@@ -129,7 +129,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     return PAM_USER_UNKNOWN;
   }
 
-  printf("Authentication successful\n. Welcome %s\n", username);
+  printf("Authentication successful.\nWelcome %s\n", username);
 
   /* Store access token */
   pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);

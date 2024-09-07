@@ -66,9 +66,9 @@ int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
   }
 
   curl_setopt_and_handle_error(CURLOPT_WRITEFUNCTION, write_callback);
-  curl_setopt_and_handle_error(CURLOPT_HEADERDATA, &header_buf);
-  curl_setopt_and_handle_error(CURLOPT_WRITEDATA, &body_buf);
-  
+  curl_setopt_and_handle_error(CURLOPT_HEADERDATA, *header_buf);
+  curl_setopt_and_handle_error(CURLOPT_WRITEDATA, *body_buf);
+
   return 1;
 }
 
@@ -109,7 +109,6 @@ int perform_POST(const char *endpoint, char *post_fields,
     goto cleanup;
   }
 
-  printf("Post fields: %s\n", post_fields);
   curl_setopt_and_handle_error(CURLOPT_COPYPOSTFIELDS, post_fields);
 
   /* Perform POST */
@@ -168,7 +167,7 @@ int authenticate_contestant(const char *username, const char *password,
     const char **access_token){
   const char *escaped_username = NULL, *escaped_password = NULL;
   char post_fields[FIELD_MAXLEN];
-  int child_rcode = 0, return_code = 0;
+  int child_rcode = 0, return_code = 1;
   struct memory *header_buf = NULL, *body_buf = NULL;
 
   /* Escape fields */
@@ -208,9 +207,10 @@ int authenticate_contestant(const char *username, const char *password,
   }
 
   /* Extract access token */
-  *access_token = get_json_value(body_buf->data, "access_token");
+  const char *body_buf_data = memory_extract(body_buf);
+  *access_token = get_json_value(body_buf_data, "accessToken");
   if (*access_token == NULL){
-    fprintf(stderr, "Access token extraction failed\nJSON Content: %s\n", body_buf->data);
+    fprintf(stderr, "Access token extraction failed\nJSON Content: %s\n", body_buf_data);
     return_code = -1;
     goto cleanup;
   }
@@ -265,7 +265,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
   }
 
   /* Extract config file */
-  *config_file = strdup(body_buf->data);
+  *config_file = strdup(memory_extract(body_buf));
   if (*config_file == NULL){
     fprintf(stderr, "Config file duplication failed\n");
     return_code = -1;

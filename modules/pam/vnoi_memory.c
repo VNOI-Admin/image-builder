@@ -37,6 +37,7 @@ int memory_extend(struct memory *buf, size_t new_size){
     return -1;
   }
 
+  buf->data = new_data;
   buf->real_size = new_real_size;
   return 0;
 }
@@ -58,4 +59,10 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata){
   buf->size += size * nmemb;
 
   return size * nmemb;
+}
+
+const char *memory_extract(struct memory *buf){
+  if (buf->data[buf->size-1])
+    write_callback("", 1, 1, buf); // Add null terminator
+  return buf->data;
 }
