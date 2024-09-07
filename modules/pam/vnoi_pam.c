@@ -83,7 +83,6 @@ int wireguard_config_write(const char *config_content){
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     int argc, const char **argv){
   int pam_rcode, auth_rcode;
-  const char *error_msg = NULL;
 
   const char *username = NULL;
   const char *password = NULL;

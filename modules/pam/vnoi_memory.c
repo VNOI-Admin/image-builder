@@ -28,7 +28,7 @@ int memory_create(struct memory *buf){
 int memory_extend(struct memory *buf, size_t new_size){
   if (new_size <= buf->real_size) return 0;
 
-  int new_real_size = buf->real_size;
+  size_t new_real_size = buf->real_size;
   while (new_real_size < new_size) new_real_size *= 2;
 
   char *new_data = realloc(buf->data, new_real_size);

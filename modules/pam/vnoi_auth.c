@@ -26,7 +26,7 @@ int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
     struct memory **header_buf, struct memory **body_buf){
   CURL *curlh = NULL;
   CURLcode curl_rcode;
-  int child_rcode, http_status;
+  int child_rcode;
 
   curl_rcode = curl_global_init(CURL_GLOBAL_ALL);
   if (curl_rcode != CURLE_OK){
@@ -230,7 +230,7 @@ int authenticate_contestant(const char *username, const char *password,
 // Returns 1 if successful, 0 if server-side error, -1 if internal error.
 // Free config_file after use.
 int get_contestant_config(const char *access_token, const char **config_file){
-  int child_rcode = 0, return_code = 0;
+  int child_rcode = 0, return_code = 1;
   char bearer_header[FIELD_MAXLEN];
   struct memory *header_buf = NULL, *body_buf = NULL;
 
@@ -260,8 +260,6 @@ int get_contestant_config(const char *access_token, const char **config_file){
   } else if (child_rcode == 0){
     return_code = 0;
     goto cleanup;
-  } else {
-    return_code = 1;
   }
 
   /* Extract config file */
@@ -274,6 +272,7 @@ int get_contestant_config(const char *access_token, const char **config_file){
 
   cleanup:
   curl_slist_free_all(header_list);
+  return return_code;
 }
 
 #undef curl_setopt_and_handle_error
