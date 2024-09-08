@@ -638,6 +638,7 @@ case $1 in
     clean)
         assert_root
         rm -rf $INS_DIR
+        make -C modules/pam clean
         ;;
     icpc_build)
         assert_root
