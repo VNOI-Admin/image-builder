@@ -1,7 +1,7 @@
 import urllib.parse as parse
 import http.server as server
 
-TEST_USER, TEST_PASSWORD = 'minhnhatnoe', 'test-password'
+TEST_USER, TEST_PASSWORD = 'test-user', 'test-password'
 TEST_ACCESS_TOKEN = 'test-access-token'
 TEST_CONFIG_FILE_CONTENT = 'test-config-file-content VNOI ICPC'
 
