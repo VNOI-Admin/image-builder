@@ -6,3 +6,4 @@ image-toolkit/misc/logo.png
 .vscode
 *.o
 *.so
+modules/pam/config.mk
