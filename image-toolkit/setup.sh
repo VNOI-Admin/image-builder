@@ -113,13 +113,13 @@ sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DOMAIN_NAME}#' /usr/share/applications/ccs.desktop
 
 # Configure GDM to copy VPN config on login
-cat - <<'EOM' > /etc/gdm3/PostLogin/Default
-#!/bin/sh
-rm -rf /etc/wireguard/*
-/opt/vnoi/bin/vnoiconf.sh fwstart
-EOM
+# cat - <<'EOM' > /etc/gdm3/PostLogin/Default
+# #!/bin/sh
+# rm -rf /etc/wireguard/*
+# /opt/vnoi/bin/vnoiconf.sh fwstart
+# EOM
 
-chmod +x /etc/gdm3/PostLogin/Default
+# chmod +x /etc/gdm3/PostLogin/Default
 
 # Configure GDM to remove VPN config on logout
 cat - <<'EOM' > /etc/gdm3/PostSession/Default
@@ -297,7 +297,7 @@ chmod 755 /lib/x86_64-linux-gnu/security/vnoi_pam.so
 
 echo "auth	requisite	vnoi_pam.so" > /etc/pam.d/gdm-password.new
 cat /etc/pam.d/gdm-password >> /etc/pam.d/gdm-password.new
-echo "session	requisite	vnoi_pam.so" > /etc/pam.d/gdm-password.new
+echo "session	requisite	vnoi_pam.so" >> /etc/pam.d/gdm-password.new
 mv /etc/pam.d/gdm-password.new /etc/pam.d/gdm-password
 chown root:root /etc/pam.d/gdm-password
 chmod 644 /etc/pam.d/gdm-password

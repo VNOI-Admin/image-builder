@@ -41,8 +41,8 @@ fi
 echo "Writing my own pid"
 echo $$ > /run/icpc-startup.pid
 
-echo "Starting client"
-/opt/vnoi/bin/client &
+# echo "Starting client"
+# /opt/vnoi/bin/client &
 
 vlc_restart_loop() {
     while :
