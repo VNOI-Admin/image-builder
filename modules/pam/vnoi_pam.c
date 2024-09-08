@@ -155,6 +155,11 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 
 PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags,
     int argc, const char **argv){
+  int rcode = remove_wireguard_dir();
+  if (rcode < 0){
+    write_log("Wireguard directory removal failed\n");
+    return PAM_SESSION_ERR;
+  }
   return PAM_SUCCESS;
 }
 

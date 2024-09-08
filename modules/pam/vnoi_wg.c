@@ -25,9 +25,9 @@ int remove_callback(const char *path, const struct stat *sb, int typeflag, struc
 }
 
 // Returns 0 if successful, -1 if error encountered.
-int remove_tree(const char *path){
+int remove_wireguard_dir(){
   int child_rcode = 0;
-  child_rcode = nftw(path, remove_callback, 64, FTW_DEPTH | FTW_PHYS | FTW_MOUNT);
+  child_rcode = nftw(VNOI_WIREGUARD_DIR, remove_callback, 64, FTW_DEPTH | FTW_PHYS | FTW_MOUNT);
   if (child_rcode < 0)
     return -1;
   return 0;
@@ -41,7 +41,7 @@ int wireguard_config_write(const char *config_content){
   FILE *config_fp = NULL;
 
   /* Clear wireguard past configs */
-  child_rcode = remove_tree(VNOI_WIREGUARD_DIR);
+  child_rcode = remove_wireguard_dir();
   if (child_rcode < 0){
     write_log("Wireguard config removal failed\n");
     return_code = -1;
