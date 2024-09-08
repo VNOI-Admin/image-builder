@@ -162,7 +162,10 @@ icpc_build() {
         p7zip-rar \
         unzip \
         zip \
-        curl
+        curl \
+        libjson-c-dev \
+        libpam0g-dev \
+        libsystemd-dev
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
