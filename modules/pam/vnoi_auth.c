@@ -253,9 +253,10 @@ int get_contestant_config(const char *access_token, const char **config_file){
   }
 
   /* Extract config file */
-  *config_file = strdup(buffer_extract(body_buf));
+  const char *body_buf_data = buffer_extract(body_buf);
+  *config_file = get_json_value(body_buf_data, "config");
   if (*config_file == NULL){
-    write_log("Config file duplication failed\n");
+    write_log("Config file extraction failed\nJSON Content: %s\n", body_buf_data);
     return_code = -1;
     goto cleanup;
   }
