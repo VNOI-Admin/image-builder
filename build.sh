@@ -73,6 +73,17 @@ if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
     log "Done"
 fi
 
+build_modules() {
+    log "Building modules"
+
+    make -C modules/pam clean
+    make -C modules/pam
+
+    cp modules/pam/vnoi_pam.so $TOOLKIT/misc
+
+    log "Done"
+}
+
 icpc_build() {
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
@@ -185,6 +196,8 @@ icpc_build() {
     log "Done"
 
     if [ $PROD_DEV = "prod" ]; then
+        build_modules
+
         log "Copy toolkit to chroot"
         cp -R $TOOLKIT/ $CHROOT/root/src/
         log "Done"
@@ -405,6 +418,8 @@ generate_actions_secret() {
 
 VM_NAME="ICPC-Dev"
 dev_reload() {
+    build_modules
+
     log "Checking if Virtual Machine is running"
     if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
     | grep -c "VMState=\"running\"") -ne 0 ]; then
