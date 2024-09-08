@@ -39,6 +39,7 @@ int curl_init_wrapper(CURL **curlh_return, const char *endpoint,
     return -1;
   }
 
+  curl_setopt_and_handle_error(CURLOPT_DEBUGFUNCTION, debug_callback);
   curl_setopt_and_handle_error(CURLOPT_VERBOSE, 1L);
   curl_setopt_and_handle_error(CURLOPT_URL, endpoint);
 
