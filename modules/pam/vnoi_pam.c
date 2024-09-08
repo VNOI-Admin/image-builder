@@ -151,3 +151,13 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
   cleanup:
   return return_code;
 }
+
+PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags,
+    int argc, const char **argv){
+  return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags,
+    int argc, const char **argv){
+  return PAM_SUCCESS;
+}
