@@ -97,7 +97,7 @@ int wireguard_restart_overwrite_config(const char *config_content){
     return -1;
   }
 
-  child_rcode = restart_systemd_unit("wg-quick@client");
+  child_rcode = restart_systemd_unit("wg-quick@client.service");
   if (child_rcode < 0){
     write_log("Wireguard restart failed\n");
     return -1;
