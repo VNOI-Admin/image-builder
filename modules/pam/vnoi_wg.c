@@ -6,6 +6,7 @@
 
 #define __USE_XOPEN_EXTENDED 1 /* https://stackoverflow.com/questions/782338/warning-with-nftw */
 #include <ftw.h>
+#include <sys/stat.h>
 
 #include "vnoi_wg.h"
 #include "vnoi_systemd.h"
@@ -27,6 +28,22 @@ int remove_callback(const char *path, const struct stat *sb, int typeflag, struc
 // Returns 0 if successful, -1 if error encountered.
 int remove_wireguard_dir(){
   int child_rcode = 0;
+
+  struct stat sb;
+
+  child_rcode = stat(VNOI_WIREGUARD_DIR, &sb);
+
+  // Check if the directory exists
+  if (child_rcode != 0) {
+      if (errno == ENOENT) {
+          // Directory does not exist, no need to remove anything
+          return 0;
+      } else {
+          write_log("Error checking %s: %s\n", VNOI_WIREGUARD_DIR, strerror(errno));
+          return -1;
+      }
+  }
+
   child_rcode = nftw(VNOI_WIREGUARD_DIR, remove_callback, 64, FTW_DEPTH | FTW_PHYS | FTW_MOUNT);
   if (child_rcode < 0)
     return -1;
@@ -36,7 +53,7 @@ int remove_wireguard_dir(){
 // Returns 0 if successful, -1 if error encountered.
 int wireguard_config_write(const char *config_content){
   int child_rcode, return_code = 0;
-  
+
   int config_fd = -1;
   FILE *config_fp = NULL;
 
