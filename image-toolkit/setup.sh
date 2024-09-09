@@ -124,7 +124,7 @@ sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DO
 # Configure GDM to remove VPN config on logout
 cat - <<'EOM' > /etc/gdm3/PostSession/Default
 #!/bin/sh
-rm -rf /etc/wireguard/*
+# rm -rf /etc/wireguard/*
 /opt/vnoi/bin/vnoiconf.sh fwstop
 exit 0
 EOM
