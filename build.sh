@@ -138,6 +138,15 @@ icpc_build() {
         -f | --force)
             FORCE_DOWNLOAD=true
             ;;
+        -q)
+            VERBOSE_LEVEL=0
+            ;;
+        -v)
+            VERBOSE_LEVEL=1
+            ;;
+        -vv)
+            VERBOSE_LEVEL=2
+            ;;
         --dev)
             PROD_DEV="dev"
             ;;
@@ -162,6 +171,9 @@ icpc_build() {
             echo
             echo "  -u, --url <url>    URL to the original ICPC image"
             echo "  -f, --force        Force download the original ICPC image"
+            echo "  -q                 Verbose level: quiet"
+            echo "  -v                 Verbose level: normal (default)"
+            echo "  -vv                Verbose level: debug"
             echo "  --image-only       Only build the image, skip downloading and modifying the original ICPC image"
             echo "  --github-actions   Clear early to free up space"
             echo "  --vnoi-source      Use VNOI and Ubuntu sources"
