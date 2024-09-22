@@ -2,9 +2,17 @@
 
 set -e
 
+VERBOSE_LEVEL=1
+STEPS=()
+
 # Custom color echo function, use for debugging
 log() {
-    echo -e "\e[32m$1\e[0m"
+    local level=$1
+    local message=$2
+
+    if [[ $VERBOSE_LEVEL -ge $level ]]; then
+        echo -e "\e[32m$level\e[0m"
+    fi
 }
 
 # Capture error and stop script
@@ -18,26 +26,65 @@ error() {
 		echo "Error at or near line ${lineno}; exiting with status ${code}"
 	fi
 
-    log "Unmounting /dev and /run from chroot"
+    log 2 "Unmounting /dev and /run from chroot"
     umount -l $CHROOT/dev
     umount -l $CHROOT/run
-    log "Done"
+    log 2 "Done"
 
 	exit "${code}"
 }
 
 trap 'error ${LINENO}' ERR
 
+add_step() {
+    local step_name=$1
+    local step_command=$2
+    STEPS+=("$step_name" "$step_command")
+}
+
+run_command() {
+    local command=$1
+
+    if [[ $VERBOSE_LEVEL -eq 0 ]]; then
+        eval "$command" &> /dev/null  # Run silently
+    elif [[ $VERBOSE_LEVEL -eq 1 ]]; then
+        eval "$command" 1> /dev/null  # Supress stdout
+    else
+        eval "$command"  # Full output for log level 2
+    fi
+}
+
+run_all_steps() {
+    local total_steps=$(( ${#STEPS[@]} / 2 ))  # Each step is a tuple of 2 strings
+    local current_step=0
+
+    for (( i = 0; i < ${#STAGES[@]} ; i += 2 )); do
+        current_step=$((current_step + 1))
+        local step_name=${STEPS[i]}
+        local step_command=${STEPS[i+1]}
+
+        log 1 "Step $current_step/$total_steps: $step_name"
+
+        local start_time=$(date +%s)
+
+        run_command "$step_command"
+
+        local end_time=$(date +%s)
+        local elapsed_time=$(( end_time - start_time ))
+
+        log 2 "Elapsed time: ${elapsed_time} seconds"
+    done
+}
+
 # Install requested packages if system has apt
 install_if_has_apt() {
     PACKAGES="$@"
     if [ -x "$(command -v apt-get)" ]; then
-        log "Installing $PACKAGES"
+        log 2 "Installing $PACKAGES"
         apt-get update
         apt-get install $@ -y
-        log "Done"
     else
-        log "apt-get not found, skipping installation of $PACKAGES"
+        log 2 "apt-get not found, skipping installation of $PACKAGES"
     fi
 }
 
@@ -62,18 +109,18 @@ TOOLKIT="image-toolkit"
 if [ -f config.local.sh ]; then
     source config.local.sh
 else
-    log "config.local.sh not found, running config.sh"
+    log 1 "config.local.sh not found, running config.sh"
     source config.sh
 fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
-    log "Unmounting /dev and /run from chroot"
-    sudo umount -l $CHROOT/dev
-    sudo umount -l $CHROOT/run
-    log "Done"
+    sudo umount -l \$CHROOT/dev
+    sudo umount -l \$CHROOT/run
 fi
 
 icpc_build() {
+    STEPS=()
+
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
     COMPACT=false
@@ -127,20 +174,22 @@ icpc_build() {
 
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
-        install_if_has_apt aria2 genisoimage
-        log "Downloading ICPC image"
-        aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
-        # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
+        add_step "Downloading ICPC image" "$(cat <<"EOM"
+install_if_has_apt aria2 genisoimage
+aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
+# wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
+
+# Check if $2 file type is iso
+if [ ! isoinfo -d -i filename.iso > /dev/null 2>&1 ]; then
+    echo "File is not an ISO" 1>&2
+    rm -f $ICPC_ISO_FILENAME
+    exit 1
+fi
+EOM
+        )"
     fi
 
-    # Check if $2 file type is iso
-    if [ ! isoinfo -d -i filename.iso > /dev/null 2>&1 ]; then
-        log "File is not an ISO"
-        rm -f $ICPC_ISO_FILENAME
-        exit 1
-    fi
-
-    install_if_has_apt \
+    add_step "Installing packages" "install_if_has_apt \
         binutils \
         squashfs-tools \
         xorriso \
@@ -151,107 +200,97 @@ icpc_build() {
         p7zip-rar \
         unzip \
         zip \
-        curl
+        curl \
+    "
 
-    mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
-
-    log "Removing old chroot"
-    rm -rf $CHROOT/*  # Clean chroot if exists
-    log "Done"
+    add_step "Creating directories and removing old chroot" 'mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc} && rm -rf $CHROOT/*'
 
     # Extract ISO to chroot
-    log "Extract MBR from ISO"
-    7z x $ICPC_ISO_FILENAME -o$INS_DIR/icpc -aoa -mnt4
-    dd if="$ICPC_ISO_FILENAME" bs=1 count=446 of="$INS_DIR/icpc/contestant.mbr"
-    log "Done"
+    add_step "Extract MBR from ISO" "$(cat <<"EOM"
+7z x $ICPC_ISO_FILENAME -o$INS_DIR/icpc -aoa -mnt4
+dd if="$ICPC_ISO_FILENAME" bs=1 count=446 of="$INS_DIR/icpc/contestant.mbr"
+EOM
+    )"
 
-    log "Extracting squashfs filesystem from ISO"
-    unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs
+    add_step "Extracting squashfs filesystem from ISO" 'unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs'
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        rm -rf $ICPC/casper/filesystem.squashfs
-        log "Done"
+        add_step "Clearing early to free up space" 'rm -rf $ICPC/casper/filesystem.squashfs'
     fi
-    log "Done"
 
-    log "Mount /dev and /run to chroot"
-    mount --make-rslave --bind /dev $CHROOT/dev
-    mount --make-rslave --bind /run $CHROOT/run
-    log "Done"
+    add_step "Mount /dev and /run to chroot" " \
+        mount --make-rslave --bind /dev \$CHROOT/dev; \
+        mount --make-rslave --bind /run \$CHROOT/run \
+    "
 
-    log "Copy scripts and config to chroot"
-    cp -R build.sh chroot_install.sh $CHROOT/root
-    log "Done"
+    add_step "Copy scripts and config to chroot" 'cp -R build.sh chroot_install.sh $CHROOT/root'
 
     if [ $PROD_DEV = "prod" ]; then
-        log "Copy toolkit to chroot"
-        cp -R $TOOLKIT/ $CHROOT/root/src/
-        log "Done"
+        add_step "Copy toolkit to chroot" 'cp -R $TOOLKIT/ $CHROOT/root/src/'
     else
-        mkdir -p $CHROOT/root/src
-        log "Skipped copying toolkit to chroot"
+        add_step "Skipped copying toolkit to chroot" 'mkdir -p $CHROOT/root/src'
     fi
 
-    log "Encrypt super password"
-    ENCRYPTED_SUPER_PASSWD=$(echo -n $SUPER_PASSWD | python3 -c 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.mksalt(crypt.METHOD_SHA512)))')
-    GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
-    echo "ENCRYPTED_SUPER_PASSWD='$ENCRYPTED_SUPER_PASSWD'" > $CHROOT/root/src/encrypted_passwd.sh
-    echo "GRUB_PASSWD='$GRUB_PASSWD'" >> $CHROOT/root/src/encrypted_passwd.sh
-    log "Done"
+    add_step "Encrypt super password" "$(cat <<"EOM"
+ENCRYPTED_SUPER_PASSWD=$(echo -n $SUPER_PASSWD | python3 -c 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.mksalt(crypt.METHOD_SHA512)))')
+GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
+echo "ENCRYPTED_SUPER_PASSWD='$ENCRYPTED_SUPER_PASSWD'" > $CHROOT/root/src/encrypted_passwd.sh
+echo "GRUB_PASSWD='$GRUB_PASSWD'" >> $CHROOT/root/src/encrypted_passwd.sh
+EOM
+    )"
 
-    log $APT_SOURCE
     if [ $APT_SOURCE = "vnoi" ]; then
-        log "Making apt use VNOI and Ubuntu sources"
-        # Change https://sysopspackages.icpc.global/ubuntu to $UBUNTU_APT_SOURCE
-        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
-        # Remove the extremely big vscode repo
-        sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
-        # Change https://sysopspackages.icpc.global to $CUSTOM_APT_SOURCE
-        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
-        for file in $CHROOT/etc/apt/sources.list.d/*; do
-            sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $file
-            sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $file
-        done
-        log "Done"
+        add_step "Making apt use VNOI and Ubuntu sources" "$(cat <<"EOM"
+log 2 $APT_SOURCE
+# Change https://sysopspackages.icpc.global/ubuntu to $UBUNTU_APT_SOURCE
+sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
+# Remove the extremely big vscode repo
+sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
+# Change https://sysopspackages.icpc.global to $CUSTOM_APT_SOURCE
+sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
+for file in $CHROOT/etc/apt/sources.list.d/*; do
+    sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $file
+    sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $file
+done
+EOM
+        )"
 
-        log "Make VNOI key trusted"
-        curl $CUSTOM_APT_SOURCE/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg
+        add_step "Make VNOI key trusted" 'curl $CUSTOM_APT_SOURCE/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg'
     fi
 
-    log "chrooting into $CHROOT"
-    # Chroot, resetting all environment variables to ensure replicable building
-    # https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
-    install -v /etc/resolv.conf $CHROOT/etc/
-    su -c "chroot $CHROOT /usr/bin/env -i \
-        HOME=/root \
-        TERM="$TERM" \
-        PS1=\"[\u@\h \W]\$ \" \
-        PATH=/usr/bin:/usr/sbin \
-        PROD_DEV="$PROD_DEV" \
-        /bin/bash /root/chroot_install.sh"
-    log "Done"
+    add_step "chrooting into $CHROOT" "$(cat <<"EOM"
+# Chroot, resetting all environment variables to ensure replicable building
+# https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
+install -v /etc/resolv.conf $CHROOT/etc/
+su -c "chroot $CHROOT /usr/bin/env -i \
+    HOME=/root \
+    TERM="$TERM" \
+    PS1=\"[\u@\h \W]\$ \" \
+    PATH=/usr/bin:/usr/sbin \
+    PROD_DEV="$PROD_DEV" \
+    /bin/bash /root/chroot_install.sh"
+EOM
+    )"
 
-    log "Cleanup scripts and config from chroot"
-    rm -f $CHROOT/root/{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}
-    log "Done"
+    add_step "Cleanup scripts and config from chroot" 'rm -f $CHROOT/root/{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}'
 
-    log "Unmounting /dev and /run from chroot"
-    umount -l $CHROOT/dev
-    umount -l $CHROOT/run
-    log "Done"
+    add_step "Unmounting /dev and /run from chroot" " \
+        umount -l \$CHROOT/dev \
+        umount -l \$CHROOT/run \
+    "
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        rm -rf $ICPC_ISO_FILENAME
-        log "Done"
+        add_step "Clearing early to free up space" 'rm -rf $ICPC_ISO_FILENAME'
     fi
+
+    run_all_steps
 
     icpc_image_build $PROD_DEV $APT_SOURCE
 }
 
 icpc_image_build() {
-    log "Start building ICPC image"
+    log 1 "Start building ICPC image"
+    STEPS=()
 
     if [ $1 = "prod" ]; then
         PRESEED=seeds/prod.preseed
@@ -276,93 +315,99 @@ icpc_image_build() {
     cp -r $ICPC $IMAGE
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
+        log 2 "Clearing early to free up space"
         rm -rf $ICPC
-        log "Done"
     fi
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
-    log "Move preseed at $PRESEED"
-    cp $PRESEED $IMAGE/preseed/icpc.seed
+    add_step "Move preseed at $PRESEED" 'cp $PRESEED $IMAGE/preseed/icpc.seed'
 
     if [ $APT_SOURCE = "vnoi" ]; then
-        log "Changing seed to make apt use VNOI and Ubuntu sources"
-        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
-        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
-        log "Done"
+        add_step "Changing seed to make apt use VNOI and Ubuntu sources" "$(cat <<"EOM"
+sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+EOM
+        )"
     fi
 
-    log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
-    cp grub.cfg $IMAGE/boot/grub/grub.cfg
+    # TODO: (Try & Install or Install)
+    add_step "Move custom grub.cfg with custom options" 'cp grub.cfg $IMAGE/boot/grub/grub.cfg'
 
-    # # Create manifest
-    chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' > $IMAGE/casper/filesystem.manifest
-
-    cp -v $IMAGE/casper/filesystem.manifest $IMAGE/casper/filesystem.manifest-desktop
+    add_step "Create manifest" "$(cat <<"EOM"
+chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' > $IMAGE/casper/filesystem.manifest
+cp -v $IMAGE/casper/filesystem.manifest $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/ubiquity/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/casper/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/discover/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/laptop-detect/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/os-prober/d' $IMAGE/casper/filesystem.manifest-desktop
-    # Compress filesystem
-    if [ $COMPACT = true ]; then
-        log "Compressing filesystem with xz (slow, smaller size)"
-        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -b 1048576 -comp xz -Xdict-size 100%
-    else
-        log "Compressing filesystem with gzip (fast, larger size)"
-        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
-    fi
+EOM
+    )"
 
-    printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
+    add_step "Compress filesystem" "$(cat <<"EOM"
+if [ $COMPACT = true ]; then
+    log 2 "Compressing filesystem with xz (slow, smaller size)"
+    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -b 1048576 -comp xz -Xdict-size 100%
+else
+    log 2 "Compressing filesystem with gzip (fast, larger size)"
+    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
+fi
 
-    if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        for i in $(ls $CHROOT); do
-            if [ ! $i = "dev" ] && [ ! $i = "run" ]; then
-                rm -rf $CHROOT/$i
-            fi
-        done
-        log "Done"
-    fi
-
-    log "Building ISO"
-    cd $IMAGE
-
-    (
-        dd if=/dev/zero of=efiboot.img bs=1M count=10 && \
-        mkfs.vfat efiboot.img && \
-        LC_CTYPE=C mmd -i efiboot.img EFI EFI/boot && \
-        LC_CTYPE=C mcopy -i efiboot.img EFI/boot/*.efi ::EFI/boot
-    )
-
-    rm md5sum.txt
-    /bin/bash -c "(find . -type f -print0 | xargs -0 md5sum | grep -v -e 'md5sum.txt' -e 'efiboot.img' -e 'contestant.mbr' > md5sum.txt)"
-
-    xorriso -as mkisofs \
-        -r -V "Contestant ISO" -J -joliet-long -l \
-        -iso-level 3 \
-        -partition_offset 16 \
-        --grub2-mbr "contestant.mbr" \
-        --mbr-force-bootable \
-        -append_partition 2 0xEF efiboot.img \
-        -appended_part_as_gpt \
-        -c /boot.catalog \
-        -b /boot/grub/i386-pc/eltorito.img \
-            -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
-        -eltorito-alt-boot \
-        -e '--interval:appended_partition_2:all::' \
-            -no-emul-boot \
-        -o "../$IMAGE_FILENAME" \
-        .
+printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
+EOM
+    )"
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        rm -rf $IMAGE
-        log "Done"
+        add_step "Clearing early to free up space" "$(cat <<"EOM"
+for i in $(ls $CHROOT); do
+    if [ ! $i = "dev" ] && [ ! $i = "run" ]; then
+        rm -rf $CHROOT/$i
+    fi
+done
+EOM
+        )"
     fi
 
-    log "Build finished. Cleaning up (run clean command for full clean up)."
+    add_step "Building ISO" "$(cat <<"EOM"
+cd $IMAGE
+
+(
+    dd if=/dev/zero of=efiboot.img bs=1M count=10 && \
+    mkfs.vfat efiboot.img && \
+    LC_CTYPE=C mmd -i efiboot.img EFI EFI/boot && \
+    LC_CTYPE=C mcopy -i efiboot.img EFI/boot/*.efi ::EFI/boot
+)
+
+rm md5sum.txt
+/bin/bash -c "(find . -type f -print0 | xargs -0 md5sum | grep -v -e 'md5sum.txt' -e 'efiboot.img' -e 'contestant.mbr' > md5sum.txt)"
+
+xorriso -as mkisofs \
+    -r -V "Contestant ISO" -J -joliet-long -l \
+    -iso-level 3 \
+    -partition_offset 16 \
+    --grub2-mbr "contestant.mbr" \
+    --mbr-force-bootable \
+    -append_partition 2 0xEF efiboot.img \
+    -appended_part_as_gpt \
+    -c /boot.catalog \
+    -b /boot/grub/i386-pc/eltorito.img \
+        -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+    -eltorito-alt-boot \
+    -e '--interval:appended_partition_2:all::' \
+        -no-emul-boot \
+    -o "../$IMAGE_FILENAME" \
+    .
+EOM
+    )"
+
+    if [ $CLEAR_EARLY = true ]; then
+        add_step "Clearing early to free up space" 'rm -rf $IMAGE'
+    fi
+
+    run_all_steps
+
+    log 1 "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
 generate_actions_secret() {
