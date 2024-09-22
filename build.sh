@@ -11,7 +11,7 @@ log() {
     local message=$2
 
     if [[ $VERBOSE_LEVEL -ge $level ]]; then
-        echo -e "\e[32m$level\e[0m"
+        echo -e "\e[32m$message\e[0m"
     fi
 }
 
@@ -58,7 +58,7 @@ run_all_steps() {
     local total_steps=$(( ${#STEPS[@]} / 2 ))  # Each step is a tuple of 2 strings
     local current_step=0
 
-    for (( i = 0; i < ${#STAGES[@]} ; i += 2 )); do
+    for (( i = 0; i < ${#STEPS[@]} ; i += 2 )); do
         current_step=$((current_step + 1))
         local step_name=${STEPS[i]}
         local step_command=${STEPS[i+1]}
@@ -114,11 +114,12 @@ else
 fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
-    sudo umount -l \$CHROOT/dev
-    sudo umount -l \$CHROOT/run
+    sudo umount -l $CHROOT/dev
+    sudo umount -l $CHROOT/run
 fi
 
 icpc_build() {
+    log 1 "Start icpc_build"
     STEPS=()
 
     FORCE_DOWNLOAD=false
@@ -275,7 +276,7 @@ EOM
     add_step "Cleanup scripts and config from chroot" 'rm -f $CHROOT/root/{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}'
 
     add_step "Unmounting /dev and /run from chroot" " \
-        umount -l \$CHROOT/dev \
+        umount -l \$CHROOT/dev; \
         umount -l \$CHROOT/run \
     "
 
@@ -450,14 +451,14 @@ generate_actions_secret() {
 
 VM_NAME="ICPC-Dev"
 dev_reload() {
-    log "Checking if Virtual Machine is running"
+    log 0 "Checking if Virtual Machine is running"
     if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
     | grep -c "VMState=\"running\"") -ne 0 ]; then
-        log "Running. Turning off VM"
+        log 0 "Running. Turning off VM"
         vboxmanage controlvm "$VM_NAME" poweroff
-        log "Done"
+        log 0 "Done"
 
-        log "Polling for shutdown"
+        log 0 "Polling for shutdown"
         while true; do
             if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
             | grep -c "VMState=\"running\"") -eq 0 ]; then
@@ -465,22 +466,22 @@ dev_reload() {
             fi
             sleep 1
         done
-        log "Done"
+        log 0 "Done"
     else
-        log "Not running"
+        log 0 "Not running"
     fi
 
-    log "Restoring VM to snapshot root-install"
+    log 0 "Restoring VM to snapshot root-install"
     vboxmanage snapshot "$VM_NAME" restore "root-install"
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Starting Virtual Machine"
+    log 0 "Starting Virtual Machine"
     vboxmanage startvm "$VM_NAME"
-    log "Done"
+    log 0 "Done"
 
-    log "Polling for guest control"
+    log 0 "Polling for guest control"
     while true; do
         if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
         | grep -c "GuestAdditionsRunLevel=2") -ne 0 ]; then
@@ -489,19 +490,19 @@ dev_reload() {
         sleep 1
     done
 
-    log "Installing from /media/sf_src (mounted Shared Folder)"
+    log 0 "Installing from /media/sf_src (mounted Shared Folder)"
     vboxmanage guestcontrol "$VM_NAME" run \
         --username $SUDO_USER --password $SUPER_PASSWD \
         --exe "/bin/bash" \
         --wait-stdout --wait-stderr \
         -- -c "cd /root/src && /media/sf_src/setup.sh"
-    log "Done"
+    log 0 "Done"
 
     # Wait for Virtual Machine to shutdown
-    log "Restarting Virtual Machine."
+    log 0 "Restarting Virtual Machine."
     vboxmanage controlvm "$VM_NAME" acpipowerbutton
 
-    log "Waiting for Virtual Machine to shutdown"
+    log 0 "Waiting for Virtual Machine to shutdown"
     while true; do
         if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
         | grep -c "VMState=\"running\"") -eq 0 ]; then
@@ -509,12 +510,12 @@ dev_reload() {
         fi
         sleep 1
     done
-    log "Done"
+    log 0 "Done"
 
     sleep 3
 
     vboxmanage startvm "$VM_NAME"
-    log "Virtual Machine started. Have fun coding!"
+    log 0 "Virtual Machine started. Have fun coding!"
 }
 
 dev_create() {
@@ -560,12 +561,12 @@ dev_create() {
     done
 
     if [ $BUILD = true ]; then
-        log "Building ICPC image for development"
+        log 0 "Building ICPC image for development"
         sudo ./$0 icpc_build --dev
-        log "Done"
+        log 0 "Done"
     else
-        log "Skipping building ICPC image for development."
-        log "Do make sure your image is for development (built with icpc_build --dev or dev_create)."
+        log 0 "Skipping building ICPC image for development."
+        log 0 "Do make sure your image is for development (built with icpc_build --dev or dev_create)."
     fi
 
     VM_NAME="ICPC-Dev"
@@ -573,14 +574,14 @@ dev_create() {
     VM_DIRECTORY="$HOME/VirtualBox VMs"
 
     if [ $NEW = true ]; then
-        log "Removing old Virtual Machine"
+        log 0 "Removing old Virtual Machine"
         vboxmanage unregistervm $VM_NAME --delete || true
         echo "$VM_DIRECTORY/$VM_NAME"
         rm -rf "$VM_DIRECTORY/$VM_NAME"
-        log "Done"
+        log 0 "Done"
     fi
 
-    log "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
+    log 0 "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
     vboxmanage createvm \
         --register \
         --default \
@@ -588,25 +589,25 @@ dev_create() {
         --groups "/$VM_NAME" \
         --basefolder "$VM_DIRECTORY" \
         --ostype $VM_GUEST_OS_TYPE
-    log "Done"
+    log 0 "Done"
 
-    log "Running configuration"
+    log 0 "Running configuration"
     vboxmanage modifyvm "$VM_NAME" \
         --memory $MEM \
         --cpus $CPUS \
         --firmware $FIRMWARE \
         --usb-xhci=on
-    log "Done"
+    log 0 "Done"
 
-    log "Creating disk"
+    log 0 "Creating disk"
     DISK_FILENAME=$VM_DIRECTORY/$VM_NAME/$VM_NAME.vdi
     vboxmanage createmedium disk \
         --filename "$DISK_FILENAME" \
         --size 40960 \
         --variant Fixed
-    log "Done"
+    log 0 "Done"
 
-    log "Attaching disk"
+    log 0 "Attaching disk"
     vboxmanage storageattach "$VM_NAME" \
         --storagectl SATA \
         --port 0 \
@@ -614,23 +615,23 @@ dev_create() {
         --type hdd \
         --medium "$DISK_FILENAME" \
         --nonrotational on
-    log "Done"
+    log 0 "Done"
 
-    log "Attaching installation image"
+    log 0 "Attaching installation image"
     vboxmanage storageattach "$VM_NAME" \
         --storagectl IDE \
         --port 0 \
         --device 0 \
         --type dvddrive \
         --medium "$INS_DIR/contestant-dev.iso"
-    log "Done"
+    log 0 "Done"
 
-    log "Starting Virtual Machine. Please install contest image using the GUI."
+    log 0 "Starting Virtual Machine. Please install contest image using the GUI."
     vboxmanage startvm "$VM_NAME"
-    log "Done"
+    log 0 "Done"
 
     # Wait for Virtual Machine to shutdown
-    log "Waiting for Virtual Machine to shutdown"
+    log 0 "Waiting for Virtual Machine to shutdown"
     while true; do
         if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
         | grep -c "VMState=\"running\"") -eq 0 ]; then
@@ -638,30 +639,30 @@ dev_create() {
         fi
         sleep 1
     done
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Mounting Shared Folder"
+    log 0 "Mounting Shared Folder"
     # Mount shared folder to /media/sf_src
     vboxmanage sharedfolder add "$VM_NAME" \
         --name "src" \
         --hostpath "$TOOLKIT" \
         --readonly \
         --automount
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Creating snapshot"
+    log 0 "Creating snapshot"
     vboxmanage snapshot "$VM_NAME" take "root-install"
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Loading toolkit to Virtual Machine"
+    log 0 "Loading toolkit to Virtual Machine"
     dev_reload
-    log "Done"
+    log 0 "Done"
 }
 
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
@@ -710,4 +711,4 @@ case $1 in
         ;;
 esac
 
-log "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
+log 0 "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
