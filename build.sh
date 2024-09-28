@@ -165,7 +165,8 @@ icpc_build() {
         curl \
         libjson-c-dev \
         libpam0g-dev \
-        libsystemd-dev
+        libsystemd-dev \
+        libcurl4-openssl-dev
 
     mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
 
