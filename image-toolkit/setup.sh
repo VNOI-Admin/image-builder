@@ -113,13 +113,13 @@ sed -i '/%sudo/ s/ALL$/NOPASSWD:ALL/' /etc/sudoers
 sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DOMAIN_NAME}#' /usr/share/applications/ccs.desktop
 
 # Configure GDM to copy VPN config on login
-# cat - <<'EOM' > /etc/gdm3/PostLogin/Default
-# #!/bin/sh
+cat - <<'EOM' > /etc/gdm3/PostLogin/Default
+#!/bin/sh
 # rm -rf /etc/wireguard/*
-# /opt/vnoi/bin/vnoiconf.sh fwstart
-# EOM
+/opt/vnoi/bin/vnoiconf.sh fwstart
+EOM
 
-# chmod +x /etc/gdm3/PostLogin/Default
+chmod +x /etc/gdm3/PostLogin/Default
 
 # Configure GDM to remove VPN config on logout
 cat - <<'EOM' > /etc/gdm3/PostSession/Default
