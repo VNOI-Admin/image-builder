@@ -302,6 +302,9 @@ mv /etc/pam.d/gdm-password.new /etc/pam.d/gdm-password
 chown root:root /etc/pam.d/gdm-password
 chmod 644 /etc/pam.d/gdm-password
 
+# Disable lock screen
+gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
 
