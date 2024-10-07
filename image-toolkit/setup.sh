@@ -115,7 +115,7 @@ sed -i 's#evince /usr/share/doc/icpc/CCS.pdf#gnome-www-browser ${CONTEST_SITE_DO
 # Configure GDM to copy VPN config on login
 cat - <<'EOM' > /etc/gdm3/PostLogin/Default
 #!/bin/sh
-rm -rf /etc/wireguard/*
+# rm -rf /etc/wireguard/*
 /opt/vnoi/bin/vnoiconf.sh fwstart
 EOM
 
@@ -124,7 +124,7 @@ chmod +x /etc/gdm3/PostLogin/Default
 # Configure GDM to remove VPN config on logout
 cat - <<'EOM' > /etc/gdm3/PostSession/Default
 #!/bin/sh
-rm -rf /etc/wireguard/*
+# rm -rf /etc/wireguard/*
 /opt/vnoi/bin/vnoiconf.sh fwstop
 exit 0
 EOM
@@ -288,6 +288,19 @@ if [[ -f '/opt/vnoi/misc/logo.png' ]] ; then
 	cp /opt/vnoi/misc/logo.png /usr/share/plymouth/ubuntu-logo.png
 	cp /opt/vnoi/misc/logo.png /usr/share/plymouth/themes/spinner/watermark.png
 fi
+
+# Set up PAM Module
+echo "Setting up PAM Module"
+cp /opt/vnoi/misc/vnoi_pam.so /lib/x86_64-linux-gnu/security/vnoi_pam.so
+chown root:root /lib/x86_64-linux-gnu/security/vnoi_pam.so
+chmod 755 /lib/x86_64-linux-gnu/security/vnoi_pam.so
+
+echo "auth	requisite	vnoi_pam.so" > /etc/pam.d/gdm-password.new
+cat /etc/pam.d/gdm-password >> /etc/pam.d/gdm-password.new
+echo "session	requisite	vnoi_pam.so" >> /etc/pam.d/gdm-password.new
+mv /etc/pam.d/gdm-password.new /etc/pam.d/gdm-password
+chown root:root /etc/pam.d/gdm-password
+chmod 644 /etc/pam.d/gdm-password
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."

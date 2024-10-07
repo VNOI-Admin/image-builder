@@ -33,8 +33,8 @@ sudo -Hu icpc bash -c 'echo yes > ~/.config/gnome-initial-setup-done'
 # sed -i '/AutomaticLogin =/c\AutomaticLogin = icpc' /etc/gdm3/custom.conf
 
 # Set up passwordless login
-sed -i '/disable-user-list=/c\disable-user-list=false' /etc/gdm3/greeter.dconf-defaults
-sed -i '2 i auth sufficient pam_succeed_if.so user = icpc' /etc/pam.d/gdm-password
+# sed -i '/disable-user-list=/c\disable-user-list=false' /etc/gdm3/greeter.dconf-defaults
+# sed -i '2 i auth sufficient pam_succeed_if.so user = icpc' /etc/pam.d/gdm-password
 
 # Copy VSCode extensions
 # TODO: Check this out

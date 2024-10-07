@@ -41,8 +41,11 @@ fi
 echo "Writing my own pid"
 echo $$ > /run/icpc-startup.pid
 
-echo "Starting client"
-/opt/vnoi/bin/client &
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/1000/bus"
+echo "Using DBUS_SESSION_BUS_ADDRESS $DBUS_SESSION_BUS_ADDRESS"
+sudo -EHu icpc gsettings set org.gnome.desktop.lockdown disable-lock-screen true
+# echo "Starting client"
+# /opt/vnoi/bin/client &
 
 vlc_restart_loop() {
     while :
