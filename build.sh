@@ -2,9 +2,17 @@
 
 set -e
 
+VERBOSE_LEVEL=1
+STEPS=()
+
 # Custom color echo function, use for debugging
 log() {
-    echo -e "\e[32m$1\e[0m"
+    local level=$1
+    local message=$2
+
+    if [[ $VERBOSE_LEVEL -ge $level ]]; then
+        echo -e "\e[32m$message\e[0m"
+    fi
 }
 
 # Capture error and stop script
@@ -18,26 +26,65 @@ error() {
 		echo "Error at or near line ${lineno}; exiting with status ${code}"
 	fi
 
-    log "Unmounting /dev and /run from chroot"
+    log 2 "Unmounting /dev and /run from chroot"
     umount -l $CHROOT/dev
     umount -l $CHROOT/run
-    log "Done"
+    log 2 "Done"
 
 	exit "${code}"
 }
 
 trap 'error ${LINENO}' ERR
 
+add_step() {
+    local step_name=$1
+    local step_command=$2
+    STEPS+=("$step_name" "$step_command")
+}
+
+run_command() {
+    local command=$1
+
+    if [[ $VERBOSE_LEVEL -eq 0 ]]; then
+        eval "$command" &> /dev/null  # Run silently
+    elif [[ $VERBOSE_LEVEL -eq 1 ]]; then
+        eval "$command" 1> /dev/null  # Supress stdout
+    else
+        eval "$command"  # Full output for log level 2
+    fi
+}
+
+run_all_steps() {
+    local total_steps=$(( ${#STEPS[@]} / 2 ))  # Each step is a tuple of 2 strings
+    local current_step=0
+
+    for (( i = 0; i < ${#STEPS[@]} ; i += 2 )); do
+        current_step=$((current_step + 1))
+        local step_name=${STEPS[i]}
+        local step_command=${STEPS[i+1]}
+
+        log 1 "Step $current_step/$total_steps: $step_name"
+
+        local start_time=$(date +%s)
+
+        run_command "$step_command"
+
+        local end_time=$(date +%s)
+        local elapsed_time=$(( end_time - start_time ))
+
+        log 2 "Elapsed time: ${elapsed_time} seconds"
+    done
+}
+
 # Install requested packages if system has apt
 install_if_has_apt() {
     PACKAGES="$@"
     if [ -x "$(command -v apt-get)" ]; then
-        log "Installing $PACKAGES"
+        log 2 "Installing $PACKAGES"
         apt-get update
         apt-get install $@ -y
-        log "Done"
     else
-        log "apt-get not found, skipping installation of $PACKAGES"
+        log 2 "apt-get not found, skipping installation of $PACKAGES"
     fi
 }
 
@@ -62,15 +109,13 @@ TOOLKIT="image-toolkit"
 if [ -f config.local.sh ]; then
     source config.local.sh
 else
-    log "config.local.sh not found, running config.sh"
+    log 1 "config.local.sh not found, running config.sh"
     source config.sh
 fi
 
 if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
-    log "Unmounting /dev and /run from chroot"
     sudo umount -l $CHROOT/dev
     sudo umount -l $CHROOT/run
-    log "Done"
 fi
 
 build_modules() {
@@ -85,6 +130,9 @@ build_modules() {
 }
 
 icpc_build() {
+    log 1 "Start icpc_build"
+    STEPS=()
+
     FORCE_DOWNLOAD=false
     CLEAR_EARLY=false
     COMPACT=false
@@ -100,6 +148,15 @@ icpc_build() {
             ;;
         -f | --force)
             FORCE_DOWNLOAD=true
+            ;;
+        -q)
+            VERBOSE_LEVEL=0
+            ;;
+        -v)
+            VERBOSE_LEVEL=1
+            ;;
+        -vv)
+            VERBOSE_LEVEL=2
             ;;
         --dev)
             PROD_DEV="dev"
@@ -125,6 +182,9 @@ icpc_build() {
             echo
             echo "  -u, --url <url>    URL to the original ICPC image"
             echo "  -f, --force        Force download the original ICPC image"
+            echo "  -q                 Verbose level: quiet"
+            echo "  -v                 Verbose level: normal (default)"
+            echo "  -vv                Verbose level: debug"
             echo "  --image-only       Only build the image, skip downloading and modifying the original ICPC image"
             echo "  --github-actions   Clear early to free up space"
             echo "  --vnoi-source      Use VNOI and Ubuntu sources"
@@ -138,20 +198,22 @@ icpc_build() {
 
     ICPC_ISO_FILENAME="icpc-image.iso"
     if [ ! -f $ICPC_ISO_FILENAME ] || [ $FORCE_DOWNLOAD = true ]; then
-        install_if_has_apt aria2 genisoimage
-        log "Downloading ICPC image"
-        aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
-        # wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
+        add_step "Downloading ICPC image" "$(cat <<"EOM"
+install_if_has_apt aria2 genisoimage
+aria2c -x 16 $ICPC_URL -o $ICPC_ISO_FILENAME --continue="true"
+# wget $ICPC_URL -O $ICPC_ISO_FILENAME -q --show-progress
+
+# Check if $2 file type is iso
+if [ ! isoinfo -d -i filename.iso > /dev/null 2>&1 ]; then
+    echo "File is not an ISO" 1>&2
+    rm -f $ICPC_ISO_FILENAME
+    exit 1
+fi
+EOM
+        )"
     fi
 
-    # Check if $2 file type is iso
-    if [ ! isoinfo -d -i filename.iso > /dev/null 2>&1 ]; then
-        log "File is not an ISO"
-        rm -f $ICPC_ISO_FILENAME
-        exit 1
-    fi
-
-    install_if_has_apt \
+    add_step "Installing packages" "install_if_has_apt \
         binutils \
         squashfs-tools \
         xorriso \
@@ -167,37 +229,29 @@ icpc_build() {
         libpam0g-dev \
         libsystemd-dev \
         libcurl4-openssl-dev
+    "
 
-    mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc}
-
-    log "Removing old chroot"
-    rm -rf $CHROOT/*  # Clean chroot if exists
-    log "Done"
+    add_step "Creating directories and removing old chroot" 'mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc} && rm -rf $CHROOT/*'
 
     # Extract ISO to chroot
-    log "Extract MBR from ISO"
-    7z x $ICPC_ISO_FILENAME -o$INS_DIR/icpc -aoa -mnt4
-    dd if="$ICPC_ISO_FILENAME" bs=1 count=446 of="$INS_DIR/icpc/contestant.mbr"
-    log "Done"
+    add_step "Extract MBR from ISO" "$(cat <<"EOM"
+7z x $ICPC_ISO_FILENAME -o$INS_DIR/icpc -aoa -mnt4
+dd if="$ICPC_ISO_FILENAME" bs=1 count=446 of="$INS_DIR/icpc/contestant.mbr"
+EOM
+    )"
 
-    log "Extracting squashfs filesystem from ISO"
-    unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs
+    add_step "Extracting squashfs filesystem from ISO" 'unsquashfs -f -d $CHROOT $ICPC/casper/filesystem.squashfs'
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        rm -rf $ICPC/casper/filesystem.squashfs
-        log "Done"
+        add_step "Clearing early to free up space" 'rm -rf $ICPC/casper/filesystem.squashfs'
     fi
-    log "Done"
 
-    log "Mount /dev and /run to chroot"
-    mount --make-rslave --bind /dev $CHROOT/dev
-    mount --make-rslave --bind /run $CHROOT/run
-    log "Done"
+    add_step "Mount /dev and /run to chroot" " \
+        mount --make-rslave --bind /dev \$CHROOT/dev; \
+        mount --make-rslave --bind /run \$CHROOT/run \
+    "
 
-    log "Copy scripts and config to chroot"
-    cp -R build.sh chroot_install.sh $CHROOT/root
-    log "Done"
+    add_step "Copy scripts and config to chroot" 'cp -R build.sh chroot_install.sh $CHROOT/root'
 
     if [ $PROD_DEV = "prod" ]; then
         build_modules
@@ -205,70 +259,71 @@ icpc_build() {
         log "Copy toolkit to chroot"
         cp -R $TOOLKIT/ $CHROOT/root/src/
         log "Done"
+        add_step "Copy toolkit to chroot" 'cp -R $TOOLKIT/ $CHROOT/root/src/'
     else
-        mkdir -p $CHROOT/root/src
-        log "Skipped copying toolkit to chroot"
+        add_step "Skipped copying toolkit to chroot" 'mkdir -p $CHROOT/root/src'
     fi
 
-    log "Encrypt super password"
-    ENCRYPTED_SUPER_PASSWD=$(echo -n $SUPER_PASSWD | python3 -c 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.mksalt(crypt.METHOD_SHA512)))')
-    GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
-    echo "ENCRYPTED_SUPER_PASSWD='$ENCRYPTED_SUPER_PASSWD'" > $CHROOT/root/src/encrypted_passwd.sh
-    echo "GRUB_PASSWD='$GRUB_PASSWD'" >> $CHROOT/root/src/encrypted_passwd.sh
-    log "Done"
+    add_step "Encrypt super password" "$(cat <<"EOM"
+ENCRYPTED_SUPER_PASSWD=$(echo -n $SUPER_PASSWD | python3 -c 'import crypt, sys; print(crypt.crypt(sys.stdin.read(), crypt.mksalt(crypt.METHOD_SHA512)))')
+GRUB_PASSWD=$(echo -e "$SUPER_PASSWD\n$SUPER_PASSWD" | grub-mkpasswd-pbkdf2 | awk '/hash of / {print $NF}')
+echo "ENCRYPTED_SUPER_PASSWD='$ENCRYPTED_SUPER_PASSWD'" > $CHROOT/root/src/encrypted_passwd.sh
+echo "GRUB_PASSWD='$GRUB_PASSWD'" >> $CHROOT/root/src/encrypted_passwd.sh
+EOM
+    )"
 
-    log $APT_SOURCE
     if [ $APT_SOURCE = "vnoi" ]; then
-        log "Making apt use VNOI and Ubuntu sources"
-        # Change https://sysopspackages.icpc.global/ubuntu to $UBUNTU_APT_SOURCE
-        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
-        # Remove the extremely big vscode repo
-        sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
-        # Change https://sysopspackages.icpc.global to $CUSTOM_APT_SOURCE
-        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
-        for file in $CHROOT/etc/apt/sources.list.d/*; do
-            sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $file
-            sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $file
-        done
-        log "Done"
+        add_step "Making apt use VNOI and Ubuntu sources" "$(cat <<"EOM"
+log 2 $APT_SOURCE
+# Change https://sysopspackages.icpc.global/ubuntu to $UBUNTU_APT_SOURCE
+sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
+# Remove the extremely big vscode repo
+sed -i '/https:\/\/sysopspackages.icpc.global\/vscode/d' $CHROOT/etc/apt/sources.list
+# Change https://sysopspackages.icpc.global to $CUSTOM_APT_SOURCE
+sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $CHROOT/etc/apt/sources.list
+for file in $CHROOT/etc/apt/sources.list.d/*; do
+    sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $file
+    sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $file
+done
+EOM
+        )"
 
-        log "Make VNOI key trusted"
-        curl $CUSTOM_APT_SOURCE/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg
+        add_step "Make VNOI key trusted" 'curl $CUSTOM_APT_SOURCE/pubkey.txt | gpg --dearmor > $CHROOT/etc/apt/trusted.gpg.d/vnoi.gpg'
     fi
 
-    log "chrooting into $CHROOT"
-    # Chroot, resetting all environment variables to ensure replicable building
-    # https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
-    install -v /etc/resolv.conf $CHROOT/etc/
-    su -c "chroot $CHROOT /usr/bin/env -i \
-        HOME=/root \
-        TERM="$TERM" \
-        PS1=\"[\u@\h \W]\$ \" \
-        PATH=/usr/bin:/usr/sbin \
-        PROD_DEV="$PROD_DEV" \
-        /bin/bash /root/chroot_install.sh"
-    log "Done"
+    add_step "chrooting into $CHROOT" "$(cat <<"EOM"
+# Chroot, resetting all environment variables to ensure replicable building
+# https://www.linuxfromscratch.org/lfs/view/12.0/chapter07/chroot.html#:~:text=The%20%2Di%20option%20given%20to,PATH%20variables%20are%20set%20again.
+install -v /etc/resolv.conf $CHROOT/etc/
+su -c "chroot $CHROOT /usr/bin/env -i \
+    HOME=/root \
+    TERM="$TERM" \
+    PS1=\"[\u@\h \W]\$ \" \
+    PATH=/usr/bin:/usr/sbin \
+    PROD_DEV="$PROD_DEV" \
+    /bin/bash /root/chroot_install.sh"
+EOM
+    )"
 
-    log "Cleanup scripts and config from chroot"
-    rm -f $CHROOT/root/{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}
-    log "Done"
+    add_step "Cleanup scripts and config from chroot" 'rm -f $CHROOT/root/{build.sh,chroot_install.sh,config.sh,config.local.sh,authorized_keys}'
 
-    log "Unmounting /dev and /run from chroot"
-    umount -l $CHROOT/dev
-    umount -l $CHROOT/run
-    log "Done"
+    add_step "Unmounting /dev and /run from chroot" " \
+        umount -l \$CHROOT/dev; \
+        umount -l \$CHROOT/run \
+    "
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        rm -rf $ICPC_ISO_FILENAME
-        log "Done"
+        add_step "Clearing early to free up space" 'rm -rf $ICPC_ISO_FILENAME'
     fi
+
+    run_all_steps
 
     icpc_image_build $PROD_DEV $APT_SOURCE
 }
 
 icpc_image_build() {
-    log "Start building ICPC image"
+    log 1 "Start building ICPC image"
+    STEPS=()
 
     if [ $1 = "prod" ]; then
         PRESEED=seeds/prod.preseed
@@ -293,93 +348,99 @@ icpc_image_build() {
     cp -r $ICPC $IMAGE
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
+        log 2 "Clearing early to free up space"
         rm -rf $ICPC
-        log "Done"
     fi
 
     rm -f $IMAGE/casper/filesystem.squashfs
 
-    log "Move preseed at $PRESEED"
-    cp $PRESEED $IMAGE/preseed/icpc.seed
+    add_step "Move preseed at $PRESEED" 'cp $PRESEED $IMAGE/preseed/icpc.seed'
 
     if [ $APT_SOURCE = "vnoi" ]; then
-        log "Changing seed to make apt use VNOI and Ubuntu sources"
-        sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
-        sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
-        log "Done"
+        add_step "Changing seed to make apt use VNOI and Ubuntu sources" "$(cat <<"EOM"
+sed -i "s|https://sysopspackages.icpc.global/ubuntu|$UBUNTU_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+sed -i "s|https://sysopspackages.icpc.global|$CUSTOM_APT_SOURCE|g" $IMAGE/preseed/icpc.seed
+EOM
+        )"
     fi
 
-    log "Move custom grub.cfg with custom options" # TODO: (Try & Install or Install)
-    cp grub.cfg $IMAGE/boot/grub/grub.cfg
+    # TODO: (Try & Install or Install)
+    add_step "Move custom grub.cfg with custom options" 'cp grub.cfg $IMAGE/boot/grub/grub.cfg'
 
-    # # Create manifest
-    chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' > $IMAGE/casper/filesystem.manifest
-
-    cp -v $IMAGE/casper/filesystem.manifest $IMAGE/casper/filesystem.manifest-desktop
+    add_step "Create manifest" "$(cat <<"EOM"
+chroot $CHROOT dpkg-query -W --showformat='${Package} ${Version}\n' > $IMAGE/casper/filesystem.manifest
+cp -v $IMAGE/casper/filesystem.manifest $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/ubiquity/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/casper/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/discover/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/laptop-detect/d' $IMAGE/casper/filesystem.manifest-desktop
     sed -i '/os-prober/d' $IMAGE/casper/filesystem.manifest-desktop
-    # Compress filesystem
-    if [ $COMPACT = true ]; then
-        log "Compressing filesystem with xz (slow, smaller size)"
-        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -b 1048576 -comp xz -Xdict-size 100%
-    else
-        log "Compressing filesystem with gzip (fast, larger size)"
-        mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
-    fi
+EOM
+    )"
 
-    printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
+    add_step "Compress filesystem" "$(cat <<"EOM"
+if [ $COMPACT = true ]; then
+    log 2 "Compressing filesystem with xz (slow, smaller size)"
+    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -b 1048576 -comp xz -Xdict-size 100%
+else
+    log 2 "Compressing filesystem with gzip (fast, larger size)"
+    mksquashfs $CHROOT $IMAGE/casper/filesystem.squashfs -noappend -comp gzip
+fi
 
-    if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        for i in $(ls $CHROOT); do
-            if [ ! $i = "dev" ] && [ ! $i = "run" ]; then
-                rm -rf $CHROOT/$i
-            fi
-        done
-        log "Done"
-    fi
-
-    log "Building ISO"
-    cd $IMAGE
-
-    (
-        dd if=/dev/zero of=efiboot.img bs=1M count=10 && \
-        mkfs.vfat efiboot.img && \
-        LC_CTYPE=C mmd -i efiboot.img EFI EFI/boot && \
-        LC_CTYPE=C mcopy -i efiboot.img EFI/boot/*.efi ::EFI/boot
-    )
-
-    rm md5sum.txt
-    /bin/bash -c "(find . -type f -print0 | xargs -0 md5sum | grep -v -e 'md5sum.txt' -e 'efiboot.img' -e 'contestant.mbr' > md5sum.txt)"
-
-    xorriso -as mkisofs \
-        -r -V "Contestant ISO" -J -joliet-long -l \
-        -iso-level 3 \
-        -partition_offset 16 \
-        --grub2-mbr "contestant.mbr" \
-        --mbr-force-bootable \
-        -append_partition 2 0xEF efiboot.img \
-        -appended_part_as_gpt \
-        -c /boot.catalog \
-        -b /boot/grub/i386-pc/eltorito.img \
-            -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
-        -eltorito-alt-boot \
-        -e '--interval:appended_partition_2:all::' \
-            -no-emul-boot \
-        -o "../$IMAGE_FILENAME" \
-        .
+printf $(du -sx --block-size=1 $CHROOT | cut -f1) > $IMAGE/casper/filesystem.size
+EOM
+    )"
 
     if [ $CLEAR_EARLY = true ]; then
-        log "Clearing early to free up space"
-        rm -rf $IMAGE
-        log "Done"
+        add_step "Clearing early to free up space" "$(cat <<"EOM"
+for i in $(ls $CHROOT); do
+    if [ ! $i = "dev" ] && [ ! $i = "run" ]; then
+        rm -rf $CHROOT/$i
+    fi
+done
+EOM
+        )"
     fi
 
-    log "Build finished. Cleaning up (run clean command for full clean up)."
+    add_step "Building ISO" "$(cat <<"EOM"
+cd $IMAGE
+
+(
+    dd if=/dev/zero of=efiboot.img bs=1M count=10 && \
+    mkfs.vfat efiboot.img && \
+    LC_CTYPE=C mmd -i efiboot.img EFI EFI/boot && \
+    LC_CTYPE=C mcopy -i efiboot.img EFI/boot/*.efi ::EFI/boot
+)
+
+rm md5sum.txt
+/bin/bash -c "(find . -type f -print0 | xargs -0 md5sum | grep -v -e 'md5sum.txt' -e 'efiboot.img' -e 'contestant.mbr' > md5sum.txt)"
+
+xorriso -as mkisofs \
+    -r -V "Contestant ISO" -J -joliet-long -l \
+    -iso-level 3 \
+    -partition_offset 16 \
+    --grub2-mbr "contestant.mbr" \
+    --mbr-force-bootable \
+    -append_partition 2 0xEF efiboot.img \
+    -appended_part_as_gpt \
+    -c /boot.catalog \
+    -b /boot/grub/i386-pc/eltorito.img \
+        -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+    -eltorito-alt-boot \
+    -e '--interval:appended_partition_2:all::' \
+        -no-emul-boot \
+    -o "../$IMAGE_FILENAME" \
+    .
+EOM
+    )"
+
+    if [ $CLEAR_EARLY = true ]; then
+        add_step "Clearing early to free up space" 'rm -rf $IMAGE'
+    fi
+
+    run_all_steps
+
+    log 1 "Build finished. Cleaning up (run clean command for full clean up)."
 }
 
 generate_actions_secret() {
@@ -422,16 +483,14 @@ generate_actions_secret() {
 
 VM_NAME="ICPC-Dev"
 dev_reload() {
-    build_modules
-
-    log "Checking if Virtual Machine is running"
+    log 0 "Checking if Virtual Machine is running"
     if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
     | grep -c "VMState=\"running\"") -ne 0 ]; then
-        log "Running. Turning off VM"
+        log 0 "Running. Turning off VM"
         vboxmanage controlvm "$VM_NAME" poweroff
-        log "Done"
+        log 0 "Done"
 
-        log "Polling for shutdown"
+        log 0 "Polling for shutdown"
         while true; do
             if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
             | grep -c "VMState=\"running\"") -eq 0 ]; then
@@ -439,22 +498,22 @@ dev_reload() {
             fi
             sleep 1
         done
-        log "Done"
+        log 0 "Done"
     else
-        log "Not running"
+        log 0 "Not running"
     fi
 
-    log "Restoring VM to snapshot root-install"
+    log 0 "Restoring VM to snapshot root-install"
     vboxmanage snapshot "$VM_NAME" restore "root-install"
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Starting Virtual Machine"
+    log 0 "Starting Virtual Machine"
     vboxmanage startvm "$VM_NAME"
-    log "Done"
+    log 0 "Done"
 
-    log "Polling for guest control"
+    log 0 "Polling for guest control"
     while true; do
         if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
         | grep -c "GuestAdditionsRunLevel=2") -ne 0 ]; then
@@ -463,19 +522,19 @@ dev_reload() {
         sleep 1
     done
 
-    log "Installing from /media/sf_src (mounted Shared Folder)"
+    log 0 "Installing from /media/sf_src (mounted Shared Folder)"
     vboxmanage guestcontrol "$VM_NAME" run \
         --username $SUDO_USER --password $SUPER_PASSWD \
         --exe "/bin/bash" \
         --wait-stdout --wait-stderr \
         -- -c "cd /root/src && /media/sf_src/setup.sh"
-    log "Done"
+    log 0 "Done"
 
     # Wait for Virtual Machine to shutdown
-    log "Restarting Virtual Machine."
+    log 0 "Restarting Virtual Machine."
     vboxmanage controlvm "$VM_NAME" acpipowerbutton
 
-    log "Waiting for Virtual Machine to shutdown"
+    log 0 "Waiting for Virtual Machine to shutdown"
     while true; do
         if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
         | grep -c "VMState=\"running\"") -eq 0 ]; then
@@ -483,12 +542,12 @@ dev_reload() {
         fi
         sleep 1
     done
-    log "Done"
+    log 0 "Done"
 
     sleep 3
 
     vboxmanage startvm "$VM_NAME"
-    log "Virtual Machine started. Have fun coding!"
+    log 0 "Virtual Machine started. Have fun coding!"
 }
 
 dev_create() {
@@ -534,12 +593,12 @@ dev_create() {
     done
 
     if [ $BUILD = true ]; then
-        log "Building ICPC image for development"
+        log 0 "Building ICPC image for development"
         sudo ./$0 icpc_build --dev
-        log "Done"
+        log 0 "Done"
     else
-        log "Skipping building ICPC image for development."
-        log "Do make sure your image is for development (built with icpc_build --dev or dev_create)."
+        log 0 "Skipping building ICPC image for development."
+        log 0 "Do make sure your image is for development (built with icpc_build --dev or dev_create)."
     fi
 
     VM_NAME="ICPC-Dev"
@@ -547,14 +606,14 @@ dev_create() {
     VM_DIRECTORY="$HOME/VirtualBox VMs"
 
     if [ $NEW = true ]; then
-        log "Removing old Virtual Machine"
+        log 0 "Removing old Virtual Machine"
         vboxmanage unregistervm $VM_NAME --delete || true
         echo "$VM_DIRECTORY/$VM_NAME"
         rm -rf "$VM_DIRECTORY/$VM_NAME"
-        log "Done"
+        log 0 "Done"
     fi
 
-    log "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
+    log 0 "Creating Virtual Machine $VM_NAME at $VM_DIRECTORY"
     vboxmanage createvm \
         --register \
         --default \
@@ -562,25 +621,25 @@ dev_create() {
         --groups "/$VM_NAME" \
         --basefolder "$VM_DIRECTORY" \
         --ostype $VM_GUEST_OS_TYPE
-    log "Done"
+    log 0 "Done"
 
-    log "Running configuration"
+    log 0 "Running configuration"
     vboxmanage modifyvm "$VM_NAME" \
         --memory $MEM \
         --cpus $CPUS \
         --firmware $FIRMWARE \
         --usb-xhci=on
-    log "Done"
+    log 0 "Done"
 
-    log "Creating disk"
+    log 0 "Creating disk"
     DISK_FILENAME=$VM_DIRECTORY/$VM_NAME/$VM_NAME.vdi
     vboxmanage createmedium disk \
         --filename "$DISK_FILENAME" \
         --size 40960 \
         --variant Fixed
-    log "Done"
+    log 0 "Done"
 
-    log "Attaching disk"
+    log 0 "Attaching disk"
     vboxmanage storageattach "$VM_NAME" \
         --storagectl SATA \
         --port 0 \
@@ -588,23 +647,23 @@ dev_create() {
         --type hdd \
         --medium "$DISK_FILENAME" \
         --nonrotational on
-    log "Done"
+    log 0 "Done"
 
-    log "Attaching installation image"
+    log 0 "Attaching installation image"
     vboxmanage storageattach "$VM_NAME" \
         --storagectl IDE \
         --port 0 \
         --device 0 \
         --type dvddrive \
         --medium "$INS_DIR/contestant-dev.iso"
-    log "Done"
+    log 0 "Done"
 
-    log "Starting Virtual Machine. Please install contest image using the GUI."
+    log 0 "Starting Virtual Machine. Please install contest image using the GUI."
     vboxmanage startvm "$VM_NAME"
-    log "Done"
+    log 0 "Done"
 
     # Wait for Virtual Machine to shutdown
-    log "Waiting for Virtual Machine to shutdown"
+    log 0 "Waiting for Virtual Machine to shutdown"
     while true; do
         if [ $(vboxmanage showvminfo --machinereadable $VM_NAME \
         | grep -c "VMState=\"running\"") -eq 0 ]; then
@@ -612,30 +671,30 @@ dev_create() {
         fi
         sleep 1
     done
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Mounting Shared Folder"
+    log 0 "Mounting Shared Folder"
     # Mount shared folder to /media/sf_src
     vboxmanage sharedfolder add "$VM_NAME" \
         --name "src" \
         --hostpath "$TOOLKIT" \
         --readonly \
         --automount
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Creating snapshot"
+    log 0 "Creating snapshot"
     vboxmanage snapshot "$VM_NAME" take "root-install"
-    log "Done"
+    log 0 "Done"
 
     sleep 2
 
-    log "Loading toolkit to Virtual Machine"
+    log 0 "Loading toolkit to Virtual Machine"
     dev_reload
-    log "Done"
+    log 0 "Done"
 }
 
 OPTIND=1 # Reset in case getopts has been used previously in the shell.
@@ -685,4 +744,4 @@ case $1 in
         ;;
 esac
 
-log "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
+log 0 "Total time elapsed: $(($(date +%s) - $START_TIME)) seconds"
