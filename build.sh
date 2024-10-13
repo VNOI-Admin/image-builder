@@ -119,14 +119,14 @@ if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
 fi
 
 build_modules() {
-    log "Building modules"
+    log 0 "Building modules"
 
     make -C modules/pam clean
     make -C modules/pam
 
     cp modules/pam/vnoi_pam.so $TOOLKIT/misc
 
-    log "Done"
+    log 0 "Done"
 }
 
 icpc_build() {
@@ -254,11 +254,7 @@ EOM
     add_step "Copy scripts and config to chroot" 'cp -R build.sh chroot_install.sh $CHROOT/root'
 
     if [ $PROD_DEV = "prod" ]; then
-        build_modules
-
-        log "Copy toolkit to chroot"
-        cp -R $TOOLKIT/ $CHROOT/root/src/
-        log "Done"
+        add_step "Build PAM modules" 'build_modules'
         add_step "Copy toolkit to chroot" 'cp -R $TOOLKIT/ $CHROOT/root/src/'
     else
         add_step "Skipped copying toolkit to chroot" 'mkdir -p $CHROOT/root/src'
