@@ -118,6 +118,17 @@ if $(findmnt -rno SOURCE,TARGET "$CHROOT/dev" > /dev/null); then
     sudo umount -l $CHROOT/run
 fi
 
+build_modules() {
+    log 0 "Building modules"
+
+    make -C modules/pam clean
+    make -C modules/pam
+
+    cp modules/pam/vnoi_pam.so $TOOLKIT/misc
+
+    log 0 "Done"
+}
+
 icpc_build() {
     log 1 "Start icpc_build"
     STEPS=()
@@ -214,6 +225,10 @@ EOM
         unzip \
         zip \
         curl \
+        libjson-c-dev \
+        libpam0g-dev \
+        libsystemd-dev \
+        libcurl4-openssl-dev
     "
 
     add_step "Creating directories and removing old chroot" 'mkdir -p $INS_DIR/{chroot,image/{casper,install},icpc} && rm -rf $CHROOT/*'
@@ -239,6 +254,7 @@ EOM
     add_step "Copy scripts and config to chroot" 'cp -R build.sh chroot_install.sh $CHROOT/root'
 
     if [ $PROD_DEV = "prod" ]; then
+        add_step "Build PAM modules" 'build_modules'
         add_step "Copy toolkit to chroot" 'cp -R $TOOLKIT/ $CHROOT/root/src/'
     else
         add_step "Skipped copying toolkit to chroot" 'mkdir -p $CHROOT/root/src'
@@ -696,6 +712,7 @@ case $1 in
     clean)
         assert_root
         rm -rf $INS_DIR
+        make -C modules/pam clean
         ;;
     icpc_build)
         assert_root
