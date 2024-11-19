@@ -73,6 +73,22 @@ webcam_stream_loop() {
         do
             echo "Looking for video devices"
 
+            local VIDEO_DEVICE_SOURCE
+            source /opt/vnoi/config.sh
+
+            if [[ -n "$VIDEO_DEVICE_SOURCE" ]] ; then
+                echo "VIDEO_DEVICE_SOURCE provided"
+                if [[ -e "$VIDEO_DEVICE_SOURCE" ]] ; then
+                    echo "Using $VIDEO_DEVICE_PATH"
+                    VIDEO_DEVICE_PATH="$VIDEO_DEVICE_SOURCE"
+                    return
+                else
+                    echo "$VIDEO_DEVICE_SOURCE not found"
+                    sleep 3
+                fi
+                continue
+            fi
+
             local VIDEO_DEVICES
             mapfile -t VIDEO_DEVICES < <(find /dev/v4l/by-id -regex ".*/usb-.*-video-index0")
 
@@ -194,9 +210,9 @@ webcam_stream_loop() {
         sleep 0.1
     }
 
-    webcam_pick_devices
     while :
     do
+        webcam_pick_devices
         echo "Checking video device at $VIDEO_DEVICE_PATH"
         if [[ -e $VIDEO_DEVICE_PATH ]]; then
             echo "Video device found"
