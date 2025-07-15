@@ -20,3 +20,5 @@ AUDIO_DEVICE_NAME="any"
 
 # If AUDIO_DEVICE_SOURCE is provided, AUDIO_DEVICE_NAME check is bypassed and AUDIO_DEVICE_SOURCE will be used directly
 # AUDIO_DEVICE_SOURCE="alsa://plughw:1,0"
+
+VIDEO_DEVICE_REGEX='.*/usb-.*-video-index0'

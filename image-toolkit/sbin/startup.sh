@@ -71,10 +71,12 @@ webcam_stream_loop() {
         # https://docs.kernel.org/userspace-api/media/v4l/open.html#v4l2-device-node-naming
         while :
         do
+	    VIDEO_DEVICE_REGEX=".*/usb-.*-video-index0"
+	    source /opt/vnoi/config.sh
             echo "Looking for video devices"
 
             local VIDEO_DEVICES
-            mapfile -t VIDEO_DEVICES < <(find /dev/v4l/by-id -regex ".*/usb-.*-video-index0")
+            mapfile -t VIDEO_DEVICES < <(find /dev/v4l/by-id -regex "$VIDEO_DEVICE_REGEX")
 
             local VIDEO_DEVICES_COUNT
             VIDEO_DEVICES_COUNT=${#VIDEO_DEVICES[@]}
@@ -164,10 +166,9 @@ webcam_stream_loop() {
 
         echo "Starting cvlc instance for streaming webcam $VIDEO_DEVICE_PATH with audio source $AUDIO_SOURCE"
         cvlc -vv -q v4l2://$VIDEO_DEVICE_PATH --v4l2-width=1280 --v4l2-height=720 \
-        --input-slave $AUDIO_SOURCE \
         --sout \
             "#transcode{ \
-                venc=x264{keyint=15},vcodec=h264,acodec=aac,channels=1,vb=3000,ab=128,fps=24 \
+                venc=x264{keyint=15},vcodec=h264,b=3000,ps=24 \
             }:duplicate{ \
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
