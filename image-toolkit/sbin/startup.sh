@@ -168,7 +168,7 @@ webcam_stream_loop() {
         cvlc -vv -q v4l2://$VIDEO_DEVICE_PATH --v4l2-width=1280 --v4l2-height=720 \
         --sout \
             "#transcode{ \
-                venc=x264{keyint=15},vcodec=h264,b=3000,ps=24 \
+                venc=x264{keyint=15},vcodec=h264,vb=3000,fps=24 \
             }:duplicate{ \
                 dst=std{access=rtmp,mux=ffmpeg{mux=flv},dst=rtmp://localhost/live/webcam}, \
             }" &
