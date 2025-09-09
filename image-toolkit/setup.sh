@@ -197,10 +197,10 @@ EOM
 
 # Disable virtual consoles
 
-cat - <<EOM >> /etc/systemd/logind.conf
-NAutoVTs=0
-ReserveVT=0
-EOM
+# cat - <<EOM >> /etc/systemd/logind.conf
+# NAutoVTs=0
+# ReserveVT=0
+# EOM
 
 # Disable updates
 
