@@ -67,21 +67,26 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   printf("Welcome %s\n", username);
 
   /* Authenticate contestant */
+  pam_info(pamh, "Authenticating user...");
   auth_rcode = authenticate_contestant(username, password, &access_token);
   if (auth_rcode < 0){
     write_log("Authentication failed due to internal error\n");
+    pam_error(pamh, "Authentication failed due to internal error!");
     return PAM_AUTH_ERR;
   } else if (auth_rcode == 0){
     write_log("Authentication failed, wrong username or password\n");
+    pam_error(pamh, "Wrong username or password!");
     return PAM_USER_UNKNOWN;
   }
 
   printf("Authentication successful.\nWelcome %s\n", username);
 
   /* Store access token */
+  pam_info(pamh, "Logging in...");
   pam_rcode = pam_set_data(pamh, "vnoi_access_token", (void*) access_token, access_token_cleanup);
   if (pam_rcode != PAM_SUCCESS){
     handle_pam_error("Access token store failed", pamh, pam_rcode);
+    pam_error(pamh, "Failed to store access token!");
     return PAM_AUTH_ERR;
   }
 
@@ -89,6 +94,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   pam_rcode = pam_set_item(pamh, PAM_USER, VNOI_DEFAULT_USERNAME);
   if (pam_rcode != PAM_SUCCESS){
     handle_pam_error("Username modify failed", pamh, pam_rcode);
+    pam_error(pamh, "Failed to modify username!");
     return PAM_AUTH_ERR;
   }
 
@@ -96,6 +102,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,
   pam_rcode = pam_set_item(pamh, PAM_AUTHTOK, VNOI_DEFAULT_PASSWORD);
   if (pam_rcode != PAM_SUCCESS){
     handle_pam_error("Password modify failed", pamh, pam_rcode);
+    pam_error(pamh, "Failed to modify password!");
     return PAM_AUTH_ERR;
   }
 
@@ -120,20 +127,25 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
   if (strcmp(username, VNOI_ROOT) == 0)
     return PAM_SUCCESS;
 
+  pam_info(pamh, "Opening session...");
   pam_rcode = pam_get_data(pamh, "vnoi_access_token", (const void**) &access_token);
   if (pam_rcode != PAM_SUCCESS){
     handle_pam_error("Access token retrieval failed", pamh, pam_rcode);
+    pam_error(pamh, "Failed to read access token!");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   }
 
+  pam_info(pamh, "Reading configuration...");
   config_rcode = get_contestant_config(access_token, &config_content);
   if (config_rcode < 0){
     write_log("Config file retrieval failed due to internal error\n");
+    pam_error(pamh, "Config file retrieval failed due to internal error!");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   } else if (config_rcode == 0){
     write_log("Config file retrieval failed due to server-side error\n");
+    pam_error(pamh, "Config file retrieval failed due to server-side error!");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   }
@@ -141,9 +153,12 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
   printf("Config file retrieval successful\n");
 
   /* Write config file */
+  write_log("Starting VPN\n");
+  pam_info(pamh, "Starting VPN...");
   child_rcode = wireguard_restart_overwrite_config(config_content);
   if (child_rcode < 0){
     write_log("Wireguard restart/overwrite failed\n");
+    pam_error(pamh, "Failed to start VPN!");
     return_code = PAM_SESSION_ERR;
     goto cleanup;
   }
