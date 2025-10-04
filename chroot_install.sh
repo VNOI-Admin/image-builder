@@ -68,7 +68,8 @@ apt-get install -y \
     wireguard \
     python3-psutil \
     nginx \
-    libnginx-mod-rtmp
+    libnginx-mod-rtmp \
+    prometheus-node-exporter
 
 # Install Chrome to avoid using Firefox snap. Firefox snap can't read stuffs not in ~/
 mkdir /tmp/chrome-download/
