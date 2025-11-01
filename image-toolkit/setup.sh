@@ -202,6 +202,9 @@ NAutoVTs=0
 ReserveVT=0
 EOM
 
+# Enable prometheus node exporter
+systemctl enable prometheus-node-exporter
+
 # Disable updates
 
 cat - <<EOM > /etc/apt/apt.conf.d/20auto-upgrades

@@ -21,6 +21,8 @@
 -A INPUT -p tcp -m tcp --dport 100 -s {ADMIN_SUBNET} -j ACCEPT -i client
 # HTTP services
 -A INPUT -p tcp -m tcp -m multiport --dports 80,443 -s {ADMIN_SUBNET} -j ACCEPT -i client
+# Node exporter output
+-A INPUT -p tcp -m tcp --dport 9100 -s {ADMIN_SUBNET} -j ACCEPT -i client
 
 # Coach views
 # VLC output
