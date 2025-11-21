@@ -24,7 +24,7 @@ OBJS := $(patsubst %.c,%.o,$(wildcard *.c))
 vnoi_pam.so: $(OBJS)
 	$(LD) $(LDFLAGS) $(LDLIBS) -o $@ $^
 
-%.o: %.c
+%.o: %.c config.mk
 	$(CC) $(CFLAGS) $(CDEF) -c -o $@ $<
 
 clean:

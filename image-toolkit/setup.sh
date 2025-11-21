@@ -197,10 +197,10 @@ EOM
 
 # Disable virtual consoles
 
-cat - <<EOM >> /etc/systemd/logind.conf
-NAutoVTs=0
-ReserveVT=0
-EOM
+# cat - <<EOM >> /etc/systemd/logind.conf
+# NAutoVTs=0
+# ReserveVT=0
+# EOM
 
 # Enable prometheus node exporter
 systemctl enable prometheus-node-exporter
@@ -304,6 +304,26 @@ echo "session	requisite	vnoi_pam.so" >> /etc/pam.d/gdm-password.new
 mv /etc/pam.d/gdm-password.new /etc/pam.d/gdm-password
 chown root:root /etc/pam.d/gdm-password
 chmod 644 /etc/pam.d/gdm-password
+
+# Set up guest VPN
+cat <<EOF > /etc/systemd/system/guest-vpn.service
+[Unit]
+Description=VNOI Guest VPN
+After=gdm.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vnoi/sbin/guest-vpn.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target
+EOF
+
+systemctl enable guest-vpn.service
+
+sed -i '/banner-message-enable=/c\banner-message-enable=true' /etc/gdm3/greeter.dconf-defaults
 
 echo "### DONE ###"
 echo "- Remember to run cleanup script."
